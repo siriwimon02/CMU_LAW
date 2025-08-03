@@ -1,47 +1,33 @@
 // Required External Modules
-const express = require('express');
-const { PrismaClient } = require('./generated/prisma');
-const prisma = new PrismaClient();
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.dev' });
+
+import express from 'express';
+import authUser from './routes/authUser.js';
+import authMiddle from './middleware/authMiddle.js';
+import petition from './routes/petition.js';
 
 // App Variables
 const app = express();
+const PORT = process.env.PORT || 3001; // Use environment variable PORT or default to 4000
+
+
+//middleware
 app.use(express.json());
-const port = process.env.PORT || 4000; // Use environment variable PORT or default to 4000
-
-//*****
-//THIS IS DUMMY ENDPOINT ADDING FOR TESTING THE DB CONNECTION PURPOSE
-// Create user
-app.post('/users', async (req, res) => {
-  const { name, email } = req.body;
-  try {
-    const user = await prisma.user.create({
-      data: { name, email },
-    });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-// Get all users
-app.get('/users', async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
-});
-//*****
 
 
-// App Configuration (optional, can include middleware, view engine setup, etc.)
-// app.set('view engine', 'pug');
-// app.set('views', './views');
-// app.use(express.static('public')); // Serve static files from 'public' directory
-
-// Routes Definitions
 app.get('/', (req, res) => {
   res.send('Hello, Express!'); // Simple response for the root route
 });
 
-// Server Activation
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
 
+app.use('/auth', authUser);
+app.use('/petition', authMiddle, petition);
+
+
+
+console.log("DB URL:", process.env.DATABASE_URL);
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});

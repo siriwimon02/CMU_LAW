@@ -13,6 +13,9 @@ echo "Postgres is up!"
 npx prisma generate
 npx prisma migrate dev --name init
 
+# Run seed script
+node prisma/seed.js
+
 # Run your app
 exec "$@"
 

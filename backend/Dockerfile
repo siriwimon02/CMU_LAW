@@ -16,7 +16,7 @@ COPY . .
 COPY wait-for-db.sh ./wait-for-db.sh
 RUN chmod +x ./wait-for-db.sh
 
-EXPOSE 4000
+EXPOSE 3001
 
 # Wait for DB, then run server
 ENTRYPOINT ["./wait-for-db.sh"]
