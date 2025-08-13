@@ -17,47 +17,114 @@ datasource db {
 
 
 model User {
-  id        Int        @id @default(autoincrement())
-  username  String     @unique
-  password  String
-  roleId    Int
-  role      Role       @relation(fields: [roleId], references: [id])
-  documents Document[]
+  id            Int             @id @default(autoincrement())
+  email         String          @unique
+  password      String
+  firstname     String
+  lastname      String
+  departmentId  Int
+  department    Department      @relation(fields: [departmentId], references: [id])
+  rId           Int
+  role          RoleOfUser      @relation(fields: [rId], references: [id])
+  documents     DocumentPetition[]
+  actionLogs    DocumentActionsLog[]
+  statusChanges DocumentStatusHistory[] @relation("ChangedBy")
 }
 
-model Role {
-  id       Int      @id @default(autoincrement())
-  name     String   @unique
-  users    User[]
+model Department {
+  id             Int             @id @default(autoincrement())
+  department_name String         @unique @db.VarChar(255)
+  users          User[]
+  documents      DocumentPetition[]
 }
 
-model Document {
-  id            Int         @id @default(autoincrement())
-  id_doc        Int
-  department    String
-  destinationId Int
-  destination   Destination @relation(fields: [destinationId], references: [id])
-  title         String
-  authorizeTo   String
-  position      String
-  affiliation   String
-  authorizeText String
-  userId        Int
-  user          User        @relation(fields: [userId], references: [id])
-  statusId      Int
-  status        Status      @relation(fields: [statusId], references: [id])
-  createdAt     DateTime    @default(now())
-  dateOfSigning DateTime?
+model RoleOfUser {
+  id       Int         @id @default(autoincrement())
+  role_name String     @unique
+  users     User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id         Int             @id @default(autoincrement())
+  permission String          @db.VarChar(255)
+  roles      RolePermission[]
+}
+
+model RolePermission {
+  id            Int        @id @default(autoincrement())
+  permissionId  Int
+  roleId        Int
+
+  permission    Permission @relation(fields: [permissionId], references: [id])
+  role          RoleOfUser @relation(fields: [roleId], references: [id])
+}
+
+model DocumentPetition {
+  id              Int                  @id @default(autoincrement())
+  id_doc          Int
+  departmentId    Int
+  department      Department           @relation(fields: [departmentId], references: [id])
+  destinationId   Int
+  destination     Destination          @relation(fields: [destinationId], references: [id])
+  title           String
+  authorize_to    String               @db.VarChar(255)
+  position        String               @db.VarChar(255)
+  affiliation     String               @db.VarChar(255)
+  authorize_text  String
+  userId          Int
+  user            User                 @relation(fields: [userId], references: [id])
+  statusId        Int
+  status          Status               @relation(fields: [statusId], references: [id])
+  createdAt       DateTime             @default(now())
+  date_of_signing DateTime?
+
+  attachments     DocumentAttachment[]
+  actionLogs      DocumentActionsLog[]
+  statusHistory   DocumentStatusHistory[]
 }
 
 model Status {
-  id        Int        @id @default(autoincrement())
-  status    String     @unique
-  documents Document[]
+  id        Int                 @id @default(autoincrement())
+  status    String              @unique
+  documents DocumentPetition[]
+  statusChanges DocumentStatusHistory[]
 }
 
 model Destination {
-  id        Int        @id @default(autoincrement())
-  desName   String     @unique
-  documents Document[]
+  id        Int                 @id @default(autoincrement())
+  des_name  String              @unique
+  documents DocumentPetition[]
+}
+
+model DocumentActionsLog {
+  id        Int                @id @default(autoincrement())
+  userId    Int
+  user      User               @relation(fields: [userId], references: [id])
+  docId     Int
+  document  DocumentPetition   @relation(fields: [docId], references: [id])
+  action    String             @db.VarChar(255)
+  time_act  DateTime           @default(now())
+  node_text String
+}
+
+model DocumentAttachment {
+  id          Int              @id @default(autoincrement())
+  file_path   String
+  file_name   String
+  docId       Int
+  document    DocumentPetition @relation(fields: [docId], references: [id])
+  time_upload DateTime         @default(now())
+}
+
+model DocumentStatusHistory {
+  id          Int       @id @default(autoincrement())
+  documentId  Int
+  document    DocumentPetition @relation(fields: [documentId], references: [id])
+  statusId    Int
+  status      Status     @relation(fields: [statusId], references: [id])
+  changeById  Int
+  changedBy   User       @relation("ChangedBy", fields: [changeById], references: [id])
+  changedAt   DateTime   @default(now())
+  note_t      String
 }

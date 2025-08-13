@@ -12,28 +12,27 @@ const router = express.Router();
 
 // console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
-
 router.post('/register', async (req, res) =>{
-    const {username, password} = req.body;
+    const {email, password, firstname, lastname} = req.body;
     const hashedPass = bcrypt.hashSync(password, 8);
 
     console.log('try to use database');
     try{
         const user = await prisma.user.create({
             data:{
-                username,
+                email:email,
                 password:hashedPass,
                 // ทุกคนที่เข้ามารอบแรกจะ จะset ให้เป็น user ปกติ แล้วค่อยให้ admin จัดการว่าต้องการใช้คนในยุ role อะไร
-                role: {
-                    connect: {id:1}
-                }
+                firstname:firstname,
+                lastname:lastname,
+                departmentId: 1,
+                rId: 1
             }
         })
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
         console.log("token", token);
         res.json({ token });
-        console.log('New User');
-        
+        console.log('New User');   
     }catch (err) {
         console.log(err.message);
         res.sendStatus(503);
@@ -42,13 +41,13 @@ router.post('/register', async (req, res) =>{
 
 
 router.post('/login', async (req, res) =>{
-    const {username, password} = req.body;
-    console.log(username, password);
+    const {email, password} = req.body;
+    console.log(email, password);
 
     try{
         const user = await prisma.user.findUnique({
             where: {
-                username: username
+                email:email
             }
         })
         //เช็คว้า user มีมั้ย
@@ -68,10 +67,6 @@ router.post('/login', async (req, res) =>{
         res.sendStatus(503);
     }
 });
-
-
-
-
 
 
 export default router;
