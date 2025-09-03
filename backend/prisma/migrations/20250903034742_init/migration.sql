@@ -118,6 +118,9 @@ CREATE TABLE "DocumentStatusHistory" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Department_department_name_key" ON "Department"("department_name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "RoleOfUser_role_name_key" ON "RoleOfUser"("role_name");
 
 -- CreateIndex

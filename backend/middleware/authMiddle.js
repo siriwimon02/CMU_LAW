@@ -19,6 +19,7 @@ function authMiddleware(req, res, next){
         }
 
         req.userId = decoded.id
+        console.log("completeee");
         next();
     });
 }

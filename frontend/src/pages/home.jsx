@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
+
 function Home() {
   const [userInfo, setUserInfo] = useState(null);
   const token = localStorage.getItem("token");
@@ -49,7 +50,7 @@ function Home() {
 
   return (
     <div>
-      <h1>Welcome Home</h1>
+      <h1 className="text-3xl font-bold">Welcome Home</h1>
       <p> Token : {token} </p>
       <p>Department: {userInfo.department_name || "No department data"}</p>
       <p>Email: {userInfo.email}</p>

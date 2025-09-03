@@ -69,10 +69,10 @@ router.get('/', async (req, res) => {
 
 router.get('/:docId', async (req, res) => {
     console.log(req.userId);
-    const documentId = parseInt(req.docId);
+    const documentId = parseInt(req.params.docId);
     console.log(documentId);
 
-    const document_audit = await prisma.documentPetition.findMany({
+    const document_audit = await prisma.documentPetition.findUnique({
         where:{
             id:documentId
         }
@@ -98,18 +98,18 @@ router.get('/:docId', async (req, res) => {
     });
        
     const setdoc = {
-        id:doc.id,
-        doc_id:doc.doc_id,
+        id:document_audit.id,
+        doc_id:document_audit.doc_id,
         department_name: dep.department_name,
         destination_name: des.des_name,
-        title:doc.title,
-        authorize_to: doc.authorize_to,
-        position: doc.position,
-        affiliation: doc.affiliation,
-        authorize_text: doc.authorize_text,
+        title:document_audit.title,
+        authorize_to: document_audit.authorize_to,
+        position: document_audit.position,
+        affiliation: document_audit.affiliation,
+        authorize_text: document_audit.authorize_text,
         status_name: stt.status,
-        createdAt: doc.createdAt,
-        date_of_signing: doc.date_of_signing
+        createdAt: document_audit.createdAt,
+        date_of_signing: document_audit.date_of_signing
     };
 
     console.log(setdoc);

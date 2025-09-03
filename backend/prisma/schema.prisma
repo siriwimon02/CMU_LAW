@@ -17,31 +17,31 @@ datasource db {
 
 
 model User {
-  id            Int             @id @default(autoincrement())
-  email         String          @unique
-  password      String
-  firstname     String
-  lastname      String
-  departmentId  Int
-  department    Department      @relation(fields: [departmentId], references: [id])
-  rId           Int
-  role          RoleOfUser      @relation(fields: [rId], references: [id])
-  documents     DocumentPetition[]
-  actionLogs    DocumentActionsLog[]
-  statusChanges DocumentStatusHistory[] @relation("ChangedBy")
+  id              Int                     @id @default(autoincrement())
+  email           String                  @unique
+  password        String
+  firstname       String
+  lastname        String
+  departmentId    Int
+  department      Department              @relation(fields: [departmentId], references: [id])
+  rId             Int
+  role            RoleOfUser              @relation(fields: [rId], references: [id])
+  documents       DocumentPetition[]
+  actionLogs      DocumentActionsLog[]
+  statusChanges   DocumentStatusHistory[] @relation("ChangedBy")
 }
 
 model Department {
-  id             Int             @id @default(autoincrement())
-  department_name String         @unique @db.VarChar(255)
-  users          User[]
-  documents      DocumentPetition[]
+  id                Int             @id @default(autoincrement())
+  department_name   String         @unique @db.VarChar(255)
+  users             User[]
+  documents         DocumentPetition[]
 }
 
 model RoleOfUser {
-  id       Int         @id @default(autoincrement())
-  role_name String     @unique
-  users     User[]
+  id          Int         @id @default(autoincrement())
+  role_name   String     @unique
+  users       User[]
   permissions RolePermission[]
 }
 
@@ -55,7 +55,6 @@ model RolePermission {
   id            Int        @id @default(autoincrement())
   permissionId  Int
   roleId        Int
-
   permission    Permission @relation(fields: [permissionId], references: [id])
   role          RoleOfUser @relation(fields: [roleId], references: [id])
 }
@@ -78,7 +77,6 @@ model DocumentPetition {
   status          Status               @relation(fields: [statusId], references: [id])
   createdAt       DateTime             @default(now())
   date_of_signing DateTime?
-
   attachments     DocumentAttachment[]
   actionLogs      DocumentActionsLog[]
   statusHistory   DocumentStatusHistory[]

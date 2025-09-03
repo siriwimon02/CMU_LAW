@@ -14,7 +14,10 @@ echo "Running prisma generate"
 npx prisma generate
 
 echo "Running prisma migrate"
-npx prisma migrate dev --name init
+# npx prisma migrate dev --name init
+npx prisma migrate deploy
+
+
 
 echo "Running seed script"
 node prisma/seed.js
