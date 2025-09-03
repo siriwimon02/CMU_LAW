@@ -10,11 +10,18 @@ done
 echo "Postgres is up!"
 
 # Generate Prisma client now, after DB is ready
+echo "Running prisma generate"
 npx prisma generate
-npx prisma migrate dev --name init
 
-# Run seed script
+echo "Running prisma migrate"
+# npx prisma migrate dev --name init
+npx prisma migrate deploy
+
+
+
+echo "Running seed script"
 node prisma/seed.js
+
 
 # Run your app
 exec "$@"
