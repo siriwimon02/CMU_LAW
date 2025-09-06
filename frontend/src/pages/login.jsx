@@ -26,7 +26,7 @@ export default function Login() {
       } else {
         localStorage.setItem('token', data.token);
         alert('Login successful');
-        navigate("/home");
+        navigate("/dashboard");
       }
 
     } catch (err) {
