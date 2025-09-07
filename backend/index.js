@@ -9,6 +9,9 @@ import authUser from './routes/authUser.js';
 import authMiddle from './middleware/authMiddle.js';
 import petition from './routes/petitionForUser.js';
 import petition_Audit from './routes/petitionForAuditor.js';
+import petition_SuperAudit from './routes/petitionForSuperAudit.js';
+import checkRole from './middleware/checkRole.js';
+
 
 // App Variables
 const app = express();
@@ -31,13 +34,21 @@ app.get('/', (req, res) => {
 
 
 app.use('/auth', authUser);
-app.use('/petition', authMiddle, petition);
-app.use('/petitionAudit', authMiddle, petition_Audit);
+app.use('/petition', authMiddle, checkRole([2]), petition); //user
+app.use('/petitionAudit', authMiddle, checkRole([4]), petition_Audit); //สำหรับคนตรวจสอบ
+app.use('/petitionSuperAudit', authMiddle, checkRole([3]), petition_SuperAudit); //สำหรับผอ กอง
+
+
+app.get('/checkrole', authMiddle, checkRole([2, 3]), (req, res) => {
+  res.json({ message: "Accept to access path", user: req.user.role_id });
+});
+
 
 
 //----------------------------------------user----------------------------------//
+//ดึง data user
 app.get('/auth/user', authMiddle, async(req, res) => {
-  const userId = req.userId;
+  const userId = req.user.id;
   console.log('user Id ' , userId)
 
   const user_info = await prisma.user.findUnique({
@@ -57,9 +68,7 @@ app.get('/auth/user', authMiddle, async(req, res) => {
       id: user_info.rId
     }
   });
-
   console.log(user_info, user_db, user_role);
-
   const json_send_info = {
     department_name: user_db[0].department_name,
     email: user_info.email,
@@ -67,18 +76,16 @@ app.get('/auth/user', authMiddle, async(req, res) => {
     lastname: user_info.lastname,
     role_n: user_role[0].role_name
   }
-
   console.log(json_send_info);
   res.json(json_send_info);
 });
 
 
 
+
+
 //-----------------------------department-----------------------------------//
 app.get('/api/department', authMiddle, async(req, res) =>{
-  const userId = req.userId;
-  console.log("user_id", userId);
-
   const department = await prisma.department.findMany();
   res.json(department)
 
@@ -86,13 +93,21 @@ app.get('/api/department', authMiddle, async(req, res) =>{
 });
 
 
-//---------------------------destination-------------------------------------//
-app.get('/api/destination', authMiddle, async(req,res) =>{
-  const destination = await prisma.destination.findMany();
-  res.json(destination);
+
+//---------------------------role of user -----------------------------------//
+app.get('/api/roleofuser', authMiddle, async(req, res) =>{
+  const role = await prisma.RoleOfUser.findMany();
+  res.json(role);
+
+  console.log(role);
 });
+
+
 
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
+
+

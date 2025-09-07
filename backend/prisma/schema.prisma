@@ -19,7 +19,6 @@ datasource db {
 model User {
   id              Int                     @id @default(autoincrement())
   email           String                  @unique
-  password        String
   firstname       String
   lastname        String
   departmentId    Int
@@ -33,14 +32,14 @@ model User {
 
 model Department {
   id                Int             @id @default(autoincrement())
-  department_name   String         @unique @db.VarChar(255)
+  department_name   String          @unique @db.VarChar(255)
   users             User[]
   documents         DocumentPetition[]
 }
 
 model RoleOfUser {
   id          Int         @id @default(autoincrement())
-  role_name   String     @unique
+  role_name   String      @unique
   users       User[]
   permissions RolePermission[]
 }

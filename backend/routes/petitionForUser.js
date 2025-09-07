@@ -9,13 +9,12 @@ import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
-
 router.get('/', async (req, res) => {
-    console.log(req.userId);
+    console.log(req.user.id);
 
     const petition_doc = await prisma.documentPetition.findMany({
         where:{
-            userId : req.userId
+            userId : req.user.id
         }
     });
     const document_json = [];
@@ -60,8 +59,9 @@ router.get('/', async (req, res) => {
 
 
 router.post('/', async (req, res) =>{
-    console.log(req.userId);
-    const userid = req.userId;
+    console.log(req.user.id);
+    const userid = req.user.id;
+
     const {
         destinationId,
         title,
@@ -77,19 +77,20 @@ router.post('/', async (req, res) =>{
         }
     })
 
-    console.log(user)
+    console.log(user);
+    console.log(user.departmentId);
     const doc = await prisma.documentPetition.create({
         data: {
             id_doc: 1,
-            departmentId: user.departmentId,
-            destinationId:destinationId,
+            department: { connect: { id: user.departmentId } },
+            destination: { connect: { id: destinationId } },
             title,
             authorize_to,
             position,
             affiliation,
             authorize_text,
-            userId: req.userId,
-            statusId: 1
+            user : { connect: {id : userid}},
+            status: { connect: {id : 1} }
         }
     });
     console.log(doc)
@@ -100,6 +101,8 @@ router.post('/', async (req, res) =>{
     });
 
 });
+
+
 
 
 //หน้าบ้านจะต้องส่ง ไอดี form มาด้วย
