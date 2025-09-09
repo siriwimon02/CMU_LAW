@@ -5,30 +5,39 @@ export default function Register() {
     email: '',
     firstname: '',
     lastname: '',
-    department: '',
+    departmentName: '',
     role_id: ''
   });
 
-  const [roleOfUser, setroleOfuser] = useState(null);
-
+  const [roleOfUser, setRoleOfUser] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
 
-  useEffect( () => {
+  //ดึงdata role
+  useEffect(() => {
     async function getRoleUser() {
-      const res1 = await fetch('http://localhost:3001/api/roleofuser', {
-        
-      })
+      try {
+        const res1 = await fetch("http://localhost:3001/api/roleofuser");
+        if (!res1.ok) throw new Error("Network response was not ok");
+        const role = await res1.json();
+        setRoleOfUser(role);
+      } catch (err) {
+        console.error("Error fetching role:", err);
+      }
     }
-  });
-
-
+    getRoleUser();
+  }, []);
 
   const handleChange = e => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: name === "role_id" ? Number(value) : value   // แปลงเป็น int ถ้าเป็น role_id
+    }));
   };
 
+  //ส่งdata
   const handleRegister = async e => {
     e.preventDefault();
     setError('');
@@ -39,7 +48,6 @@ export default function Register() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      
       const data = await res.json();
       if (!res.ok) {
         setError(data.message || 'Register failed');
@@ -53,21 +61,84 @@ export default function Register() {
     setLoading(false);
   };
 
-
-  
-
   return (
-    <form onSubmit={handleRegister}>
-      <h2>Register</h2>
-      <h1 className="font-kanit text-3xl">สวัสดี Tailwind</h1>
-      <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="Email CMU" />
-      <input type="text" name="firstname" value={form.firstname} onChange={handleChange} required placeholder="First name" />
-      <input type="text" name="lastname" value={form.lastname} onChange={handleChange} required placeholder="Last Name" />
-      <input type="text" name="department" value={form.department} onChange={handleChange} required placeholder="Department" />
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form 
+        onSubmit={handleRegister}
+        className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md space-y-5"
+      >
+        <h2 className="text-2xl font-bold text-center text-gray-800">Register</h2>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button disabled={loading}>{loading ? 'Loading...' : 'Register'}</button>
-    </form>
+        <input 
+          type="email" 
+          name="email" 
+          value={form.email} 
+          onChange={handleChange} 
+          required 
+          placeholder="Email CMU"
+          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+        />
+        
+        <input 
+          type="text" 
+          name="firstname" 
+          value={form.firstname} 
+          onChange={handleChange} 
+          required 
+          placeholder="First name"
+          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+        />
+        
+        <input 
+          type="text" 
+          name="lastname" 
+          value={form.lastname} 
+          onChange={handleChange} 
+          required 
+          placeholder="Last Name"
+          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+        />
+        
+        <input 
+          type="text" 
+          name="department" 
+          value={form.department} 
+          onChange={handleChange} 
+          required 
+          placeholder="Department"
+          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+        />
+
+        <div>
+          <label htmlFor="role" className="block mb-1 text-gray-700 font-medium">
+            เลือก role ของคุณ
+          </label>
+          <select 
+            id="role" 
+            name="role_id" 
+            value={form.role_id} 
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+          >
+            <option value="">-- เลือก role --</option>
+            {roleOfUser.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.role_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        <button 
+          disabled={loading}
+          className="w-full py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition disabled:opacity-50"
+        >
+          {loading ? 'Loading...' : 'Register'}
+        </button>
+      </form>
+    </div>
   );
 }
-
