@@ -8,7 +8,6 @@ import { parse } from 'path';
 
 const router = express.Router();
 
-
 router.get('/waittoaccept', async (req, res) => {
     console.log(req.user.id);
     
@@ -19,22 +18,51 @@ router.get('/waittoaccept', async (req, res) => {
     });
     // console.log(user);
 
-    const findstatus = await prisma.status.findUnique({
+    const findstatus1 = await prisma.status.findUnique({
       where:{
         status: "รอรับเข้ากอง"
       }
     });
-    // console.log(findstatus);
+
+    const findstatus2 = await prisma.status.findUnique({
+      where:{
+        status: "ส่งไปที่กองอื่น"
+      }
+    });
+
+    //update status of doc have status is "ส่งเอกสารไปกองอื่น"
+    const doc_changestatus = await prisma.documentPetition.findMany({
+        where:{
+            destinationId : user.departmentId,
+            statusId : findstatus2.id
+        }
+    })
+    console.log("เอกสารที่ส่งมาจากกองอื่นเข้ากองเรา")
+    console.log(doc_changestatus);
+
+    if (doc_changestatus.length > 0) {
+      await prisma.documentPetition.updateMany({
+        where: {
+          destinationId: user.departmentId,
+          statusId: findstatus2.id
+        },
+        data: {
+          statusId: findstatus1.id
+        }
+      });
+    }
     
     //หาเอกสารที่ส่งเข้ามาในกองนี้
     const document_audit = await prisma.documentPetition.findMany({
         where:{
             destinationId : user.departmentId,
-            statusId : findstatus.id
+            statusId : findstatus1.id
         }
     })
     console.log("doc for super Audit");
-    // console.log(document_audit);
+    console.log(document_audit);
+
+    // res.json(document_audit);
 
     const document_json = [];
     for(const doc of document_audit){
@@ -80,7 +108,7 @@ router.get('/waittoaccept', async (req, res) => {
         document_json.push(setdoc);
         // console.log(setdoc);
     }
-    console.log(document_json);
+    // console.log(document_json);
     res.json(document_json);
 });
 

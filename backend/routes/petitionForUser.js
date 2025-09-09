@@ -103,8 +103,6 @@ router.post('/', async (req, res) =>{
 });
 
 
-
-
 //หน้าบ้านจะต้องส่ง ไอดี form มาด้วย
 router.put('/:docId', async (req, res) =>{
     const documentId = parseInt(req.params.id);
@@ -164,6 +162,10 @@ router.delete('/:docId', async (req, res) => {
     }
   }
 });
+
+
+
+
 
 
 export default router;

@@ -85,7 +85,7 @@ app.get('/auth/user', authMiddle, async(req, res) => {
 
 
 //-----------------------------department-----------------------------------//
-app.get('/api/department', authMiddle, async(req, res) =>{
+app.get('/api/department' , async(req, res) =>{
   const department = await prisma.department.findMany();
   res.json(department)
 
@@ -95,7 +95,7 @@ app.get('/api/department', authMiddle, async(req, res) =>{
 
 
 //---------------------------role of user -----------------------------------//
-app.get('/api/roleofuser', authMiddle, async(req, res) =>{
+app.get('/api/roleofuser', async(req, res) =>{
   const role = await prisma.RoleOfUser.findMany();
   res.json(role);
 
