@@ -11,7 +11,6 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
     console.log(req.user.id);
-
     const petition_doc = await prisma.documentPetition.findMany({
         where:{
             userId : req.user.id
@@ -71,34 +70,39 @@ router.post('/', async (req, res) =>{
         authorize_text
     } = req.body;
 
-    const user = await prisma.user.findUnique({
-        where:{
-            id: userid
-        }
-    })
+    try {
+        const user = await prisma.user.findUnique({
+            where:{ id: userid }
+        })
 
-    console.log(user);
-    console.log(user.departmentId);
-    const doc = await prisma.documentPetition.create({
-        data: {
-            id_doc: 1,
-            department: { connect: { id: user.departmentId } },
-            destination: { connect: { id: destinationId } },
-            title,
-            authorize_to,
-            position,
-            affiliation,
-            authorize_text,
-            user : { connect: {id : userid}},
-            status: { connect: {id : 1} }
-        }
-    });
-    console.log(doc)
-    console.log('document save')
-    res.status(200).json({
-        message: "document saved",
-        success: true
-    });
+        console.log(user);
+        // console.log(user.departmentId);
+        const doc = await prisma.documentPetition.create({
+            data: {
+                id_doc: 1,
+                department: { connect: { id: user.departmentId } },
+                destination: { connect: { id: destinationId } },
+                title,
+                authorize_to,
+                position,
+                affiliation,
+                authorize_text,
+                user : { connect: {id : userid}},
+                status: { connect: {id : 1} }
+            }
+        });
+        console.log(doc)
+        console.log('document save')
+
+        res.status(200).json({
+            message: "document saved",
+            success: true
+        });    
+    } catch (err){
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+
 
 });
 
@@ -108,7 +112,6 @@ router.put('/:docId', async (req, res) =>{
     const documentId = parseInt(req.params.id);
     console.log(documentId);
     const {
-        department,
         destinationId,
         title,
         authorizeTo,
@@ -141,27 +144,6 @@ router.put('/:docId', async (req, res) =>{
 
 });
 
-
-
-router.delete('/:docId', async (req, res) => {
-  const documentId = parseInt(req.params.id);
-
-  try {
-    const deletedDoc = await prisma.document.delete({
-      where: { id: documentId }
-    });
-
-    res.json({ message: 'Document deleted successfully', data: deletedDoc });
-  } catch (error) {
-    console.error(error);
-
-    if (error.code === 'P2025') {
-      res.status(404).json({ message: 'Document not found' });
-    } else {
-      res.status(500).json({ message: 'Server error' });
-    }
-  }
-});
 
 
 

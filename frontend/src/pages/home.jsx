@@ -15,7 +15,7 @@ function Home() {
                         alt="Logo"
                         className="w-[180px] h-[69px] object-contain"
                     />
-                    <h1 className="text-2xl sm:text-3xl font-bold text-black text-center ml-4">
+                    <h1 className="font-kanit text-2xl sm:text-3xl font-bold text-black text-center ml-4">
                         Chiang Mai University Project Authorization
                     </h1>
                 </div>
@@ -27,17 +27,17 @@ function Home() {
 
                     {/* Text */}
                     <div className="p-6 sm:p-10 text-white pt-10 sm:pt-20"> {/* Added pt-10 sm:pt-20 for top padding */}
-                        <h1 className="text-3xl sm:text-5xl font-bold text-center mt-6 sm:mt-10">
+                        <h1 className="font-kanit text-3xl sm:text-5xl font-bold text-center mt-6 sm:mt-10">
                             ระบบบริหารจัดการหนังสือมอบอำนาจออนไลน์
                         </h1>
-                        <h2 className="text-lg sm:text-2xl text-center mt-6 sm:mt-10">
+                        <h2 className="font-kanit text-lg sm:text-2xl text-center mt-6 sm:mt-10">
                             จัดการคำขอมอบอำนาจ ติดตามสถานะ และอนุมัติเอกสารได้อย่างมีประสิทธิภาพ
                         </h2>
                     </div>
 
                     {/* button */}
                     <div className="flex justify-center items-end p-6 sm:p-10 pb-10 sm:pb-20"> {/* Added pb-10 sm:pb-20 for bottom padding */}
-                        <button className="w-full max-w-[493px] h-[60px] sm:h-[80px] rounded-[20px] text-[#66009F] text-xl sm:text-3xl 
+                        <button className="font-kanit w-full max-w-[493px] h-[60px] sm:h-[80px] rounded-[20px] text-[#66009F] text-xl sm:text-3xl 
                         font-bold flex items-center justify-center bg-white shadow hover:bg-[#66009F] hover:text-white transition-colors duration-300">
                             Login With CMU Account
                         </button>

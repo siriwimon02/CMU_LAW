@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authUser);
 app.use('/petition', authMiddle, checkRole([2]), petition); //user
-app.use('/petitionAudit', authMiddle, checkRole([4]), petition_Audit); //สำหรับคนตรวจสอบ
+app.use('/petitionAudit', authMiddle, checkRole([3, 4]), petition_Audit); //สำหรับคนตรวจสอบ
 app.use('/petitionSuperAudit', authMiddle, checkRole([3]), petition_SuperAudit); //สำหรับผอ กอง
 
 
@@ -108,6 +108,7 @@ app.get('/api/roleofuser', async(req, res) =>{
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
