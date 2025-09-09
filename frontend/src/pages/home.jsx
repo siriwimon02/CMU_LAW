@@ -15,7 +15,7 @@ function Home() {
                         alt="Logo"
                         className="w-[180px] h-[69px] object-contain"
                     />
-                    <h1 className="font-kanit text-2xl sm:text-3xl font-bold text-black text-center ml-4">
+                    <h1 className="font-kanit text-2xl sm:text-3xl text-black text-center ml-5">
                         Chiang Mai University Project Authorization
                     </h1>
                 </div>
@@ -30,7 +30,7 @@ function Home() {
                         <h1 className="font-kanit text-3xl sm:text-5xl font-bold text-center mt-6 sm:mt-10">
                             ระบบบริหารจัดการหนังสือมอบอำนาจออนไลน์
                         </h1>
-                        <h2 className="font-kanit text-lg sm:text-2xl text-center mt-6 sm:mt-10">
+                        <h2 className="font-kanit text-lg sm:text-2xl text-center sm:mt-10">
                             จัดการคำขอมอบอำนาจ ติดตามสถานะ และอนุมัติเอกสารได้อย่างมีประสิทธิภาพ
                         </h2>
                     </div>
@@ -38,7 +38,7 @@ function Home() {
                     {/* button */}
                     <div className="flex justify-center items-end p-6 sm:p-10 pb-10 sm:pb-20"> {/* Added pb-10 sm:pb-20 for bottom padding */}
                         <button className="font-kanit w-full max-w-[493px] h-[60px] sm:h-[80px] rounded-[20px] text-[#66009F] text-xl sm:text-3xl 
-                        font-bold flex items-center justify-center bg-white shadow hover:bg-[#66009F] hover:text-white transition-colors duration-300">
+                            flex items-center justify-center bg-white shadow hover:bg-[#66009F] hover:text-white transition-colors duration-300">
                             Login With CMU Account
                         </button>
                     </div>
