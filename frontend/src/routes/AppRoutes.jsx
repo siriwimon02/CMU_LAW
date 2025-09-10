@@ -6,6 +6,7 @@ import FormPetition from '../pages/form_petition';
 import Dashboard from '../pages/dashboard';
 import Petition from '../pages/petition';
 import Admin_Panel from '../pages/admin_panel';
+import Auditor_Check from '../pages/auditor_check';
 
 export default function AppRoutes() {
 
@@ -19,6 +20,7 @@ export default function AppRoutes() {
         <Route path="/formPetition" element={<FormPetition/>} />
         <Route path="/petition" element={<Petition/>} />
         <Route path="/admin_panel" element={<Admin_Panel/>} />
+        <Route path="/auditor_check" element={<Auditor_Check/>} />
       </Routes>
     </Router>
   );
