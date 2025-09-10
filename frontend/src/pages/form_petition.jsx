@@ -75,7 +75,6 @@ function FormPetition() {
             placeholder='มอบอำนาจให้...'
           />
 
-
           <h4>ตำแหน่งผู้รับมอบอำนาจ...</h4>
           <input
             type='text'

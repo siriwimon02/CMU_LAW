@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authUser);
 app.use('/petition', authMiddle, checkRole([2]), petition); //user
-app.use('/petitionAudit', authMiddle, checkRole([3, 4]), petition_Audit); //สำหรับคนตรวจสอบ
+app.use('/petitionAudit', authMiddle, checkRole([5]), petition_Audit); //สำหรับคนตรวจสอบ
 app.use('/petitionSuperAudit', authMiddle, checkRole([3]), petition_SuperAudit); //สำหรับผอ กอง
 
 
@@ -100,6 +100,13 @@ app.get('/api/roleofuser', async(req, res) =>{
   res.json(role);
 
   console.log(role);
+});
+
+
+//----------------------------destination----------------------------------//
+app.get('/api/destination', async(req, res) => {
+  const des = await prisma.Destination.findMany();
+  res.json(des);
 });
 
 

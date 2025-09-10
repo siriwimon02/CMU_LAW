@@ -8,7 +8,6 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
-
   server: {
     proxy : {
       '/auth/register' : {
@@ -23,6 +22,10 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      '/api' : {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      }
     }
   }
 

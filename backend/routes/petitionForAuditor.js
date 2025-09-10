@@ -20,32 +20,49 @@ router.get('/waittoaudit', async (req, res) => {
     console.log(user);
     
     const findstatus1 = await prisma.status.findUnique({
-        where : { status: "รับเข้ากองเรียบร้อยแล้ว" }
+        where : { status: "รับเข้ากองเรียบร้อย" }
     });
 
     const findstatus2 = await prisma.status.findUnique({
-        where : { status: "กำลังตรวจสอบเอกสาร" }
+        where : { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
     });
+
+    const findstatus3 = await prisma.status.findUnique({
+        where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
+    })
+
+    const findstatus4 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบโดยหัวหน้า"}
+    })
+
+    const findstatus5 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
+    })
+
 
     //หาเอกสารที่ส่งเข้ามาในกองนี้
     const find_doc = await prisma.documentPetition.findMany({
         where : {
             destinationId : user.departmentId,
-            statusId: findstatus1.id
+            statusId: {
+                in : [findstatus1.id, findstatus2.id, findstatus3.id, findstatus4.id, findstatus5.id]
+            }
         }
     });
+    console.log(find_doc);
 
     if (find_doc.length > 0) {
         await prisma.documentPetition.updateMany({
             where:{
                 destinationId : user.departmentId,
-                statusId: findstatus1.id
+                statusId: {
+                    in : [findstatus1.id, findstatus2.id, findstatus3.id, findstatus4.id, findstatus5.id]
+                }
             }, data :{
                 statusId : findstatus2.id
             }
         });
     }
-
 
     const document_audit = await prisma.documentPetition.findMany({
         where : {
@@ -104,7 +121,6 @@ router.get('/waittoaudit', async (req, res) => {
 
 
 router.get('/history_st_to_audit_already', async (req, res) => {
-
     try{
         console.log(req.user.id);
         const user = await prisma.user.findUnique({
@@ -203,7 +219,7 @@ router.put('/update_st_to_audit_already/:docId', async (req, res) => {
         }
 
         const findstatus = await prisma.status.findUnique({
-            where :{ status: "กำลังตรวจสอบเอกสาร" }
+            where :{ status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
         });
         console.log(findstatus);
 
@@ -212,7 +228,7 @@ router.put('/update_st_to_audit_already/:docId', async (req, res) => {
         }
 
         const audit_already_st = await prisma.status.findUnique({
-            where : { status : "ตรวจสอบเอกสารเรียบร้อยแล้ว" }
+            where : { status : "ตรวจสอบขั้นต้นเสร็จสิ้น" }
         })
 
 
@@ -232,7 +248,7 @@ router.put('/update_st_to_audit_already/:docId', async (req, res) => {
 
 
 //----------------------------------------------edit status--------------------------------------------//
-router.put('/update_edit_status:docId', async (req, res) => {
+router.put('/update_edit_status/:docId', async (req, res) => {
     try {
         const { text_suggestion } = req.body;
         const documentId = parseInt(req.params.docId);
@@ -255,7 +271,7 @@ router.put('/update_edit_status:docId', async (req, res) => {
         }
 
         const findstatus = await prisma.status.findUnique({
-            where :{ status: "กำลังตรวจสอบเอกสาร" }
+            where :{ status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
         });
         console.log(findstatus);
 
@@ -264,7 +280,7 @@ router.put('/update_edit_status:docId', async (req, res) => {
         }
 
         const audit_already_st = await prisma.status.findUnique({
-            where : { status : "แก้ไขเอกสาร" }
+            where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
         })
 
         const updated = await prisma.documentPetition.update({
@@ -277,9 +293,9 @@ router.put('/update_edit_status:docId', async (req, res) => {
 
         //update สำเร็จจ ให้ส่งแจ้งตื่น email ไปหา user ว่าแก้ไขเอกสาร ไฟล์นี้ เรื่องนี้ แผนกอะไร บลาๆ
 
-
     } catch (err) {
-
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 });
 

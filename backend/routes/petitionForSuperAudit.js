@@ -26,7 +26,7 @@ router.get('/waittoaccept', async (req, res) => {
 
     const findstatus2 = await prisma.status.findUnique({
       where:{
-        status: "ส่งไปที่กองอื่น"
+        status: "ส่งต่อไปยังกองอื่น"
       }
     });
 
@@ -114,6 +114,10 @@ router.get('/waittoaccept', async (req, res) => {
 
 
 
+
+
+
+
 router.get('/history_document_accept_already', async (req, res) => {
     console.log(req.user.id);
     
@@ -126,7 +130,7 @@ router.get('/history_document_accept_already', async (req, res) => {
 
     const findstatus = await prisma.status.findUnique({
       where:{
-        status: "รับเข้ากองเรียบร้อยแล้ว"
+        status: "รับเข้ากองเรียบร้อย"
       }
     });
     // console.log(findstatus);
@@ -227,7 +231,7 @@ router.put('/accepttoaccess/:doc_id', async (req, res) => {
 
     const accept_to_dp = await prisma.status.findUnique({
       where:{
-        status: "รับเข้ากองเรียบร้อยแล้ว"
+        status: "รับเข้ากองเรียบร้อย"
       }
     });
     const updated = await prisma.documentPetition.update({
@@ -278,7 +282,7 @@ router.put('/change_des_doc/:docId', async (req, res) =>{
     }
 
     const updated_st = await prisma.status.findUnique({
-      where : { status : "ส่งไปที่กองอื่น" } 
+      where : { status : "ส่งต่อไปยังกองอื่น" } 
     })
 
     const change_des_doc = await prisma.documentPetition.update({
