@@ -7,12 +7,44 @@ import AddUserModal from '../components/addUserModal';
 function Admin_Panel() {
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
-
     const users = Array.from({ length: 20 }).map((_, i) => ({
         name: `User ${i + 1}`,
         email: `user${i + 1}@cmu.ac.th`,
         role: `Role ${i + 1}`,
     }));
+    // const [search, setSearch] = useState("");
+    // const [showModal, setShowModal] = useState(false);
+    // const [users, setUsers] = useState([]);
+    // const token = localStorage.getItem("token");
+    // const navigate = useNavigate();
+
+    // useEffect(() => {
+    //     const fetchUsers = async () => {
+    //         try {
+    //             const res = await fetch("/api/user", {
+    //                 headers: {
+    //                     "Authorization": `${token}`,
+    //                     "Content-Type": "application/json"
+    //                 }
+    //             });
+    //             if (!res.ok) throw new Error("Failed to fetch users");
+    //             const data = await res.json();
+    //             setUsers(data); // สมมติ backend ส่ง [{name, email, role}, ...]
+    //         } catch (err) {
+    //             console.error(err);
+    //             // ถ้า token ไม่ถูกต้อง ส่งกลับไป login
+    //             navigate("/login");
+    //         }
+    //     };
+
+    //     if (token) {
+    //         fetchUsers();
+    //     } else {
+    //         navigate("/login");
+    //     }
+    // }, [token, navigate]);
+
+    // console.log(users)
 
     const filteredUsers = users.filter(
         (user) =>

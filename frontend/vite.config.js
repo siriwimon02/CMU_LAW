@@ -9,21 +9,26 @@ export default defineConfig({
     react()
   ],
   server: {
+    host: '0.0.0.0',
     proxy : {
       '/auth/register' : {
-        target: 'http://localhost:3001',
+        target: 'http://backend:3001',
         changeOrigin: true,
       },
       '/auth/login' : {
-        target: 'http://localhost:3001',
+        target: 'http://backend:3001',
         changeOrigin: true,
       },
       '/petition' : {
-        target: 'http://localhost:3001',
+        target: 'http://backend:3001',
         changeOrigin: true,
       },
       '/api' : {
-        target: 'http://localhost:3001',
+        target: 'http://backend:3001',
+        changeOrigin: true,
+      },
+      '/api/user' : {
+        target: 'http://backend:3001',
         changeOrigin: true,
       }
     }
