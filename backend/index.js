@@ -10,6 +10,7 @@ import authMiddle from './middleware/authMiddle.js';
 import petition from './routes/petitionForUser.js';
 import petition_Audit from './routes/petitionForAuditor.js';
 import petition_SuperAudit from './routes/petitionForSuperAudit.js';
+import petition_HeadAudit from './routes/petitionForHeadAuditor.js';
 import checkRole from './middleware/checkRole.js';
 
 
@@ -37,12 +38,13 @@ app.use('/auth', authUser);
 app.use('/petition', authMiddle, checkRole([2]), petition); //user
 app.use('/petitionAudit', authMiddle, checkRole([5]), petition_Audit); //สำหรับคนตรวจสอบ
 app.use('/petitionSuperAudit', authMiddle, checkRole([3]), petition_SuperAudit); //สำหรับผอ กอง
+app.use('/petitionHeadAudit', authMiddle, checkRole([4]), petition_HeadAudit)
+
 
 
 app.get('/checkrole', authMiddle, checkRole([2, 3]), (req, res) => {
   res.json({ message: "Accept to access path", user: req.user.role_id });
 });
-
 
 
 //----------------------------------------user----------------------------------//
@@ -83,12 +85,11 @@ app.get('/auth/user', authMiddle, async(req, res) => {
 
 
 //-----------------------------------user all -------------------------------//
-app.get('/api/user', authMiddle, checkRole[1], async (req, res) => {
+app.get('/api/user', authMiddle, checkRole([1]), async (req, res) => {
   const userAll = await prisma.user.findMany();
   res.json(userAll);
   console.log(userAll);
 });
-
 
 
 
