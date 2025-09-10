@@ -82,6 +82,14 @@ app.get('/auth/user', authMiddle, async(req, res) => {
 
 
 
+//-----------------------------------user all -------------------------------//
+app.get('/api/user', authMiddle, checkRole[1], async (req, res) => {
+  const userAll = await prisma.user.findMany();
+  res.json(userAll);
+  console.log(userAll);
+});
+
+
 
 
 //-----------------------------department-----------------------------------//
@@ -108,7 +116,6 @@ app.get('/api/destination', async(req, res) => {
   const des = await prisma.Destination.findMany();
   res.json(des);
 });
-
 
 
 
