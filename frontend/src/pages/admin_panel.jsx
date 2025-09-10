@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import AddUserModal from '../components/addUserModal';
 
 
 function Admin_Panel() {
     const [search, setSearch] = useState("");
+    const [showModal, setShowModal] = useState(false);
 
     const users = Array.from({ length: 20 }).map((_, i) => ({
         name: `User ${i + 1}`,
@@ -12,7 +14,6 @@ function Admin_Panel() {
         role: `Role ${i + 1}`,
     }));
 
-    // ฟิลเตอร์ตามคำค้นหา
     const filteredUsers = users.filter(
         (user) =>
         user.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -21,56 +22,84 @@ function Admin_Panel() {
     );
     
     return (
-        <div className="font-kanit bg-[#F7F7FD] min-h-screen flex items-center justify-center">
-            <div className="bg-white rounded-2xl shadow-md p-6 w-[75vw] h-[75vh] flex flex-col">
-                <h1 className="ml-5 text-xl">การจัดการสิทธิ์ผู้ใช้งาน</h1>
-                <div className="relative w-full sm:w-80 m-5">
-                <input
-                    type="text"
-                    placeholder="ค้นหาด้วยชื่ออีเมลหรือ สิทธิ์"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-                </div>
-                <div className="overflow-y-auto flex-1 border rounded-lg m-5">
-                <table className="min-w-full border-collapse">
-                    <thead className="bg-gray-100 sticky top-0">
-                    <tr >
-                        <th className="px-4 py-2 text-center text-gray-700">ชื่อผู้ใช้</th>
-                        <th className="px-4 py-2 text-center text-gray-700">อีเมล</th>
-                        <th className="px-4 py-2 text-center text-gray-700">สิทธิ์ปัจจุบัน</th>
-                        <th className="px-4 py-2 text-center text-gray-700">การจัดการ</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {filteredUsers.map((user, i) => (
-                        <tr key={i} className="border-t text-center">
-                        <td className="px-4 py-2">{user.name}</td>
-                        <td className="px-4 py-2">{user.email}</td>
-                        <td className="px-4 py-2">
-                            <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">
-                            {user.role}
+        <div>
+            <div className="font-kanit bg-[#F7F7FD] min-h-screen flex items-center justify-center">
+                <div className="bg-white rounded-2xl shadow-md p-6 w-[75vw] h-[75vh] flex flex-col">
+                    <h1 className="ml-5 text-xl">การจัดการสิทธิ์ผู้ใช้งาน</h1>
+                    <div className="relative w-full m-5 mb-3 flex items-center gap-2">
+                        <div className="flex-1 relative">
+                            <input
+                                type="text"
+                                placeholder="ค้นหาด้วยชื่ออีเมลหรือ สิทธิ์"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <span className="absolute left-3 top-2.5 text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
+                                <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z" clipRule="evenodd" />
+                                </svg>
                             </span>
-                        </td>
-                        <td className="px-4 py-2">
-                            <button className="text-purple-600 hover:underline">
-                                แก้ไขสิทธิ์
+                        </div>
+
+                        <div className="flex items-center justify-center space-x-2 ml-5 mr-10">
+                            <button onClick={() => setShowModal(true)}
+                            className='flex items-center gap-1 text-white text-base font-semibold bg-[#66009F] border border-[#A6A6A6] shadow-md rounded-lg px-6 py-3 hover:bg-white hover:text-[#66009F] transition-colors duration-300'>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                                </svg>
+                                เพิ่มผู้ใช้
                             </button>
-                            <button className="text-purple-600 hover:underline ml-8">
-                                ลบ
-                            </button>
-                        </td>
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto flex-1 border rounded-lg m-5">
+                    <table className="min-w-full border-collapse">
+                        <thead className="bg-gray-100 sticky top-0">
+                        <tr >
+                            <th className="px-4 py-2 text-center text-gray-700">ชื่อผู้ใช้</th>
+                            <th className="px-4 py-2 text-center text-gray-700">อีเมล</th>
+                            <th className="px-4 py-2 text-center text-gray-700">สิทธิ์ปัจจุบัน</th>
+                            <th className="px-4 py-2 text-center text-gray-700">การจัดการ</th>
                         </tr>
-                    ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {filteredUsers.map((user, i) => (
+                            <tr key={i} className="border-t text-center">
+                            <td className="px-6 py-2">{user.name}</td>
+                            <td className="px-6 py-2">{user.email}</td>
+                            <td className="px-6 py-2">
+                                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">
+                                {user.role}
+                                </span>
+                            </td>
+                            <td className="text-center px-4 py-2">
+                                <div className="flex items-center justify-center space-x-2">
+                                    <button className="flex items-center text-black bg-white border border-[#A6A6A6] shadow-md rounded-[5px] px-4 py-1 text-sm font-medium hover:bg-gray-100 active:scale-95 transition-transform duration-300 ease-out">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4 mr-1">
+                                            <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+                                            <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+                                        </svg>
+                                        แก้ไขสิทธิ์
+                                    </button>
+
+                                    <button className="text-[#66009F] hover:text-red-500 hover:shadow-md transition-colors duration-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
+                                            <path fillRule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                    </div>
                 </div>
             </div>
-            </div>
-    )
-}
+            <AddUserModal isVisible={showModal} onClose={() => setShowModal(false)} />
+        </div>
+    );
+};
 
 
 export default Admin_Panel;

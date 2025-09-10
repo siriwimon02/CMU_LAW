@@ -37,7 +37,7 @@ function Home() {
 
                     {/* button */}
                     <div className="flex justify-center items-end p-6 sm:p-10 pb-10 sm:pb-20"> {/* Added pb-10 sm:pb-20 for bottom padding */}
-                        <button className="font-kanit w-full max-w-[493px] h-[60px] sm:h-[80px] rounded-[20px] text-[#66009F] text-xl sm:text-3xl 
+                        <button className="font-kanit w-full max-w-[493px] h-[60px] bg-pink rounded-[20px] text-[#66009F] text-xl
                             flex items-center justify-center bg-white shadow hover:bg-[#66009F] hover:text-white transition-colors duration-300">
                             Login With CMU Account
                         </button>
