@@ -64,6 +64,7 @@ app.get('/auth/user', authMiddle, async(req, res) => {
       id: user_info.departmentId
     }
   });
+  console.log(user_db);
 
   const user_role = await prisma.RoleOfUser.findMany({
     where:{

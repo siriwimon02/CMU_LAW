@@ -98,12 +98,12 @@ export default function Register() {
           placeholder="Last Name"
           className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
         />
-        
+                
         <input 
           type="text" 
-          name="department" 
-          value={form.department} 
-          onChange={handleChange} 
+          name="departmentName"  
+          value={form.departmentName}
+          onChange={handleChange}
           required 
           placeholder="Department"
           className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"

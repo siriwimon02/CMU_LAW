@@ -15,19 +15,21 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   const { email, firstname, lastname, departmentName, role_id } = req.body;
+  console.log(departmentName);
 
   try {
     // หาหรือสร้าง department
     let dept = await prisma.department.findUnique({
-    where: { department_name: departmentName },
+      where: { department_name: departmentName },
     });
+    console.log(dept)
 
     if (!dept) {
-    dept = await prisma.department.create({
-        data: { department_name: departmentName },
-    });
+      dept = await prisma.department.create({
+          data: { department_name: departmentName },
+      });
     }
-
+    
     // หาว่ามี user อยู่แล้วหรือยัง
     const user = await prisma.user.upsert({
       where: { email },

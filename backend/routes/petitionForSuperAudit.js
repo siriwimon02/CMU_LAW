@@ -5,67 +5,70 @@ dotenv.config({ path: '../.env.dev' });
 import express from 'express';
 import prisma from '../prismaClient.js';
 import { parse } from 'path';
+import e from 'express';
 
 const router = express.Router();
 
-router.get('/waittoaccept', async (req, res) => {
-    console.log(req.user.id);
+//---------------------------------------------------new code -----------------------------------------------------//
+
+//doc ที่รอรับเข้า + อัพเดตสถานะให้ตรวจสอบขั้นต้น
+router.get('/wait_to_accept', async (req, res) => {
     
+  try {
+    const find_status1 = await prisma.status.findUnique({
+      where : { status : "รอรับเข้ากอง" }
+    });
+
+    const find_status2 = await prisma.status.findUnique({
+      where : { status : "ส่งต่อไปยังกองอื่น" }
+    });
+
     const user = await prisma.user.findUnique({
-        where:{
-            id : req.user.id
-        }
-    });
-    // console.log(user);
-
-    const findstatus1 = await prisma.status.findUnique({
-      where:{
-        status: "รอรับเข้ากอง"
-      }
+      where : { id : req.user.id }
     });
 
-    const findstatus2 = await prisma.status.findUnique({
-      where:{
-        status: "ส่งต่อไปยังกองอื่น"
-      }
-    });
-
-    //update status of doc have status is "ส่งเอกสารไปกองอื่น"
-    const doc_changestatus = await prisma.documentPetition.findMany({
-        where:{
-            destinationId : user.departmentId,
-            statusId : findstatus2.id
-        }
+    const user_dep = await prisma.department.findUnique({
+      where : { id : user.departmentId }
     })
-    console.log("เอกสารที่ส่งมาจากกองอื่นเข้ากองเรา")
-    console.log(doc_changestatus);
 
-    if (doc_changestatus.length > 0) {
-      await prisma.documentPetition.updateMany({
-        where: {
-          destinationId: user.departmentId,
-          statusId: findstatus2.id
-        },
-        data: {
-          statusId: findstatus1.id
-        }
-      });
+    const find_des = await prisma.destination.findUnique({
+      where : { des_name : user_dep.department_name }
+    });
+
+    if (!find_des) {
+      res.status(401).json( {message : "user not live in destination department"} )
     }
-    
-    //หาเอกสารที่ส่งเข้ามาในกองนี้
-    const document_audit = await prisma.documentPetition.findMany({
-        where:{
-            destinationId : user.departmentId,
-            statusId : findstatus1.id
-        }
-    })
-    console.log("doc for super Audit");
-    console.log(document_audit);
 
-    // res.json(document_audit);
+    //หา document ที่มาจากกองอื่นเพื่ออัพเดตสถานะ
+    const document_audit_1st = await prisma.documentPetition.findMany({
+      where : {
+        destinationId : find_des.id,
+        statusId : find_status2.id 
+      }
+    });
+    console.log(document_audit_1st);
+
+    if (document_audit_1st.length > 0){
+      await prisma.documentPetition.updateMany({
+        where : {
+          destinationId : find_des.id,
+          statusId : find_status2.id 
+        }, data : {
+          statusId : find_status1.id
+        }
+      })
+    }
+
+    const document_audit_2st = await prisma.documentPetition.findMany({
+      where : {
+        destinationId : find_des.id,
+        statusId : find_status1.id 
+      }
+    })
+    console.log(document_audit_2st);
 
     const document_json = [];
-    for(const doc of document_audit){
+    for(const doc of document_audit_2st){
         const dep = await prisma.department.findUnique({
             where:{
                 id: doc.departmentId
@@ -109,103 +112,205 @@ router.get('/waittoaccept', async (req, res) => {
         // console.log(setdoc);
     }
     // console.log(document_json);
-    res.json(document_json);
+    res.json({ message : "find document waiting to accpet in department already", document_json})
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 
 
+
+
+
+
+//---------------------------------------------------------ดึง data แต่ละ ID--------------------------------------//
 router.get('/:docId', async (req, res) => {
-    try {
-        const documentId = parseInt(req.params.docId);
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id }
-        });
-
-        if (!documentId){
-            res.status(404).json({message: "not found document"})
-        }
-
-        const doc = await prisma.documentPetition.findUnique({
-            where : { id : documentId }
-        });
-
-        const dep = await prisma.department.findUnique({
-            where:{
-                id: doc.departmentId
-            }
-        });
-
-        const des = await prisma.destination.findUnique({
-            where:{
-                id:doc.destinationId
-            }
-        });
-
-        const stt = await prisma.status.findUnique({
-            where:{
-                id:doc.statusId
-            }
-        });
-
-        const user_email = await prisma.user.findUnique({
-            where:{
-                id: doc.userId
-            }
-        });
-       
-        const setdoc = {
-            id:doc.id,
-            doc_id:doc.doc_id,
-            department_name: dep.department_name,
-            destination_name: des.des_name,
-            user_email: user_email.email,
-            title:doc.title,
-            authorize_to: doc.authorize_to,
-            position: doc.position,
-            affiliation: doc.affiliation,
-            authorize_text: doc.authorize_text,
-            status_name: stt.status,
-            createdAt: doc.createdAt,
-            date_of_signing: doc.date_of_signing
-        };
-        
-        res.json( {message : "get doccument", setdoc});
-    }catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+  try {
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
     }
-});
 
-
-router.get('/history_document_accept_already', async (req, res) => {
-    console.log(req.user.id);
-    
-    const user = await prisma.user.findUnique({
-        where:{
-            id : req.user.id
-        }
+    const find_status1 = await prisma.status.findUnique({
+      where: { status: "รอรับเข้ากอง" }
     });
-    // console.log(user);
+    if (!find_status1) {
+      return res.status(500).json({ message: "Status not found" });
+    }
 
-    const findstatus = await prisma.status.findUnique({
-      where:{
-        status: "รับเข้ากองเรียบร้อย"
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { department: true }
+    });
+
+    const find_des = await prisma.destination.findUnique({
+      where: { des_name: user.department.department_name }
+    });
+
+    if (!find_des) {
+      return res.status(403).json({ message: "User is not in destination department" });
+    }
+
+    const doc = await prisma.documentPetition.findUnique({
+      where: { id: documentId },
+      include: {
+        department: true,
+        destination: true,
+        status: true,
+        user: true
       }
     });
-    // console.log(findstatus);
+
+    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+      return res.status(404).json({ message: "Document not found or not in correct status" });
+    }
+
+    const setdoc = {
+      id: doc.id,
+      doc_id: doc.doc_id,
+      department_name: doc.department.department_name,
+      destination_name: doc.destination.des_name,
+      user_email: doc.user.email,
+      title: doc.title,
+      authorize_to: doc.authorize_to,
+      position: doc.position,
+      affiliation: doc.affiliation,
+      authorize_text: doc.authorize_text,
+      status_name: doc.status.status,
+      createdAt: doc.createdAt,
+      date_of_signing: doc.date_of_signing
+    };
+
+    res.json({ message: "Document waiting to be accepted in department", setdoc });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+//------------------------------------------update status รับเข้ากองเรียบร้อยแล้ว--------------------------------//
+router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
+  try {
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    const find_status1 = await prisma.status.findUnique({
+      where: { status: "รอรับเข้ากอง" }
+    });
+
+    const find_status2 = await prisma.status.findUnique({
+      where: { status: "รับเข้ากองเรียบร้อย" }
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    const user_dep = await prisma.department.findUnique({
+      where: { id: user.departmentId }
+    });
+
+    const find_des = await prisma.destination.findUnique({
+      where: { des_name: user_dep.department_name }
+    });
+
+    if (!find_des) {
+      return res.status(403).json({ message: "User is not in this destination department" });
+    }
+
+    const doc = await prisma.documentPetition.findUnique({
+      where: { id: documentId }
+    });
+
+    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+        return res.status(404).json({ message: "Document not found or not in correct status" });
+    }else {
+        const updatedDoc = await prisma.documentPetition.update({
+          where: { id: documentId },
+          data: { statusId: find_status2.id }
+        });
+
+        res.json({
+          message: "Document status updated to 'accepted in department'",
+          updatedDoc
+        });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+//------------------------------------------------ตรวจสอบเอกสารขั้นสุดท้ายก่อนส่งไปให้ อธิการบดี-------------------------------------//
+//doc ที่รอรับเข้า
+router.get('/wait_to_last_audit', async (req, res) => {
     
-    //หาเอกสารที่ส่งเข้ามาในกองนี้
-    const document_audit = await prisma.documentPetition.findMany({
-        where:{
-            destinationId : user.departmentId,
-            statusId : findstatus.id
-        }
+  try {
+    const find_status1 = await prisma.status.findUnique({
+      where : { status : "ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น" }
+    });
+    const find_status2 = await prisma.status.findUnique({
+      where : { status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
+    });
+
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id }
+    });
+
+    const user_dep = await prisma.department.findUnique({
+      where : { id : user.departmentId }
     })
-    // console.log("doc for super Audit");
-    // console.log(document_audit);
+
+    const find_des = await prisma.destination.findUnique({
+      where : { des_name : user_dep.department_name }
+    });
+
+
+    if (!find_des) {
+      res.status(401).json( {message : "user not live in destination department"} )
+    }
+
+    //หา document ที่มาdoc ที่ผ่านการตรวจสอบจากหัวหน้ากองแล้ว
+    const document_audit_1st = await prisma.documentPetition.findMany({
+      where : {
+        destinationId : find_des.id,
+        statusId : find_status1.id 
+      }
+    });
+    console.log(document_audit_1st);
+
+    //อัพเดตสถานะการตรวจสอบจากหัวหน้า เป็น อยุ่ระหว่างตรวจสอบอันสุดท้าย
+    if (document_audit_1st.length > 0){
+      await prisma.documentPetition.updateMany({
+        where : {
+          destinationId : find_des.id,
+          statusId : find_status1.id 
+        }, data : {
+          statusId : find_status2.id
+        }
+      })
+    }
+
+    const document_audit_2st = await prisma.documentPetition.findMany({
+      where : {
+        destinationId : find_des.id,
+        statusId : find_status1.id 
+      }
+    })
+    console.log(document_audit_2st);
 
     const document_json = [];
-    for(const doc of document_audit){
+    for(const doc of document_audit_2st){
         const dep = await prisma.department.findUnique({
             where:{
                 id: doc.departmentId
@@ -248,58 +353,62 @@ router.get('/history_document_accept_already', async (req, res) => {
         document_json.push(setdoc);
         // console.log(setdoc);
     }
-    console.log(document_json);
-    res.json(document_json);
+    // console.log(document_json);
+    res.json({ message : "find document waiting to the last audit", document_json})
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 
-
-
-router.put('/accepttoaccess/:doc_id', async (req, res) => {
+router.get('/last_audit_already/:docId', async (req, res) => {
   try {
-    const documentId = parseInt(req.params.doc_id);
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    const find_status1 = await prisma.status.findUnique({
+      where: { status: "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
+    });
+
+    const find_status2 = await prisma.status.findUnique({
+      where: { status: "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
+    });
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id }
     });
 
-    const document = await prisma.documentPetition.findUnique({
+    const user_dep = await prisma.department.findUnique({
+      where: { id: user.departmentId }
+    });
+
+    const find_des = await prisma.destination.findUnique({
+      where: { des_name: user_dep.department_name }
+    });
+
+    if (!find_des) {
+      return res.status(403).json({ message: "User is not in this destination department" });
+    }
+
+    const doc = await prisma.documentPetition.findUnique({
       where: { id: documentId }
     });
 
-    if (!document) {
-      return res.status(404).json({ message: "Document not found" });
+    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+      return res.status(404).json({ message: "Document not found or not in correct status" });
+    }else {
+      const updatedDoc = await prisma.documentPetition.update({
+        where : { 
+          id : documentId, 
+        }, data : {
+          statusId : find_status2.id
+        }
+      })
+      res.json({message: "Document status updated to the last audit already", updatedDoc });
     }
-
-    //ต้องเป็นกองที่รับผิดชอบเอกสารนี้เท่านั้น
-    if (user.departmentId !== document.destinationId) {
-      return res.status(403).json({ message: "Forbidden: document does not belong to your department" });
-    }
-
-    const findstatus = await prisma.status.findUnique({
-      where:{
-        status: "รอรับเข้ากอง"
-      }
-    });
-    console.log(findstatus);
-
-    //ต้องเป็นสถานะ "รอรับเข้ากอง" เท่านั้น (statusId = 1)
-    if ( document.statusId !== findstatus.id ) {
-      return res.status(409).json({ message: "Conflict: document is not waiting for receive" });
-    }
-
-    const accept_to_dp = await prisma.status.findUnique({
-      where:{
-        status: "รับเข้ากองเรียบร้อย"
-      }
-    });
-    const updated = await prisma.documentPetition.update({
-      where: { id: documentId },
-      data: {
-        statusId: accept_to_dp.id // เปลี่ยนสถานะเป็น "รับเข้ากองแล้ว"
-      }
-    });
-    res.json({ message: "Document accepted successfully", updated });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -308,55 +417,130 @@ router.put('/accepttoaccess/:doc_id', async (req, res) => {
 
 
 
-router.put('/change_des_doc/:docId', async (req, res) =>{
-  try{
-    const documentId = parseInt(req.params.docId); // ดึงค่า docId จาก URL
-    const { newDestinationId } = req.body; // ดึงค่าที่ส่งมาจาก frontend
+
+
+//------------------------------------------------ส่งเอกสารไปกองอื่น ที่ไม่ใช้กองตัวเอง-------------------------------------//
+router.put('/change_destination/:docId', async( req, res) => {
+  //ส่งไอดีของกองใหม่่มา
+  const {new_destinationId} = req.body;
+  try {
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    if (isNaN(new_destinationId)) {
+      return res.status(400).json({ error: "new_destinationId must be integer" });
+    }
+
+    const find_status1 = await prisma.status.findUnique({
+      where: { status: "รอรับเข้ากอง" }
+    });
+
+    const find_status2 = await prisma.status.findUnique({
+      where: { status: "ส่งต่อไปยังกองอื่น" }
+    });
 
     const user = await prisma.user.findUnique({
-      where : { id : req.user.id }
+      where: { id: req.user.id }
     });
 
-    const document = await prisma.documentPetition.findUnique({
-      where : { id : documentId }
+    const user_dep = await prisma.department.findUnique({
+      where: { id: user.departmentId }
     });
 
-    if (!document) {
-      return res.status(404).json({ message: "Document not found" });
+    const find_des = await prisma.destination.findUnique({
+      where: { des_name: user_dep.department_name }
+    });
+
+    if (!find_des) {
+      return res.status(403).json({ message: "User is not in this destination department" });
     }
 
-    //ต้องเป็นกองที่รับผิดชอบเอกสารนี้เท่านั้น
-    if (user.departmentId !== document.destinationId) {
-      return res.status(403).json({ message: "Forbidden: document does not belong to your department" });
+    const doc = await prisma.documentPetition.findUnique({
+      where: { id: documentId }
+    });
+
+    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+      return res.status(404).json({ message: "Document not found or not in correct status" });
     }
 
-    const findstatus = await prisma.status.findUnique({
-      where:{ status: "รอรับเข้ากอง" }
-    });
-    // console.log(findstatus);
-
-    //ต้องเป็นสถานะ "รอรับเข้ากอง" เท่านั้น (statusId = 1)
-    if ( document.statusId !== findstatus.id ) {
-      return res.status(409).json({ message: "Conflict: document is not waiting for receive" });
+    if ( new_destinationId === doc.destinationId ) {
+      return res.status(400).json({ message: "New destination is the same as the current destination" });
     }
 
-    const updated_st = await prisma.status.findUnique({
-      where : { status : "ส่งต่อไปยังกองอื่น" } 
-    })
+    const updatedDoc = await prisma.documentPetition.update({
+        where : { 
+          id : documentId, 
+        }, data : {
+          statusId : find_status2.id,
+          destinationId : new_destinationId
+        }
+      })
+    res.json({message: "Document status updated to the last audit already", updatedDoc });
+  
 
-    const change_des_doc = await prisma.documentPetition.update({
-      where : { id:documentId },
-      data : {
-        destinationId: newDestinationId,
-        statusId: updated_st.id
-      }
-    });
-    res.json({message: "Document change destination Already finished", change_des_doc})
-  } catch (err){
+  } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
+
 });
+
+
+
+//-------------------------ส่งเอกสาร กลับไปแก้ไขที่ role audit----------------------------//
+router.put('/edit_ByAuditor/:docId', async (req, res) => {
+    const test_edit_suggesttion = req.body;
+    try {
+        const documentId = parseInt(req.params.docId, 10); 
+        if (isNaN(documentId)) {
+        return res.status(400).json({ error: "docId is invalid integer" });
+        }
+ 
+        const find_status1 = await prisma.status.findUnique({
+        where: { status: "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
+        });
+
+        const find_status2 = await prisma.status.findUnique({
+            where: { status: "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+        });
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentPetition.findUnique({
+            where: { id: documentId }
+        });
+
+        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+            return res.status(404).json({ message: "Document not found or not in correct status" });
+        } else {
+            const updatedDoc = await prisma.documentPetition.update({
+                where: { id: documentId },
+                data: { statusId: find_status2.id }
+            });
+
+            //ส่ง data ไปยังเมลด้วย
+            //------------------------mail----------------//
+            res.json({message: "Document status updated to audit to edit document", updatedDoc});
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 
 
 
