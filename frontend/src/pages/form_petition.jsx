@@ -1,114 +1,663 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-
+// import { Icon } from '@iconify/react';
 
 function FormPetition() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
+  console.log(token);
+  // ถ้าต้องบังคับให้ล็อกอินก่อนใช้งาน เปิดคอมเมนต์นี้ได้เลย
+  if (!token) {
+    alert("Please Login or SignIn First!!!");
+    return <Navigate to="/login" replace />;
+  }
 
+  const [destinations, setDestinations] = useState([]);
   const [destinationId, setDestination] = useState('');
   const [title, setTitle] = useState('');
   const [authorize_to, setAuthorize_to] = useState('');
   const [position, setPosition] = useState('');
   const [affiliation, setAffiliation] = useState('');
   const [authorize_text, setAuthorize_text] = useState('');
-  const [error, setError] = useState('');
+  const [agree, setAgree] = useState(false);
 
-  //ถ้าไม่ได้ Login เข้าไม่ได้
-  if (!token) {
-    alert("Please Login or SignIn First!!!");
-    return <Navigate to="/login" replace />;
-  }
-  
-  const handlesubmitPetition = async e => {
+  const [error, setError] = useState('');
+  const [okMsg, setOkMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // ✅ ใหม่: state เก็บไฟล์แนบหลายไฟล์
+  const [attachments, setAttachments] = useState([]);
+
+    useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+            const res = await fetch("http://localhost:3001/api/destination");
+            const data = await res.json();
+            setDestinations(data);
+          } catch (err) {
+            console.error("โหลดรายการหน่วยงานไม่สำเร็จ", err);
+          }
+        };
+        fetchDestinations();
+      }, []);
+
+      console.log(destinations);
+
+      // เพิ่ม state & memo ด้านบนใกล้ ๆ state อื่น ๆ
+      const [confirmOpen, setConfirmOpen] = useState(false);
+      const [modalStep, setModalStep] = useState('confirm'); // 'confirm' | 'success'
+
+      const destinationName = useMemo(() => {
+        const d = destinations.find(x => String(x.id) === String(destinationId));
+        return d ? d.des_name : '';
+      }, [destinations, destinationId]);
+
+  const isValid = useMemo(() => {
+    return (
+      destinationId !== '' &&
+      title.trim() &&
+      authorize_to.trim() &&
+      position.trim() &&
+      affiliation.trim() &&
+      authorize_text.trim() &&
+      agree
+    );
+  }, [destinationId, title, authorize_to, position, affiliation, authorize_text, agree]);
+
+  useEffect(() => {
+    if (confirmOpen && modalStep === 'success') {
+      const t = setTimeout(() => {
+        window.location.href = 'http://localhost:5173/tracking';
+        // หรือถ้าใช้ react-router: const nav = useNavigate(); แล้ว nav('/tracking', { replace: true })
+      }, 1000);
+      return () => clearTimeout(t);
+    }
+  }, [confirmOpen, modalStep]);
+
+  const resetForm = () => {
+    setDestination('');
+    setTitle('');
+    setAuthorize_to('');
+    setPosition('');
+    setAffiliation('');
+    setAuthorize_text('');
+    setAgree(false);
+    setAttachments([]); // ✅ รีเซ็ตไฟล์แนบ
+  };
+
+  // ✅ ใหม่: เปลี่ยนไฟล์
+  const handleFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    // รวมกับของเดิม (กันผู้ใช้เลือกหลายรอบ)
+    setAttachments(prev => [...prev, ...files]);
+    // เคลียร์ค่า input เพื่อให้เลือกไฟล์ชื่อซ้ำได้ในครั้งถัดไป
+    e.target.value = '';
+  };
+
+  // ✅ ใหม่: ลบไฟล์ทีละรายการ
+  const handleRemoveFile = (idx) => {
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const sendPetition = async (e) => {
     e.preventDefault();
-    try{
-      const petition = await fetch('http://localhost:3001/petition', {
+    setError('');
+    setOkMsg('');
+
+    if (!isValid) {
+      setError('กรุณากรอกข้อมูลให้ครบถ้วนและติ๊กยืนยันความถูกต้อง');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        destinationId: Number(destinationId),
+        title: title.trim(),
+        authorize_to: authorize_to.trim(),
+        position: position.trim(),
+        affiliation: affiliation.trim(),
+        authorize_text: authorize_text.trim(),
+      };
+      console.log(payload);
+
+      const res = await fetch('http://localhost:3001/petition', {
         method: 'POST',
-        headers:{
-          'Authorization': `${token}`,
-          'Content-Type': 'application/json'
+        headers: {
+          'Content-Type': 'application/json',      // ✅ ต้องตั้งเมื่อส่ง JSON
+          Authorization: `${token}`,        // ✅ ใช้ Bearer ถ้าหลังบ้านต้องการ
         },
-        body: JSON.stringify({
-          destinationId,title,authorize_to,position,affiliation,authorize_text
-        })
+        body: JSON.stringify(payload),             // ✅ แปลงเป็นสตริง
       });
 
-      const data = await petition.json();
-      if (!petition.ok){
-        setError(data.message || 'Submit form failed');
-      }else{
-        alert('Submit form successful');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.message || `ส่งคำร้องไม่สำเร็จ (HTTP ${res.status})`);
+      } else {
+        setOkMsg(data.message || 'บันทึกและส่งหนังสือมอบอำนาจสำเร็จ');
+        setModalStep('success');     // ✅ เปลี่ยนคอนเทนต์เป็นหน้าสำเร็จ
+        resetForm();
       }
-    } catch (err){
-      setError('Server error');
+    } catch (err) {
+      setError('Server error: ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // แยกฟังก์ชันยิงจริงตอนกด "ยืนยันการส่ง"
+  // const sendPetition = async () => {
+  //   setLoading(true);
+  //   setError('');
+  //   setOkMsg('');
+  //   try {
+  //     const payload = {
+  //       destinationId: Number(destinationId),
+  //       title: title.trim(),
+  //       authorize_to: authorize_to.trim(),
+  //       position: position.trim(),
+  //       affiliation: affiliation.trim(),
+  //       authorize_text: authorize_text.trim(),
+  //     };
+
+  //     const res = await fetch('http://localhost:3001/petition', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         Authorization: `${token}`, // ถ้าหลังบ้านต้อง Bearer ให้เปลี่ยนเป็น `Bearer ${token}`
+  //       },
+  //       body: JSON.stringify(payload),
+  //     });
+
+  //     const data = await res.json().catch(() => ({}));
+  //     if (!res.ok) {
+  //       setError(data.message || `ส่งคำร้องไม่สำเร็จ (HTTP ${res.status})`);
+  //     } else {
+  //       setOkMsg(data.message || 'บันทึกและส่งหนังสือมอบอำนาจสำเร็จ');
+  //       setConfirmOpen(false); // ปิดป็อปอัปเมื่อสำเร็จ
+  //       resetForm();
+  //     }
+  //   } catch (err) {
+  //     setError('Server error: ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // เปลี่ยน handleSubmit เดิม ให้เปิดป็อปอัปแทน
+  const handleOpenConfirm = (e) => {
+    e.preventDefault();
+    setError('');
+    setOkMsg('');
+    if (!isValid) {
+      setError('กรุณากรอกข้อมูลให้ครบถ้วนและติ๊กยืนยันความถูกต้อง');
+      return;
+    }
+    setModalStep('confirm');   // ✅ โหมดยืนยัน
+    setConfirmOpen(true);
   };
 
 
   return (
-    <div>
-      <h1>Form Petition</h1>
-      <form onSubmit={handlesubmitPetition}>
-          <h4>กองที่ต้องการจะส่งคำร้องไป</h4>
-          <select value={destinationId} onChange={ (e) => setDestination(parseInt(e.target.value))}>
-            <option value="">-- กรุณาเลือกกอง --</option>
-            <option value= {1}>กองกฏหมาย</option>
-            <option value= {2}>สำนักงานบริหารงานวิจัย</option>
-            <option value= {3}>ศูนย์บริหารพันธกิจสากล</option>
-          </select>
+    <div 
+      style={{ 
+        minHeight: '100vh',            
+        backgroundColor: '#F9FAFE',    
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        padding: '40px 16px',
+        overflow: 'hidden',              
+        overscrollBehavior: 'none',
+        fontFamily: "'Kanit', sans-serif"
+      }}
+    >
+      <div 
+        style={{ 
+          maxWidth: 850, 
+          width: '100%',
+          padding: 24, 
+          border: '1px solid #ddd', 
+          borderRadius: 12, 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+          background: 'white',
+          fontFamily: "'Kanit', sans-serif"
+        }}
+        
+      >
 
-          <h4>เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ ...</h4>
+       {/* header: ไอคอน + หัวข้อ + ปุ่มย้อนกลับ */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* ซ้าย: ไอคอน + หัวข้อ */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: "#E0E5F9",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 6,
+                boxShadow: "0 4px 12px rgba(157, 146, 198, 0.8)"
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+            </div>
+            <h1 style={{ fontSize: "28px", fontWeight: 500, margin: 0 }}>
+              ยื่นคำขอมอบอำนาจ
+            </h1>
+          </div>
+
+          {/* ขวา: ปุ่มย้อนกลับ */}
+          <a
+            href="http://localhost:5173/dashboard"
+            aria-label="ย้อนกลับไปแดชบอร์ด"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,               // ✅ จัตุรัส
+              height: 40,              // ✅ จัตุรัส
+              background: '#66009F',   // ✅ พื้นหลังม่วง
+              color: '#FFFFFF',        // ✅ currentColor ของ SVG จะเป็นสีขาว
+              borderRadius: 10,        // ✅ มนเล็กน้อย (ถ้าอยากคมสนิทใช้ 0)
+              textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(108, 106, 108, 0.35)',
+              transition: 'transform .06s ease, box-shadow .12s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(102,0,159,0.45)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(102,0,159,0.35)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            {/* ไอคอนย้อนกลับสีขาว */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24">
+              <g fill="none">
+                <path d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.17-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
+                <path fill="currentColor"
+                      d="M3.283 10.94a1.5 1.5 0 0 0 0 2.12l5.656 5.658a1.5 1.5 0 1 0 2.122-2.122L7.965 13.5H19.5a1.5 1.5 0 0 0 0-3H7.965l3.096-3.096a1.5 1.5 0 1 0-2.122-2.121z"/>
+              </g>
+            </svg>
+          </a>
+        </div>
+
+        <h1 style={{ fontSize: '25px', fontWeight: 'bold', color: '#66009F' }}>
+          รายละเอียดหนังสือมอบอำนาจ
+        </h1>
+
+        <hr />
+
+        <form onSubmit={handleOpenConfirm}>
+          {/* 1. เรื่อง */}
+          <h4 style={{ marginTop: 16 }}>1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ</h4>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            placeholder="ชื่อโครงการ เช่น คำขอมอบอำนาจการเบิกจ่าย/ติดต่อประสานงาน ฯลฯ"
             required
-            placeholder="เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ ..."
+            style={{
+              width: '100%',
+              padding: 10,
+              border: '1px solid #E5E5E5',
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
           />
 
-          <h4>มอบอำนาจให้...</h4>
+          {/* 2. ผู้รับมอบอำนาจ */}
+          <h4 style={{ marginTop: 16 }}>2. ผู้รับมอบอำนาจ</h4>
           <input
-            type='text'
+            type="text"
             value={authorize_to}
             onChange={(e) => setAuthorize_to(e.target.value)}
+            placeholder="ชื่อ-สกุล ผู้รับมอบอำนาจ"
             required
-            placeholder='มอบอำนาจให้...'
+            style={{
+              width: '100%',
+              padding: 10,
+              border: '1px solid #E5E5E5',
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
           />
 
-          <h4>ตำแหน่งผู้รับมอบอำนาจ...</h4>
+          {/* 3. ตำแหน่ */}
+          <h4 style={{ marginTop: 16 }}>3. ตำแหน่ง</h4>
           <input
-            type='text'
+            type="text"
             value={position}
             onChange={(e) => setPosition(e.target.value)}
+            placeholder="ตำแหน่งของผู้รับมอบอำนาจ"
             required
-            placeholder='ตำแหน่งผู้รับมอบอำนาจ...'
+            style={{
+              width: '100%',
+              padding: 10,
+              border: '1px solid #E5E5E5',   // ✅ แก้ตรงนี้เป็นสตริงเดียว
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
           />
 
-          <h4>สังกัดผู้รับมอบอำนาจ...</h4>
+          {/* 4. สังกัด */}
+          <h4 style={{ marginTop: 16 }}>4. สังกัด</h4>
           <input
-            type='text'
+            type="text"
             value={affiliation}
             onChange={(e) => setAffiliation(e.target.value)}
+            placeholder="หน่วยงาน/สังกัดของผู้รับมอบอำนาจ"
             required
-            placeholder='สังกัดผู้รับมอบอำนาจ...'
+            style={{
+              width: '100%',
+              padding: 10,
+              border: '1px solid #E5E5E5',
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
           />
 
-          <h4>เป็นผู้มอบอำนาจในการ...</h4>
-          <input 
-            type="text"
+          {/* 5. รายละเอียดการมอบอำนาจ */}
+          <h4 style={{ marginTop: 16 }}>5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด</h4>
+          <textarea
             value={authorize_text}
             onChange={(e) => setAuthorize_text(e.target.value)}
+            placeholder="ระบุรายละเอียดอำนาจหน้าที่ที่มอบให้ เช่น การเซ็นเอกสาร การติดต่อหน่วยงาน การดำเนินการเเทน ฯลฯ"
             required
-            placeholder='มอบอำนาจในเรื่อง...' 
+            rows={6}
+            style={{
+              width: '100%',
+              padding: 10,
+              resize: 'vertical',
+              border: '1px solid #E5E5E5',
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
           />
 
-          <br/>
-          <br/>
-          <button type="submit">ส่งคำร้อง</button>
-      </form>    
-    </div>
-  )
+          {/* 6. หน่วยงานปลายทาง */}
+          <h4 style={{ marginTop: 16 }}>6. หน่วยงานปลายทาง</h4>
+          <select
+            value={destinationId}
+            onChange={(e) => setDestination(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              padding: 10,
+              border: '1px solid #E5E5E5',
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
+          >
+            <option value="">ต้องการส่งคำร้องไปยังหน่วยงานใด</option>
+            {destinations.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.des_name}
+              </option>
+            ))}
+          </select>
 
+
+          {/* 7. เลขที่เอกสาร */}
+          <h4 style={{ marginTop: 16 }}>7. เลขลำดับเอกสาร</h4>
+          <input
+            type="text"
+            value="POA-2025-0818-1631"
+            readOnly
+            style={{
+              width: '100%',
+              padding: 10,
+              border: '1px solid #E5E5E5',
+              backgroundColor: '#F7F7F7',
+              borderRadius: 6
+            }}
+          />
+
+          {/* ✅ ใหม่: แนบเอกสารเพิ่มเติม (หลายไฟล์) — อยู่ "ด้านบน" ช่องยืนยัน */}
+          <h4 style={{ marginTop: 16 }}>8. แนบเอกสารเพิ่มเติม (ถ้ามี)</h4>
+          <div
+            style={{
+              border: '1px dashed #CFCFCF',
+              background: '#FAFAFA',
+              borderRadius: 8,
+              padding: 12
+            }}
+          >
+            <input
+              type="file"
+              multiple
+              onChange={handleFilesChange}
+              // เลือกนามสกุลที่พบบ่อย ปรับได้ตามนโยบายองค์กร
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            />
+            {attachments.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                  ไฟล์ที่เลือก ({attachments.length}):
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {attachments.map((f, idx) => (
+                    <li key={idx} style={{ marginBottom: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ wordBreak: 'break-all' }}>
+                        {f.name} ({Math.ceil(f.size / 1024)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(idx)}
+                        style={{
+                          marginLeft: 'auto',
+                          border: 'none',
+                          background: '#F0F0F0',
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          cursor: 'pointer'
+                        }}
+                        title="ลบไฟล์นี้"
+                      >
+                        ลบ
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* ยืนยันความถูกต้อง */}
+          <div style={{ marginTop: 16 }}>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                required
+              />
+              <span>ยืนยันว่าข้อมูลที่กรอกถูกต้องและครบถ้วน</span>
+            </label>
+          </div>
+
+          {/* แสดงสถานะ */}
+          {error && (
+            <div style={{ marginTop: 12, color: '#b00020' }}>
+              {error}
+            </div>
+          )}
+          {okMsg && (
+            <div style={{ marginTop: 12, color: '#0a7d00' }}>
+              {okMsg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={!isValid || loading}
+            style={{
+              marginTop: 20,
+              padding: '12px 18px',
+              borderRadius: 10,
+              border: 'none',
+              background: !isValid || loading ? '#9b9b9b' : '#66009F',
+              color: 'white',
+              cursor: !isValid || loading ? 'not-allowed' : 'pointer',
+              display: 'block',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              transition: 'transform .06s ease, box-shadow .12s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!isValid || loading) return;
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.35)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            {loading ? 'กำลังส่ง…' : 'บันทึกและส่งหนังสือมอบอำนาจ'}
+          </button>
+        </form>
+
+        {/* ===== Modal ยืนยันการส่ง ===== */}
+        {confirmOpen && (
+          <div
+            onClick={() => modalStep === 'confirm' && setConfirmOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: 420,
+                maxWidth: '90vw',
+                background: 'white',
+                borderRadius: 12,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+                padding: 20,
+                position: 'relative',
+                fontFamily: "'Kanit', sans-serif",
+                textAlign: 'center'
+              }}
+            >
+              {/* ปุ่มปิด (แสดงเฉพาะตอน confirm) */}
+              {modalStep === 'confirm' && (
+                <button
+                  aria-label="ปิด"
+                  onClick={() => setConfirmOpen(false)}
+                  style={{
+                    position: 'absolute',
+                    top: 10,
+                    right: 10,
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 20,
+                    cursor: 'pointer',
+                    lineHeight: 1
+                  }}
+                >
+                  ×
+                </button>
+              )}
+
+              {modalStep === 'confirm' ? (
+                <>
+                  <h2 style={{ margin: '0 28px 8px 0', fontSize: 22, fontWeight: 700 }}>
+                    ยื่นคำมอบอำนาจ
+                  </h2>
+                  <div style={{ color: '#333', marginTop: 8, textAlign: 'left' }}>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 16 }}>เรื่อง {title || '…'}</div>
+                    </div>
+                    <div style={{ fontSize: 16 }}>
+                      ส่งไปยัง&nbsp;
+                      <span style={{ color: '#276EF1', fontWeight: 600 }}>
+                        {destinationName || '-'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+                    <button
+                      type="button"
+                      onClick={sendPetition}
+                      disabled={loading}
+                      style={{
+                        background: '#66009F',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 10,
+                        padding: '10px 16px',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                        fontSize: 15
+                      }}
+                    >
+                      {loading ? 'กำลังส่ง…' : 'ยืนยันการส่ง'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 style={{ margin: '0 0 16px 0', fontSize: 20, fontWeight: 700 }}>
+                    ส่งหนังสือมอบอำนาจเรียบร้อยแล้ว
+                  </h2>
+
+                  {/* วงกลมเขียว + ติ๊กถูกสีขาว */}
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: 6 }}>
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: '50%',
+                        background: '#22C55E', // เขียว
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 6px 20px rgba(34,197,94,0.35)'
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="36"
+                        height="36"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 12, color: '#555' }}>
+                    กำลังพาไปหน้าติดตามสถานะ…
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+
+
+      </div>
+    </div>
+  );
 }
 
 export default FormPetition;
