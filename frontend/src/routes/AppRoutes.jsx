@@ -7,6 +7,7 @@ import Dashboard from '../pages/dashboard';
 import Petition from '../pages/petition';
 import Admin_Panel from '../pages/admin_panel';
 import Auditor_Check from '../pages/auditor_check';
+import Tracking from '../pages/tracking'
 
 export default function AppRoutes() {
 
@@ -21,6 +22,7 @@ export default function AppRoutes() {
         <Route path="/petition" element={<Petition/>} />
         <Route path="/admin_panel" element={<Admin_Panel/>} />
         <Route path="/auditor_check" element={<Auditor_Check/>} />
+        <Route path="/tracking" element={<Tracking/>} />
       </Routes>
     </Router>
   );

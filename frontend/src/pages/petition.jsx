@@ -41,6 +41,7 @@ function petition() {
     if (!userInfo && !documentAll) {
         return <div>Loading...</div>;  // หรือ แสดง loading ขณะรอข้อมูล
     }
+    console.log(token)
 
     return (
         <div>

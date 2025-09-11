@@ -43,6 +43,10 @@ function Dashboard() {
     navigate('/formpetition');
   }
 
+  const ClickToTracking = () => {
+    navigate('/tracking');
+  }
+
   const ClicktoWatchPetition = () =>{
     navigate('/petition');
   }
@@ -145,9 +149,8 @@ function Dashboard() {
           </p>
         </div>
         {/* block2 */}
-        {/* onClick ยังผิดที่อยู่ */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoWatchPetition}
+          onClick={ClickToTracking}
         >
           <div className="mb-5">
               <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -344,4 +347,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
