@@ -9,6 +9,8 @@ import Admin_Panel from '../pages/admin_panel';
 import Auditor_Check from '../pages/auditor_check';
 import Tracking from '../pages/tracking';
 import Employee_Paper from '../pages/employee_paper';
+import Detail from "../pages/detail";
+import Modify from "../pages/modify";
 
 export default function AppRoutes() {
 
@@ -25,6 +27,8 @@ export default function AppRoutes() {
         <Route path="/auditor_check" element={<Auditor_Check/>} />
         <Route path="/tracking" element={<Tracking/>} />
         <Route path="/employeePaper" element={<Employee_Paper/>} />
+        <Route path="/detail/:id" element={<Detail />} />
+        <Route path="/modify/:id" element={<Modify />}/>
       </Routes>
     </Router>
   );

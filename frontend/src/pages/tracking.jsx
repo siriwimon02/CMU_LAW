@@ -7,7 +7,7 @@ function Tracking() {
   const [userInfo, setUserInfo] = useState(null);
   const [documentAll, setDocumentAll] = useState([]); // เริ่มเป็น array
 
-  // ถ้าไม่มี token ให้เด้งไป login
+// เหลือ 1 test สีดูทุกสี 2 เลขคำขอ 3 โลโก้ค้นหากับโลโก้แก้ไขปรับฟ้อนให้สวยขึ้น
   if (!token) {
     alert("Please Login or SignIn First!!!");
     return <Navigate to="/login" replace />;
@@ -37,15 +37,27 @@ function Tracking() {
     }
     getDocandUser();
   }, [token]);
-  // รออีอายจัดสีให้
+  
+  // color of status
   const greenList = ['รับเข้ากองเรียบร้อย','ส่งต่อไปยังกองอื่น','ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว','ตรวจสอบขั้นต้นเสร็จสิ้น', 'ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น', 'ตรวจสอบขั้นสุดท้ายเสร็จสิ้น', 'ตรวจสอบโดยอธิการบดีเสร็จสิ้น', 
   'อธิการบดีอนุมัติแล้ว']
   const orangeList = [   'รอการอนุมัติจากอธิการบดี','รอรับเข้ากอง','อยู่ระหว่างการตรวจสอบขั้นต้น','อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า', 'อยู่ระหว่างการตรวจสอบขั้นสุดท้าย','อยู่ระหว่างการตรวจสอบโดยอธิการบดี' ]
   const redList = [ 'ส่งกลับให้ผู้ใช้แก้ไขเอกสาร','ส่งกลับให้แก้ไขจากการตรวจสอบโดยหัวหน้า', 'ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย', 'ปฏิเสธคำร้อง' ]
 
+  const modifyList = [ 'ส่งกลับให้ผู้ใช้แก้ไขเอกสาร','ส่งกลับให้แก้ไขจากการตรวจสอบโดยหัวหน้า', 'ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย']
+  // navigate
   const navigate = useNavigate();
   const ClicktoDashboard = () => {
     navigate('/dashboard');
+  }
+
+  const ClickForMoreDetail = (doc) => {
+    navigate(`/detail/${doc.id}`);
+  }
+
+  // wrong nav
+  const ClickForModify = (doc) => {
+    navigate(`/modify/${doc.id}`)
   }
 
   // Sorted copy based on dropdown
@@ -139,6 +151,7 @@ function Tracking() {
               : "-";
 
             
+            const isModifiable = modifyList.includes(doc.status_name);
 
             return (
               <article
@@ -165,20 +178,46 @@ function Tracking() {
                       </span>
                     </p>
                   </div>
+                  
+                    
+                    <button 
+                      onClick={() => isModifiable ? ClickForModify(doc) : ClickForMoreDetail(doc)}
+                      className="mt-2 inline-flex items-center gap-2 self-start rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
+                      {isModifiable ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width={20}
+                          height={20}
+                          viewBox="0 0 24 24"
+                          className="text-black"
+                        >
+                          <path
+                            fill="currentColor"
+                            fillRule="evenodd"
+                            d="M14.25 2.5a.25.25 0 0 0-.25-.25H7A2.75 2.75 0 0 0 4.25 5v14A2.75 2.75 0 0 0 7 21.75h10A2.75 2.75 0 0 0 19.75 19V9.147a.25.25 0 0 0-.25-.25H15a.75.75 0 0 1-.75-.75zm.75 9.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1 0-1.5zm0 4a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1 0-1.5z"
+                            clipRule="evenodd"
+                          ></path>
+                          <path
+                            fill="currentColor"
+                            d="M15.75 2.824c0-.184.193-.301.336-.186q.182.147.323.342l3.013 4.197c.068.096-.006.22-.124.22H16a.25.25 0 0 1-.25-.25z"
+                          ></path>
+                        </svg>
+                      ):(
 
-                  <button className="mt-2 inline-flex items-center gap-2 self-start rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <circle cx="11" cy="11" r="7" />
-                      <path d="M21 21l-4.3-4.3" />
-                    </svg>
-                    ดูรายละเอียด
-                  </button>
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          >
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="M21 21l-4.3-4.3" />
+                        </svg>
+                      )}
+                        {isModifiable ? "แก้ไขเอกสาร" : "ดูรายละเอียด"}
+                      
+                    </button>
                 </div>
               </article>
             );
