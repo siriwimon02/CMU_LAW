@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
-
+import Header from '../../components/trackingHeader'
 function Tracking() {
   const token = localStorage.getItem("token");
   const [userInfo, setUserInfo] = useState(null);
@@ -55,7 +55,6 @@ function Tracking() {
     navigate(`/detail/${doc.id}`);
   }
 
-  // wrong nav
   const ClickForModify = (doc) => {
     navigate(`/modify/${doc.id}`)
   }
@@ -71,47 +70,14 @@ function Tracking() {
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
       {/* Header */}
-      <header className="bg-white text-gray-800 px-5 py-4">
-        <div className="mx-auto  flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/images/Logo.svg"
-              alt="Logo"
-              className="w-[150px] h-[50px] object-contain"
-            />
-          </div>
-          <button
-            onClick={ClicktoDashboard}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-purple-800 transition"
-            title="เมนู"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-      </header>
+      <Header/>
 
-      {/* ล่าง header*/}
-      <div className="bg-[#66009F] w-full h-64 mt-2 flex flex-col items-center justify-center text-center px-4">
-        <p className="text-white font-bold text-3xl">
-          ระบบบริหารจัดการหนังสือมอบอำนาจออนไลน์
-        </p>
-        <p className="text-white text-lg mt-4">
-          จัดการคำขอมอบอำนาจ ติดตามสถานะ และอนุมัติเอกสารได้อย่างมีประสิทธิภาพ
-        </p>
-      </div>
+      
 
       {/* Main */}
-      <main className="flex-1 bg-gray-100 p-4">
+      <main className="flex-1 bg-gray-100 p-4 ">
         {/* กล่องให้เลือก */}
-        <div className="mb-4">
+        <div className="m-4">
           <label className="sr-only">เอกสารล่าสุด</label>
           <div className="relative w-full max-w-xs">
             <select 
@@ -156,7 +122,7 @@ function Tracking() {
             return (
               <article
                 key={doc.id}
-                className="rounded-2xl bg-white shadow p-4 mb-4"
+                className="rounded-2xl bg-white shadow p-4 m-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1 text-gray-800">

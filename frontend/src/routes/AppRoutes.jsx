@@ -2,15 +2,19 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from '../pages/home';
 import Register from '../pages/register';
 import Login from '../pages/login';
-import FormPetition from '../pages/form_petition';
-import Dashboard from '../pages/dashboard';
-import Petition from '../pages/petition';
-import Admin_Panel from '../pages/admin_panel';
 import Auditor_Check from '../pages/auditor_check';
-import Tracking from '../pages/tracking';
+import Petition from '../pages/petition';
 import Employee_Paper from '../pages/employee_paper';
-import Detail from "../pages/detail";
-import Modify from "../pages/modify";
+import Dashboard from '../pages/dashboard';
+// user
+import FormPetition from '../pages/staff/form_petition';
+import Tracking from '../pages/staff/tracking';
+import Detail from "../pages/staff/detail";
+import Modify from "../pages/staff/modify";
+// อธิการ
+import TrackingForChancellor from "../pages/Chancellor/tracking"
+// admin
+import Admin_Panel from '../pages/admin/admin_panel';
 
 export default function AppRoutes() {
 
@@ -21,14 +25,18 @@ export default function AppRoutes() {
         <Route path="/register" element={<Register/>} />
         <Route path='/login' element={<Login/>} />
         <Route path='/dashboard' element={<Dashboard/>} />
-        <Route path="/formPetition" element={<FormPetition/>} />
         <Route path="/petition" element={<Petition/>} />
-        <Route path="/admin_panel" element={<Admin_Panel/>} />
         <Route path="/auditor_check" element={<Auditor_Check/>} />
-        <Route path="/tracking" element={<Tracking/>} />
         <Route path="/employeePaper" element={<Employee_Paper/>} />
+        {/* staff */}
+        <Route path="/formPetition" element={<FormPetition/>} />
+        <Route path="/tracking" element={<Tracking/>} />
         <Route path="/detail/:id" element={<Detail />} />
         <Route path="/modify/:id" element={<Modify />}/>
+        {/* admin */}
+        <Route path="/admin_panel" element={<Admin_Panel/>} />
+        {/* อธิการบดี */}
+        <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
       </Routes>
     </Router>
   );
