@@ -7,50 +7,42 @@ import AddUserModal from '../../components/addUserModal';
 function Admin_Panel() {
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
-    const users = Array.from({ length: 20 }).map((_, i) => ({
-        name: `User ${i + 1}`,
-        email: `user${i + 1}@cmu.ac.th`,
-        role: `Role ${i + 1}`,
-    }));
-    // const [search, setSearch] = useState("");
-    // const [showModal, setShowModal] = useState(false);
-    // const [users, setUsers] = useState([]);
-    // const token = localStorage.getItem("token");
-    // const navigate = useNavigate();
+    const [users, setUsers] = useState([]);
+    const token = localStorage.getItem("token");
+    const navigate = useNavigate();
 
-    // useEffect(() => {
-    //     const fetchUsers = async () => {
-    //         try {
-    //             const res = await fetch("/api/user", {
-    //                 headers: {
-    //                     "Authorization": `${token}`,
-    //                     "Content-Type": "application/json"
-    //                 }
-    //             });
-    //             if (!res.ok) throw new Error("Failed to fetch users");
-    //             const data = await res.json();
-    //             setUsers(data); // สมมติ backend ส่ง [{name, email, role}, ...]
-    //         } catch (err) {
-    //             console.error(err);
-    //             // ถ้า token ไม่ถูกต้อง ส่งกลับไป login
-    //             navigate("/login");
-    //         }
-    //     };
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const res = await fetch("/api/user", {
+                    headers: {
+                        'Authorization': `${token}`
+                    }
+                })
+                if (!res.ok) throw new Error("Failed to fetch users");
+                const data = await res.json();
+                setUsers(data); // สมมติ backend ส่ง [{name, email, role}, ...]
+            } catch (err) {
+                console.error(err);
+                // ถ้า token ไม่ถูกต้อง ส่งกลับไป login
+                navigate("/login");
+            }
+        };
 
-    //     if (token) {
-    //         fetchUsers();
-    //     } else {
-    //         navigate("/login");
-    //     }
-    // }, [token, navigate]);
+        if (token) {
+            fetchUsers();
+        } else {
+            navigate("/login");
+        }
+    }, [token, navigate]);
 
-    // console.log(users)
+    console.log(users)
 
     const filteredUsers = users.filter(
         (user) =>
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
+        user.firstname.toLowerCase().includes(search.toLowerCase()) ||
         user.email.toLowerCase().includes(search.toLowerCase()) || 
-        user.role.toLowerCase().includes(search.toLowerCase())
+        user.role.role_name.toLowerCase().includes(search.toLowerCase())
     );
     
     return (
@@ -97,11 +89,11 @@ function Admin_Panel() {
                         <tbody>
                         {filteredUsers.map((user, i) => (
                             <tr key={i} className="border-t text-center">
-                            <td className="px-6 py-2">{user.name}</td>
+                            <td className="px-6 py-2">{user.firstname}</td>
                             <td className="px-6 py-2">{user.email}</td>
                             <td className="px-6 py-2">
                                 <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">
-                                {user.role}
+                                {user.role.role_name}
                                 </span>
                             </td>
                             <td className="text-center px-4 py-2">

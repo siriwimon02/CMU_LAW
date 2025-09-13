@@ -87,7 +87,15 @@ app.get('/auth/user', authMiddle, async(req, res) => {
 
 //-----------------------------------user all -------------------------------//
 app.get('/api/user', authMiddle, checkRole([1]), async (req, res) => {
-  const userAll = await prisma.user.findMany();
+  const userAll = await prisma.user.findMany({
+      include: {
+        role: {
+          select: {
+            role_name: true
+          }
+        }
+      }
+    });
   res.json(userAll);
   console.log(userAll);
 });
