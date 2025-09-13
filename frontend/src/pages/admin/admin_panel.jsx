@@ -2,14 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import AddUserModal from '../../components/addUserModal';
-
+import EditUserRole from '../../components/editUserRole';
 
 function Admin_Panel() {
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [users, setUsers] = useState([]);
+    const [selectedUser, setSelectedUser] = useState(null);
     const token = localStorage.getItem("token");
     const navigate = useNavigate();
+
+    if (!token) {
+        alert("Please Login or SignIn First!!!");
+        return <Navigate to="/login" replace />;
+    }
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -21,10 +28,9 @@ function Admin_Panel() {
                 })
                 if (!res.ok) throw new Error("Failed to fetch users");
                 const data = await res.json();
-                setUsers(data); // สมมติ backend ส่ง [{name, email, role}, ...]
+                setUsers(data);
             } catch (err) {
                 console.error(err);
-                // ถ้า token ไม่ถูกต้อง ส่งกลับไป login
                 navigate("/login");
             }
         };
@@ -36,7 +42,28 @@ function Admin_Panel() {
         }
     }, [token, navigate]);
 
-    console.log(users)
+    const handleDeleteUser = async (userId) => {
+        if (!window.confirm('คุณต้องการลบผู้ใช้นี้?')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/user/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `${token}`
+            }
+            });
+
+            if (!res.ok) throw new Error('Failed to delete user');
+
+            setUsers(users.filter(user => user.id !== userId));
+            alert('ลบผู้ใช้สำเร็จ');
+        } catch (err) {
+            console.error('Error deleting user:', err);
+            alert('ลบผู้ใช้ไม่สำเร็จ');
+        }
+    };
 
     const filteredUsers = users.filter(
         (user) =>
@@ -45,6 +72,27 @@ function Admin_Panel() {
         user.role.role_name.toLowerCase().includes(search.toLowerCase())
     );
     
+    const getRoleColor = (roleName) => {
+        switch(roleName) {
+            case 'user':
+                return 'bg-[#D9D9D9] text-[#000000]'; // เทา
+            case 'auditor':
+                return 'bg-[#FFFBEB] text-[#CA8A04]'; // เหลือง
+            case 'spv_auditor':
+                return 'bg-[#FFEDD5] text-[#EA580C]'; // ส้ม
+            case 'head_auditor':
+                return 'bg-[#FEE2E2] text-[#DC2626]'; // สีแดง
+            case 'endorser':
+                return 'bg-[#DCFCE7] text-[#16A34A]'; // เขียว
+            case 'se_endorser':
+                return 'bg-[#DBEAFE] text-[#1D4ED8]'; // น้ำเงิน
+            case 'admin':
+                return 'bg-[#F1EDFF] text-[#66009F]'; // สีม่วง
+            default:
+                return 'bg-[#D9D9D9] text-[#000000]';
+        }
+    };
+
     return (
         <div>
             <div className="font-kanit bg-[#F7F7FD] min-h-screen flex items-center justify-center">
@@ -92,13 +140,17 @@ function Admin_Panel() {
                             <td className="px-6 py-2">{user.firstname}</td>
                             <td className="px-6 py-2">{user.email}</td>
                             <td className="px-6 py-2">
-                                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">
+                                <span className={`px-2 py-1 rounded-full text-sm ${getRoleColor(user.role.role_name)}`}>
                                 {user.role.role_name}
                                 </span>
                             </td>
                             <td className="text-center px-4 py-2">
                                 <div className="flex items-center justify-center space-x-2">
-                                    <button className="flex items-center text-black bg-white border border-[#A6A6A6] shadow-md rounded-[5px] px-4 py-1 text-sm font-medium hover:bg-gray-100 active:scale-95 transition-transform duration-300 ease-out">
+                                    <button onClick={() => {
+                                        setSelectedUser(user);
+                                        setShowEditModal(true);
+                                    }}
+                                    className="flex items-center text-black bg-white border border-[#A6A6A6] shadow-md rounded-[5px] px-4 py-1 text-sm font-medium hover:bg-gray-100 active:scale-95 transition-transform duration-300 ease-out">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4 mr-1">
                                             <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
                                             <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
@@ -106,7 +158,8 @@ function Admin_Panel() {
                                         แก้ไขสิทธิ์
                                     </button>
 
-                                    <button className="text-[#66009F] hover:text-red-500 hover:shadow-md transition-colors duration-300">
+                                    <button onClick={() => handleDeleteUser(user.id)}
+                                    className="text-[#66009F] hover:text-red-500 hover:shadow-md transition-colors duration-300">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
                                             <path fillRule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clipRule="evenodd" />
                                         </svg>
@@ -120,7 +173,18 @@ function Admin_Panel() {
                     </div>
                 </div>
             </div>
-            <AddUserModal isVisible={showModal} onClose={() => setShowModal(false)} />
+            <AddUserModal 
+                isVisible={showModal} 
+                onClose={() => setShowModal(false)} 
+            />
+            <EditUserRole
+                isVisible={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                user={selectedUser}
+                onUpdate={(updatedUser) => {
+                    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+                }}
+            />
         </div>
     );
 };

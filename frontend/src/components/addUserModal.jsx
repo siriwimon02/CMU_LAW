@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AddUserModal = ({ isVisible, onClose }) => {
+const AddUserModal = ({ isVisible, onClose}) => {
   if (!isVisible) return null;
 
   return (

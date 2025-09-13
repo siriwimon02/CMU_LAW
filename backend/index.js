@@ -100,6 +100,40 @@ app.get('/api/user', authMiddle, checkRole([1]), async (req, res) => {
   console.log(userAll);
 });
 
+//------------------------------ edit role user -----------------------------//
+app.put('/api/updateRole', authMiddle, checkRole([1]), async (req, res) => {
+  try {
+    const { user_id, role_id } = req.body;
+    if (!user_id || !role_id) {
+      return res.status(400).json({ error: 'user_id and role_id are required' });
+    }
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(user_id) },
+      data: { roleId: parseInt(role_id) }
+    });
+    res.json({ message: 'Role updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Error updating role:', error);
+    res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+
+//-------------------------------- delete user -------------------------------//
+app.delete('/api/user/:id', authMiddle, checkRole([1]), async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 
 
 //-----------------------------department-----------------------------------//
