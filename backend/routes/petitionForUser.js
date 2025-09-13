@@ -4,10 +4,117 @@ dotenv.config({ path: '../.env.dev' });
 
 import express from 'express';
 import prisma from '../prismaClient.js';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import multer from "multer";
 
 const router = express.Router();
+
+
+//การโหลดไฟล์แนบ
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
+
+
+//ฟอร์มเอกสารใหม่ เข้ามาใหม่
+// ฟอร์มเอกสารใหม่ เข้ามาใหม่
+router.post('/', upload.array("attachments", 5), async (req, res) => {
+  try {
+    const userid = req.user.id;
+    if (!userid) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userid }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const find_status = await prisma.status.findUnique({
+        where : { status : "รอรับเข้ากอง" }
+    })
+
+    const {
+      title,
+      authorize_to,
+      position,
+      affiliation,
+      authorize_text
+    } = req.body;
+    const destinationId = parseInt(req.body.destinationId, 10);
+
+    console.log("body:", req.body);
+    console.log("files:", req.files);
+
+    // สร้าง document หลัก
+    const doc = await prisma.documentPetition.create({
+      data: {
+        id_doc: 12345,
+        department: { connect: { id: user.departmentId } },
+        destination: { connect: { id: destinationId } },
+        title,
+        authorize_to,
+        position,
+        affiliation,
+        authorize_text,
+        user: { connect: { id: userid }},
+        status: { connect: { id: find_status.id }} 
+      }
+    });
+
+
+    // เก็บ document status action log
+    await prisma.documentActionsLog.create({
+        data: {
+        document: { connect: { id: doc.id } },
+        status:   { connect: { id: doc.statusId } },
+        changeBy: { connect: { id: doc.userId } },
+        note_t:   "เพิ่มคำร้องเข้าไปใหม่"
+        }
+    });
+
+    // บันทึกไฟล์แนบ (ใช้ for...of เพราะรองรับ await)
+    if (req.file || (req.files && req.files.length > 0)) {
+        for (const file of req.files) {
+        const paths = file.path;            // path เต็ม เช่น "uploads/xxxx-test.pdf"
+        const file_n = file.originalname;   // ชื่อไฟล์ต้นฉบับ
+
+        console.log("save attachment:", paths, file_n);
+
+        const doc_attachment = await prisma.documentAttachment.create({
+            data: {
+            file_path: paths,
+            file_name: file_n,
+            docId: doc.id,
+            userId: user.id
+            }
+        });
+
+        console.log("saved:", doc_attachment);
+        }
+    }
+    res.status(201).json({
+      message: "Document saved",
+      success: true,
+      document: doc
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 //ดึงdata ทั้งหมดที่ User กรอก
 router.get('/', async (req, res) => {
@@ -111,57 +218,9 @@ router.get('/:docId', async (req, res) => {
 });
 
 
-//ฟอร์มเอกสารใหม่ เข้ามาใหม่
-router.post('/', async (req, res) =>{
-    console.log(req.user.id);
-    const userid = req.user.id;
-
-    const {
-        destinationId,
-        title,
-        authorize_to,
-        position,
-        affiliation,
-        authorize_text
-    } = req.body;
-
-    try {
-        const user = await prisma.user.findUnique({
-            where:{ id: userid }
-        })
-
-        console.log(user);
-        // console.log(user.departmentId);
-        const doc = await prisma.documentPetition.create({
-            data: {
-                id_doc: 1,
-                department: { connect: { id: user.departmentId } },
-                destination: { connect: { id: destinationId } },
-                title,
-                authorize_to,
-                position,
-                affiliation,
-                authorize_text,
-                user : { connect: {id : userid}},
-                status: { connect: {id : 1} }
-            }
-        });
-        console.log(doc)
-        console.log('document save')
-
-        res.status(200).json({
-            message: "document saved",
-            success: true
-        });    
-    } catch (err){
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
 
 // หน้าบ้านต้องส่ง docId มาด้วย เช่น PUT /documents/5
-router.put('/edit/:docId', async (req, res) => {
+router.put('/edit/:docId', upload.array("attachments", 5),async (req, res) => {
     const documentId = parseInt(req.params.docId, 10); 
     if (isNaN(documentId)) {
         return res.status(400).json({ error: "docId ต้องเป็นตัวเลข" });
@@ -183,12 +242,12 @@ router.put('/edit/:docId', async (req, res) => {
         const existingDoc = await prisma.documentPetition.findUnique({
             where: { 
                 id: documentId,
-                statusId : find_st.id
+                statusId : find_st.id,
+                userId : req.user.id
             }
         });
 
         console.log(existingDoc);
-
         if (!existingDoc) {
             return res.status(404).json({ error: "not found document" });
         }
@@ -204,6 +263,37 @@ router.put('/edit/:docId', async (req, res) => {
                 statusId : status_already_edit.id
             },
         });
+
+
+        // เก็บ document status action log
+        await prisma.documentActionsLog.create({
+            data: {
+            document: { connect: { id: updatedDoc.id } },
+            status:   { connect: { id: updatedDoc.statusId } },
+            changeBy: { connect: { id: updatedDoc.userId } },
+            note_t:   "ส่งคำร้องที่ user แก้ไขเสร็จเรียบร้อย"
+            }
+        });
+
+
+        if (req.file || (req.files && req.files.length > 0)) {
+            for (const file of req.files) {
+                const paths = file.path;            // path เต็ม เช่น "uploads/xxxx-test.pdf"
+                const file_n = file.originalname;   // ชื่อไฟล์ต้นฉบับ
+
+                console.log("save attachment:", paths, file_n);
+
+                const doc_attachment = await prisma.documentAttachment.create({
+                    data: {
+                    file_path: paths,
+                    file_name: file_n,
+                    userId: req.user.id
+                    }
+                });
+                console.log("saved:", doc_attachment);
+            }
+        }
+
         res.json({message: "update document already", updatedDoc});
 
 

@@ -4,10 +4,22 @@ dotenv.config({ path: '../.env.dev' });
 
 import express from 'express';
 import prisma from '../prismaClient.js';
-import { parse } from 'path';
-import assert from 'assert';
+import multer from "multer";
 
 const router = express.Router();
+
+//ดาวโหลดเอกสาร
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
 
 //---------------------------------------------------new code -----------------------------------------------------//
 
@@ -58,10 +70,11 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 }
             }
         });
-        console.log(document_audit_1st);
+        console.log("doc audit_1st", document_audit_1st);
 
         if ( document_audit_1st.length > 0 ){
-            await prisma.documentPetition.updateMany({
+
+            const update_st = await prisma.documentPetition.updateMany({
                 where : {
                     destinationId : find_des.id,
                     statusId : {
@@ -71,6 +84,21 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                     statusId : findstatus2.id
                 }
             });
+
+                    
+            // เก็บ document status action log
+            await Promise.all(
+                document_audit_1st.map(doc =>
+                    prisma.documentActionsLog.create({
+                        data: {
+                        document: { connect: { id: doc.id } },
+                        status:   { connect: { id: findstatus2.id } }, 
+                        changeBy: { connect: { id: user.id } },
+                        note_t:   `เปลี่ยนสถานะจาก ${doc.statusId} เป็น ${findstatus2.id}`
+                        }
+                    })
+                )
+            );
         }
 
         const document_audit_2st = await prisma.documentPetition.findMany({
@@ -135,7 +163,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
 
 
 //ดึง data มาทีละอัน
-router.get('/:docId', async (req, res) => {
+router.get('/document/:docId', async (req, res) => {
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
@@ -203,6 +231,7 @@ router.get('/:docId', async (req, res) => {
 
 //อัพเดตยืนการตรวจเอกสารขั้นต้น
 router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
+    const text_suggesttion = req.body;
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
@@ -236,14 +265,28 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
         if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
             return res.status(404).json({ message: "Document not found or not in correct status" });
-        } else {
-            const updatedDoc = await prisma.documentPetition.update({
-                where: { id: documentId },
-                data: { statusId: find_status2.id }
-            });
+        } 
 
-            res.json({ message: "Document status updated to the first audit is already", updatedDoc});
-        }
+        //อัพเดตสถานนะแก้ไข
+        const updatedDoc = await prisma.documentPetition.update({
+            where: { id: documentId },
+            data: { statusId: find_status2.id }
+        });
+
+        // เก็บ document status action log
+        await prisma.documentActionsLog.create({
+            data: {
+            document: { connect: { id: updatedDoc.id } },
+            status:   { connect: { id: updatedDoc.statusId } },
+            changeBy: { connect: { id: user.id } },
+            note_t:   `อัพเดตสถานะจาก 'อยู่ระหว่างการตรวจสอบขั้นต้น' เป็น 'ตรวจสอบขั้นต้นเสร็จสิ้น' รายละเอียดเพิ่มเติม: ${text_suggesttion || "-"}`
+            }
+        });
+
+
+
+        res.json({ message: "Document status updated to the first audit is already", updatedDoc});
+    
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });
@@ -254,7 +297,7 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
 //แก้ไขสถานะ กลับไปแก้ไขเอกสาร ส่งไปที่ผู้ใช้แก้ไข
 router.put('/edit_ByAuditor/:docId', async (req, res) => {
-    const test_edit_suggesttion = req.body;
+    const text_edit_suggesttion = req.body;
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
@@ -289,16 +332,108 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
 
         if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
             return res.status(404).json({ message: "Document not found or not in correct status" });
-        } else {
+        } 
+
+        const updatedDoc = await prisma.documentPetition.update({
+            where: { id: documentId },
+            data: { statusId: find_status2.id }
+        });
+
+
+                // เก็บ document status action log
+        await prisma.documentActionsLog.create({
+            data: {
+            document: { connect: { id: updatedDoc.id } },
+            status:   { connect: { id: updatedDoc.statusId } },
+            changeBy: { connect: { id: user.id } },
+            note_t:   `อัพเดตสถานะจาก '"อยู่ระหว่างการตรวจสอบขั้นต้น' เป็น 'ส่งกลับให้ผู้ใช้แก้ไขเอกสาร' รายละเอียดเพิ่มเติม: ${text_edit_suggesttion || "-"}`
+            }
+        });
+
+
+        //ส่ง data ไปยังเมลด้วย
+        //------------------------mail----------------//
+        res.json({message: "Document status updated to user to edit document", updatedDoc});
+    
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+
+
+
+//การเพิ่มเอกสารได้ แก้ไขเอกสารได้ ของuser โดยพนักงาน คือพนง สามารถเข้าไปแก้ไขเอกสารได้ แก้ไขคำผิด
+router.put('/update_document_ByAuditor/:docId', upload.array("attachments", 5), async (req, res) => {
+    const {title, authorizeTo, position, affiliation, authorizeText} = req.body
+    try {
+        const documentId = parseInt(req.params.docId, 10); 
+        if (isNaN(documentId)) {
+            return res.status(400).json({ error: "docId is invalid integer" });
+        }
+ 
+        const find_status1 = await prisma.status.findUnique({
+            where: { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
+        });
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentPetition.findUnique({
+            where: { id: documentId }
+        });
+
+        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+            return res.status(404).json({ message: "Document not found or not in correct status" });
+        }else {
             const updatedDoc = await prisma.documentPetition.update({
                 where: { id: documentId },
-                data: { statusId: find_status2.id }
+                data: {
+                    title,
+                    authorize_to: authorizeTo,
+                    position,
+                    affiliation,
+                    authorize_text: authorizeText,
+                },
             });
 
+            if (req.file || (req.files && req.files.length > 0)){
+                for (const file of req.files) {
+                const paths = file.path;            // path เต็ม เช่น "uploads/xxxx-test.pdf"
+                const file_n = file.originalname;   // ชื่อไฟล์ต้นฉบับ
 
-            //ส่ง data ไปยังเมลด้วย
-            //------------------------mail----------------//
-            res.json({message: "Document status updated to user to edit document", updatedDoc});
+                console.log("save attachment:", paths, file_n);
+
+                const doc_attachment = await prisma.documentAttachment.create({
+                    data: {
+                    file_path: paths,
+                    file_name: file_n,
+                    docId: doc.id,
+                    userId: user.id
+                    }
+                });
+                console.log("saved:", doc_attachment);
+                }
+            }
+
+            res.status(201).json({
+            message: "Document saved",
+            success: true,
+            document: updatedDoc
+            });
         }
     } catch (err) {
         console.error(err);
@@ -307,10 +442,7 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
 });
 
 
-//เหลือคือการเพิ่มเอกสารได้ แก้ไขเอกสารได้ แล้วก็
-router.put('/update_document_ByAuditor/:docId', async (req, res) => {
 
-});
 
 
 export default router;

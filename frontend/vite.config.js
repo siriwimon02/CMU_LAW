@@ -30,6 +30,18 @@ export default defineConfig({
       '/api/user' : {
         target: 'http://backend:3001',
         changeOrigin: true,
+      },
+      '/petitionAudit' : {
+        target: 'http://backend:3001',
+        changeOrigin: true,
+      },
+      '/petitionSuperAudit' : {
+        target: 'http://backend:3001',
+        changeOrigin: true,
+      },
+      '/petitionHeadAudit' : {
+        target: 'http://backend:3001',
+        changeOrigin: true,
       }
     }
   }

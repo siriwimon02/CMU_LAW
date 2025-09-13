@@ -27,29 +27,30 @@ function FormPetition() {
   // ✅ ใหม่: state เก็บไฟล์แนบหลายไฟล์
   const [attachments, setAttachments] = useState([]);
 
-    useEffect(() => {
-    const fetchDestinations = async () => {
-      try {
-            const res = await fetch("http://localhost:3001/api/destination");
-            const data = await res.json();
-            setDestinations(data);
-          } catch (err) {
-            console.error("โหลดรายการหน่วยงานไม่สำเร็จ", err);
-          }
-        };
-        fetchDestinations();
-      }, []);
+  //destination
+  useEffect(() => {
+  const fetchDestinations = async () => {
+    try {
+          const res = await fetch("http://localhost:3001/api/destination");
+          const data = await res.json();
+          setDestinations(data);
+        } catch (err) {
+          console.error("โหลดรายการหน่วยงานไม่สำเร็จ", err);
+        }
+      };
+      fetchDestinations();
+  }, []);
+  console.log(destinations);
 
-      console.log(destinations);
 
-      // เพิ่ม state & memo ด้านบนใกล้ ๆ state อื่น ๆ
-      const [confirmOpen, setConfirmOpen] = useState(false);
-      const [modalStep, setModalStep] = useState('confirm'); // 'confirm' | 'success'
+  // เพิ่ม state & memo ด้านบนใกล้ ๆ state อื่น ๆ
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [modalStep, setModalStep] = useState('confirm'); // 'confirm' | 'success'
 
-      const destinationName = useMemo(() => {
-        const d = destinations.find(x => String(x.id) === String(destinationId));
-        return d ? d.des_name : '';
-      }, [destinations, destinationId]);
+  const destinationName = useMemo(() => {
+    const d = destinations.find(x => String(x.id) === String(destinationId));
+    return d ? d.des_name : '';
+  }, [destinations, destinationId]);
 
   const isValid = useMemo(() => {
     return (
@@ -98,6 +99,9 @@ function FormPetition() {
     setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
+
+
+  // send data to backend
   const sendPetition = async (e) => {
     e.preventDefault();
     setError('');
@@ -110,23 +114,32 @@ function FormPetition() {
 
     setLoading(true);
     try {
-      const payload = {
-        destinationId: Number(destinationId),
-        title: title.trim(),
-        authorize_to: authorize_to.trim(),
-        position: position.trim(),
-        affiliation: affiliation.trim(),
-        authorize_text: authorize_text.trim(),
-      };
-      console.log(payload);
+      // ใช้ FormData แทน JSON
+      const formData = new FormData();
+      formData.append('destinationId', destinationId);
+      formData.append('title', title.trim());
+      formData.append('authorize_to', authorize_to.trim());
+      formData.append('position', position.trim());
+      formData.append('affiliation', affiliation.trim());
+      formData.append('authorize_text', authorize_text.trim());
+
+      // แนบไฟล์หลายไฟล์
+      attachments.forEach((file, idx) => {
+        formData.append('attachments', file); 
+        // backend จะได้ req.files['attachments']
+      });
+
+      // หลังจาก append ค่าเสร็จแล้ว
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
 
       const res = await fetch('http://localhost:3001/petition', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',      // ✅ ต้องตั้งเมื่อส่ง JSON
-          Authorization: `${token}`,        // ✅ ใช้ Bearer ถ้าหลังบ้านต้องการ
+          Authorization: `${token}`, 
         },
-        body: JSON.stringify(payload),             // ✅ แปลงเป็นสตริง
+        body: formData,
       });
 
       const data = await res.json().catch(() => ({}));
@@ -134,7 +147,7 @@ function FormPetition() {
         setError(data.message || `ส่งคำร้องไม่สำเร็จ (HTTP ${res.status})`);
       } else {
         setOkMsg(data.message || 'บันทึกและส่งหนังสือมอบอำนาจสำเร็จ');
-        setModalStep('success');     // ✅ เปลี่ยนคอนเทนต์เป็นหน้าสำเร็จ
+        setModalStep('success');
         resetForm();
       }
     } catch (err) {

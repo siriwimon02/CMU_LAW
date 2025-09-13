@@ -28,6 +28,7 @@ model User {
   documents       DocumentPetition[]
   actionLogs      DocumentActionsLog[]
   statusChanges   DocumentStatusHistory[] @relation("ChangedBy")
+  attachments     DocumentAttachment[]
 }
 
 model Department {
@@ -111,6 +112,8 @@ model DocumentAttachment {
   file_name   String
   docId       Int
   document    DocumentPetition @relation(fields: [docId], references: [id])
+  userId      Int
+  user        User             @relation(fields: [userId], references: [id])
   time_upload DateTime         @default(now())
 }
 

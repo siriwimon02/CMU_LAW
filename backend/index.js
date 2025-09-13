@@ -59,14 +59,14 @@ app.get('/auth/user', authMiddle, async(req, res) => {
       }
   });
 
-  const user_db = await prisma.Department.findMany({
+  const user_db = await prisma.department.findMany({
     where:{
       id: user_info.departmentId
     }
   });
   console.log(user_db);
 
-  const user_role = await prisma.RoleOfUser.findMany({
+  const user_role = await prisma.roleOfUser.findMany({
     where:{
       id: user_info.rId
     }
@@ -106,7 +106,7 @@ app.get('/api/department' , async(req, res) =>{
 
 //---------------------------role of user -----------------------------------//
 app.get('/api/roleofuser', async(req, res) =>{
-  const role = await prisma.RoleOfUser.findMany();
+  const role = await prisma.roleOfUser.findMany();
   res.json(role);
 
   console.log(role);
@@ -115,10 +115,32 @@ app.get('/api/roleofuser', async(req, res) =>{
 
 //----------------------------destination----------------------------------//
 app.get('/api/destination', async(req, res) => {
-  const des = await prisma.Destination.findMany();
+  const des = await prisma.destination.findMany();
   res.json(des);
 });
 
+
+
+//-------------------------- Get Document Attactment-----------------------------------//
+app.get('/api/doc_attactment', authMiddle, checkRole([3, 4, 5]), async(req, res) => {
+  const user = await prisma.user.findUnique({
+    where : { id : req.user.id },
+    include: { department: true }
+  });
+
+  const find_des = await prisma.destination.findUnique({
+      where : { des_name : user.department.department_name }
+  });
+
+  console.log(user, find_des);
+
+  if (!find_des) {
+      return res.status(403).json({ message: "User is not in destination department" });
+  }
+
+
+
+});
 
 
 app.listen(PORT, () => {
