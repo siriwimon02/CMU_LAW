@@ -62,12 +62,12 @@ router.get('/wait_to_accept_byHeadaudit', async (req, res) => {
         // เก็บ document status action log
         await Promise.all(
             document_audit_1st.map(doc =>
-                prisma.documentActionsLog.create({
+                prisma.documentStatusHistory.create({
                     data: {
                     document: { connect: { id: doc.id } },
                     status:   { connect: { id: find_status2.id } }, 
-                    changeBy: { connect: { id: user.id } },
-                    note_t:   `เปลี่ยนสถานะจาก ${doc.statusId} เป็น ${find_status2.id}`
+                    changedBy: { connect: { id: user.id } },
+                    note_t:   "เปลี่ยนสถานะจาก ตรวจสอบขั้นต้นเสร็จสิ้น เป็น อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า"
                     }
                 })
             )
@@ -127,7 +127,7 @@ router.get('/wait_to_accept_byHeadaudit', async (req, res) => {
         // console.log(setdoc);
     }
     // console.log(document_json);
-    res.json({ message : "find document waiting to accpet in department already", document_json})
+    res.json({ message : "find document waiting to audit by headAudit", document_json})
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -175,8 +175,13 @@ router.get('/document/:docId', async (req, res) => {
         });
         console.log(doc);
 
-        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-            return res.status(404).json({ message: "Document not found or not in correct status" });
+        
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
+        }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
         }
 
         const setdoc = {
@@ -194,7 +199,7 @@ router.get('/document/:docId', async (req, res) => {
             createdAt: doc.createdAt,
             date_of_signing: doc.date_of_signing
         };
-        res.json({ message: "Document waiting to be accepted in department", setdoc });
+        res.json({ message: "find document waiting to audit by headAudit", setdoc });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });
@@ -236,8 +241,13 @@ router.put('/update_st_audit_by_Headaudit/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
-        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-            return res.status(404).json({ message: "Document not found or not in correct status" });
+        
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
+        }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
         }
 
         const updatedDoc = await prisma.documentPetition.update({
@@ -247,17 +257,16 @@ router.put('/update_st_audit_by_Headaudit/:docId', async (req, res) => {
 
 
         // เก็บ document status action log
-        await prisma.documentActionsLog.create({
+        await prisma.documentStatusHistory.create({
             data: {
             document: { connect: { id: updatedDoc.id } },
             status:   { connect: { id: updatedDoc.statusId } },
-            changeBy: { connect: { id: user.id } },
-            note_t:   `อัพเดตสถานะจาก 'อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า' เป็น 'ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น' รายละเอียดเพิ่มเติม: ${text_suggesttion || "-"}`
+            changedBy: { connect: { id: user.id } },
+            note_t:   `รายละเอียดเพิ่มเติมการตรวจสอบ: ${text_suggesttion || "-"}`
             }
         });
 
-
-        res.json({ message: "Document status updated to the first audit is already", updatedDoc});
+        res.json({ message: "Document status updated to the audit is already by HeadAudit", updatedDoc});
     
     } catch (err) {
         console.error(err);
@@ -267,8 +276,9 @@ router.put('/update_st_audit_by_Headaudit/:docId', async (req, res) => {
 
 
 //แก้ไขสถานะ กลับไปแก้ไขเอกสาร ส่งไปที่ผู้ใช้แก้ไข
-router.put('/edit_ByAuditor/:docId', async (req, res) => {
-    const text_suggesttion = req.body;
+router.put('/edit_ByheadAuditor/:docId', async (req, res) => {
+
+    const {text_suggesttion} = req.body;
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
@@ -301,31 +311,34 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
-        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-            return res.status(404).json({ message: "Document not found or not in correct status" });
-        } else {
-            const updatedDoc = await prisma.documentPetition.update({
-                where: { id: documentId },
-                data: { statusId: find_status2.id }
-            });
 
-
-            // เก็บ document status action log
-            await prisma.documentActionsLog.create({
-                data: {
-                document: { connect: { id: updatedDoc.id } },
-                status:   { connect: { id: updatedDoc.statusId } },
-                changeBy: { connect: { id: user.id } },
-                note_t:   `อัพเดตสถานะจาก 'อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า' เป็น 'ส่งกลับให้แก้ไขจากการตรวจสอบโดยหัวหน้า' รายละเอียดเพิ่มเติม: ${text_suggesttion || "-"}`
-                }
-            });
-
-
-
-            //ส่ง data ไปยังเมลด้วย
-            //------------------------mail----------------//
-            res.json({message: "Document status updated to user to edit document", updatedDoc});
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
         }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
+        }
+
+        const updatedDoc = await prisma.documentPetition.update({
+            where: { id: documentId },
+            data: { statusId: find_status2.id }
+        });
+
+        // เก็บ document status action log
+        await prisma.documentStatusHistory.create({
+            data: {
+            document: { connect: { id: updatedDoc.id } },
+            status:   { connect: { id: updatedDoc.statusId } },
+            changedBy: { connect: { id: user.id } },
+            note_t:   `รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_suggesttion || "-"}`
+            }
+        });
+
+        //ส่ง data ไปยังเมลด้วย
+        //------------------------mail----------------//
+        res.json({message: "Document status updated to user to edit document", updatedDoc});
+    
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });

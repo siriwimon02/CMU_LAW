@@ -19,6 +19,9 @@ prisma/dev.db-journal
 *.sqlite
 *.sqlite-journal
 
+# Prisma migrations
+backend/prisma/migrations/
+
 # Build / Coverage
 dist/
 build/

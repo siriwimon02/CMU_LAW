@@ -34,10 +34,16 @@ router.get('/wait_to_accept', async (req, res) => {
     const find_des = await prisma.destination.findUnique({
       where : { des_name : user_dep.department_name }
     });
+    console.log(user_dep, find_des);
+
+    const find_d = await prisma.destination.findMany();
+    console.log(find_d, "checkkkkkkkk");
+
 
     if (!find_des) {
       return res.status(401).json( {message : "user not live in destination department"} )
     }
+
 
     //หา document ที่มาจากกองอื่นเพื่ออัพเดตสถานะ
     const document_audit_1st = await prisma.documentPetition.findMany({
@@ -60,11 +66,11 @@ router.get('/wait_to_accept', async (req, res) => {
       // เก็บ document status action log
       await Promise.all(
         document_audit_1st.map(doc =>
-          prisma.documentActionsLog.create({
+          prisma.documentStatusHistory.create({
             data: {
               document: { connect: { id: doc.id } },
               status: { connect: { id: find_status1.id } }, // ใช้ status ใหม่
-              changeBy: { connect: { id: user.id } },
+              changedBy: { connect: { id: user.id } },
               note_t: "เปลี่ยนสถานะจาก 'ส่งต่อไปยังกองอื่น' เป็น 'รอรับเข้ากอง'"
             }
           })
@@ -144,6 +150,7 @@ router.get('/document/:docId', async (req, res) => {
     const find_status1 = await prisma.status.findUnique({
       where: { status: "รอรับเข้ากอง" }
     });
+
     if (!find_status1) {
       return res.status(500).json({ message: "Status not found" });
     }
@@ -171,7 +178,11 @@ router.get('/document/:docId', async (req, res) => {
       }
     });
 
-    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+    if (!doc || doc.destinationId !== find_des.id) {
+      return res.status(404).json({ message: "Document not found in this destination department" });
+    }
+
+    if (doc.statusId !== find_status1.id){
       return res.status(404).json({ message: "Document not found or not in correct status" });
     }
 
@@ -236,8 +247,12 @@ router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
       where: { id: documentId }
     });
 
-    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-        return res.status(404).json({ message: "Document not found or not in correct status" });
+    if (!doc || doc.destinationId !== find_des.id) {
+      return res.status(404).json({ message: "Document not found in this destination department" });
+    }
+
+    if (doc.statusId !== find_status1.id){
+      return res.status(404).json({ message: "Document not found or not in correct status" });
     }
 
     //อัพเดตสถานะ
@@ -247,11 +262,11 @@ router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
     });
 
     // เก็บ document status action log
-    await prisma.documentActionsLog.create({
+    await prisma.documentStatusHistory.create({
         data: {
           document: { connect: { id: updatedDoc.id } },
           status:   { connect: { id: updatedDoc.statusId } },
-          changeBy: { connect: { id: user.id } },
+          changedBy: { connect: { id: user.id } },
           note_t:   "อัพเดตสถานะจาก 'รอรับเข้ากอง' เป็น 'รับเข้ากองเรียบร้อยแล้ว'"
         }
     });
@@ -271,7 +286,7 @@ router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
 
 
 //------------------------------------------------ตรวจสอบเอกสารขั้นสุดท้ายก่อนส่งไปให้ อธิการบดี-------------------------------------//
-//doc ที่รอรับเข้า
+//doc ที่รอตรวจสอบ
 router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
   try {
     const find_status1 = await prisma.status.findUnique({
@@ -322,11 +337,11 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
       // เก็บ document status action log
       await Promise.all(
         document_audit_1st.map(doc =>
-          prisma.documentActionsLog.create({
+          prisma.documentStatusHistory.create({
             data: {
               document: { connect: { id: doc.id } },
               status: { connect: { id: find_status2.id } }, 
-              changeBy: { connect: { id: user.id } },
+              changedBy: { connect: { id: user.id } },
               note_t: "เปลี่ยนสถานะจาก 'ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น' เป็น 'อยู่ระหว่างการตรวจสอบขั้นสุดท้าย'"
             }
           })
@@ -434,8 +449,12 @@ router.get('/document_forlastAudit/:docId', async (req, res) => {
         });
         console.log(doc);
 
-        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-            return res.status(404).json({ message: "Document not found or not in correct status" });
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
+        }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
         }
 
         const setdoc = {
@@ -459,6 +478,9 @@ router.get('/document_forlastAudit/:docId', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
 
 
 //อัพเดตยืนการตรวจเอกสารรอบสุดท้าย
@@ -494,8 +516,13 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
-        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-            return res.status(404).json({ message: "Document not found or not in correct status" });
+
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
+        }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
         }
 
         //อัพเดตสถานะ
@@ -505,11 +532,11 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
         });
 
         // เก็บ document status action log
-        await prisma.documentActionsLog.create({
+        await prisma.documentStatusHistory.create({
             data: {
               document: { connect: { id: updatedDoc.id } },
               status:   { connect: { id: updatedDoc.statusId } },
-              changeBy: { connect: { id: user.id } },
+              changedBy: { connect: { id: user.id } },
               note_t:   "อัพเดตสถานะจาก 'อยู่ระหว่างการตรวจสอบขั้นสุดท้าย' เป็น 'ตรวจสอบขั้นสุดท้ายเสร็จสิ้น'"
             }
         });
@@ -570,7 +597,11 @@ router.put('/change_destination/:docId', async( req, res) => {
       where: { id: documentId }
     });
 
-    if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
+    if (!doc || doc.destinationId !== find_des.id) {
+      return res.status(404).json({ message: "Document not found in this destination department" });
+    }
+
+    if (doc.statusId !== find_status1.id){
       return res.status(404).json({ message: "Document not found or not in correct status" });
     }
 
@@ -587,13 +618,17 @@ router.put('/change_destination/:docId', async( req, res) => {
         }
     });
 
+    const new_des = await prisma.destination.findUnique({
+      where : { id : new_destinationId }
+    });
+
     // เก็บ document status action log
-    await prisma.documentActionsLog.create({
+    await prisma.documentStatusHistory.create({
         data: {
           document: { connect: { id: updatedDoc.id } },
           status:   { connect: { id: updatedDoc.statusId } },
-          changeBy: { connect: { id: user.id } },
-          note_t: `อัพเดตสถานะจาก 'รอรับเข้ากอง' เป็น 'ส่งต่อไปยังกองอื่น' ส่งไปยังกอง ${new_destinationId} รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
+          changedBy: { connect: { id: user.id } },
+          note_t: `ส่งไปยังกอง ${new_des.des_name} รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
         }
     });
 
@@ -641,9 +676,15 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
-        if (!doc || doc.destinationId !== find_des.id || doc.statusId !== find_status1.id) {
-            return res.status(404).json({ message: "Document not found or not in correct status" });
+        
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
         }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
+        }
+
 
         //อัพเดต status
         const updatedDoc = await prisma.documentPetition.update({
@@ -652,12 +693,12 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
         });
 
         // เก็บ document status action log
-        await prisma.documentActionsLog.create({
+        await prisma.documentStatusHistory.create({
             data: {
               document: { connect: { id: updatedDoc.id } },
               status:   { connect: { id: updatedDoc.statusId } },
-              changeBy: { connect: { id: user.id } },
-              note_t: `อัพเดตสถานะจาก 'อยู่ระหว่างการตรวจสอบขั้นสุดท้าย' เป็น 'ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย' รายละเอียดเพิ่มเติม: ${test_edit_suggesttion || "-"}`
+              changedBy: { connect: { id: user.id } },
+              note_t: `รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${test_edit_suggesttion || "-"}`
             }
         });
 

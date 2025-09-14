@@ -72,15 +72,14 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
       }
     });
 
-
     // เก็บ document status action log
-    await prisma.documentActionsLog.create({
-        data: {
+    await prisma.documentStatusHistory.create({
+    data: {
         document: { connect: { id: doc.id } },
         status:   { connect: { id: doc.statusId } },
-        changeBy: { connect: { id: doc.userId } },
-        note_t:   "เพิ่มคำร้องเข้าไปใหม่"
-        }
+        changedBy: { connect: { id: req.user.id } },    // แค่ id ของ user
+        note_t: "เพิ่มคำร้องเข้าไปใหม่"
+    }
     });
 
     // บันทึกไฟล์แนบ (ใช้ for...of เพราะรองรับ await)
@@ -266,12 +265,12 @@ router.put('/edit/:docId', upload.array("attachments", 5),async (req, res) => {
 
 
         // เก็บ document status action log
-        await prisma.documentActionsLog.create({
+        await prisma.documentStatusHistory.create({
             data: {
             document: { connect: { id: updatedDoc.id } },
             status:   { connect: { id: updatedDoc.statusId } },
-            changeBy: { connect: { id: updatedDoc.userId } },
-            note_t:   "ส่งคำร้องที่ user แก้ไขเสร็จเรียบร้อย"
+            changedBy: { connect: { id: req.user.id } }, 
+            note_t:  "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"
             }
         });
 
@@ -301,6 +300,88 @@ router.put('/edit/:docId', upload.array("attachments", 5),async (req, res) => {
         console.error("Update failed:", error);
         res.status(500).json({ error: "Failed to update document" });
     }
+});
+
+
+router.get('/docStatus/:docId', async (req, res) => {
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+        return res.status(400).json({ error: "docId ต้องเป็นตัวเลข" });
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id }
+        });
+
+        const doc = await prisma.documentPetition.findUnique({
+            where : { id : documentId }
+        })
+
+        if ( !doc ){
+            return res.status(404).json({ error: "not found document" });
+        }
+
+        if ( doc.userId !== user.id ) {
+            return res.status(404).json({ error: "user not create this document" });
+        }
+
+
+        const find_status1 = await prisma.status.findUnique({
+            where : {status : "ตรวจสอบขั้นต้นเสร็จสิ้น"}
+        });
+
+        const find_status2 = await prisma.status.findUnique({
+            where : {status : "อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า"}
+        });
+
+        const find_status3 = await prisma.status.findUnique({
+            where : {status : "ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น"}
+        });
+
+        const find_status4 = await prisma.status.findUnique({
+            where : {status : "ส่งกลับให้แก้ไขจากการตรวจสอบโดยหัวหน้า"}
+        });
+
+        const find_status5 = await prisma.status.findUnique({
+            where : {status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย"}
+        });
+
+        const find_status6 = await prisma.status.findUnique({
+            where : {status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
+        });
+
+        const find_status7 = await prisma.status.findUnique({
+            where : {status : "ตรวจสอบโดยอธิการบดีเสร็จสิ้น"}
+        });
+
+
+        const find_statusHistory = await prisma.documentStatusHistory.findMany({
+            where: { documentId: documentId },
+            include : {
+                status : true,
+                changedBy : true
+            },
+            orderBy: { changedAt: 'asc' }
+        });
+
+
+        const set_json = find_statusHistory.map(h => ({
+            docId: h.documentId,
+            ChangeBy: h.changedBy.email || null,
+            status: h.status.status || null,
+            changeAt: h.changedAt,
+            note: h.note_t
+        }));
+
+
+        res.json({ message : "find document history status", set_json})
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+
 });
 
 
