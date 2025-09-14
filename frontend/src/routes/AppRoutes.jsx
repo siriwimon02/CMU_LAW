@@ -15,6 +15,9 @@ import Modify from "../pages/staff/modify";
 import TrackingForChancellor from "../pages/Chancellor/tracking"
 // admin
 import Admin_Panel from '../pages/admin/admin_panel';
+// ผู้อำนวยการคัดกรองเอกสาร
+import Seendorser from "../pages/seendorser";
+
 
 export default function AppRoutes() {
 
@@ -37,6 +40,8 @@ export default function AppRoutes() {
         <Route path="/admin_panel" element={<Admin_Panel/>} />
         {/* อธิการบดี */}
         <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
+        {/* ผู้อำนวยการคัดกรองเอกสาร */}
+        <Route path="/seendorser" element={<Seendorser />} />
       </Routes>
     </Router>
   );
