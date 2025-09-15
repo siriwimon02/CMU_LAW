@@ -713,5 +713,192 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
 });
 
 
+
+router.get('/history_accept', async (req, res) => {
+    try {
+        const find_st = await prisma.status.findUnique({
+            where : { status : "รับเข้ากองเรียบร้อย" }
+        });
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentStatusHistory.findMany({
+            where: {
+                statusId: find_st.id,
+                document: {
+                    destinationId: find_des.id
+                }
+            },
+            include: {
+                document: true,
+                changedBy: true,
+                status: true
+            },
+            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
+        });
+
+        
+        const set_json = doc.map(h => ({
+            docId: h.documentId,
+            ChangeBy: h.changedBy.email || null,
+            status: h.status.status || null,
+            changeAt: h.changedAt,
+            note: h.note_t,
+            doc_title : h.document.title,
+            doc_id_doc : h.document.id_doc
+        }));
+
+
+        res.json({
+            message: "History in Destination of status : รับเข้ากองเรียบร้อย",
+            data: set_json
+        });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+router.get('/history_change_des', async (req, res) => {
+    try {
+        const find_st = await prisma.status.findUnique({
+            where : { status : "ส่งต่อไปยังกองอื่น" }
+        });
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentStatusHistory.findMany({
+            where: {
+                statusId: find_st.id,
+                changedBy: {
+                  departmentId: user.departmentId 
+                }
+            },
+            include: {
+                document: {include : { destination : true }},
+                changedBy: true,
+                status: true
+            },
+            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
+        });
+
+        const f_doc = await prisma.documentStatusHistory.findMany({
+          where: {
+            statusId: find_st.id
+          }
+        });
+        console.log(f_doc);
+
+        
+        const set_json = doc.map(h => ({
+            docId: h.documentId,
+            ChangeBy: h.changedBy.email || null,
+            status: h.status.status || null,
+            changeAt: h.changedAt,
+            note: h.note_t,
+            doc_title : h.document.title,
+            doc_id_doc : h.document.id_doc,
+            new_des : h.document.destination.des_name
+        }));
+
+
+        res.json({
+            message: "History in Destination of status : ส่งต่อไปยังกองอื่น",
+            data: set_json
+        });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+router.get('/history_thelastAudit', async (req, res) => {
+    try {
+        const find_st = await prisma.status.findUnique({
+            where : { status : "ตรวจสอบขั้นต้นเสร็จสิ้น" }
+        });
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentStatusHistory.findMany({
+            where: {
+                statusId: find_st.id,
+                document: {
+                    destinationId: find_des.id
+                }
+            },
+            include: {
+                document: true,
+                changedBy: true,
+                status: true
+            },
+            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
+        });
+
+        
+        const set_json = doc.map(h => ({
+            docId: h.documentId,
+            ChangeBy: h.changedBy.email || null,
+            status: h.status.status || null,
+            changeAt: h.changedAt,
+            note: h.note_t,
+            doc_title : h.document.title,
+            doc_id_doc : h.document.id_doc
+        }));
+
+
+        res.json({
+            message: "History in Destination of status : ตรวจสอบขั้นต้นเสร็จสิ้น",
+            data: set_json
+        });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+
+
 export default router;
 

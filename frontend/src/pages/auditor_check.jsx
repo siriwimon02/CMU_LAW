@@ -4,7 +4,7 @@ import Header from '../components/trackingHeader';
 
 function Auditor_Check() {
     const token = localStorage.getItem("token");
-    // const [documentAll, setDocumentAll] = useState([]); // เริ่มเป็น array
+    const [documentAll, setDocumentAll] = useState([]); // เริ่มเป็น array
   
     //ถ้าไม่มี token ให้เด้งไป login
     if (!token) {
@@ -12,80 +12,78 @@ function Auditor_Check() {
       return <Navigate to="/login" replace />;
     }
   
-  // const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // useEffect(() => {
-  //   async function getDocandUser() {
-  //     try {
-  //       const res = await fetch("http://localhost:3001/petitionHeadAudit/wait_to_accept_byHeadaudit", {
-  //         headers: { Authorization: `${token}` },
-  //       });
-  //       const docs = await res.json();
-  //       setDocumentAll(docs.document_json || []);
-  //       console.log(docs.document_json);
-  //     } catch (e) {
-  //       console.error(e);
-  //       setDocumentAll([]);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   }
-  //   getDocandUser();
-  // }, [token]);
-
-  // useEffect(() => {
-  //   console.log("Updated documentAll:", documentAll);
-  // }, [documentAll]);
-
-
-
-
-    const fakeData = [
-    {
-    id: 1,
-    doc_id: undefined,
-    department_name: '1',
-    destination_name: 'สำนักงานบริหารงานวิจัย ',
-    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านกำแพงเพชร',
-    authorize_to: 'เบล กำแพงเพชร',
-    position: 'หัวหน้าชมรม',
-    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-    authorize_text: 'ขอเงิน',
-    status_name: 'ตรวจสอบเอกสารเรียบร้อยเเล้ว',
-    createdAt: "2025-09-13T12:01:05.381Z",
-    date_of_signing: null
-    },
-    {
-    id: 2,
-    doc_id: undefined,
-    department_name: '1',
-    destination_name: 'สำนักงานบริหารงานวิจัย ',
-    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านสุโขทัย',
-    authorize_to: 'น้อต สุโขทัย',
-    position: 'หัวหน้าชมรม',
-    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-    authorize_text: 'ขอเงิน',
-    status_name: 'รอการตรวจสอบ',
-    createdAt: "2025-09-13T12:01:05.381Z",
-    date_of_signing: null
-    },
-    {
-    id: 3,
-    doc_id: undefined,
-    department_name: '1',
-    destination_name: 'สำนักงานบริหารงานวิจัย ',
-    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
-    authorize_to: 'แก้ม จอมทอง',
-    position: 'หัวหน้าชมรม',
-    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-    authorize_text: 'ขอเงิน',
-    status_name: 'รอการตรวจสอบ',
-    createdAt: "2025-09-13T12:01:05.381Z",
-    date_of_signing: null
+  useEffect(() => {
+    async function getDocandUser() {
+      try {
+        const res = await fetch("http://localhost:3001/petitionHeadAudit/wait_to_accept_byHeadaudit", {
+          headers: { Authorization: `${token}` },
+        });
+        const docs = await res.json();
+        setDocumentAll(docs.document_json || []);
+        console.log(docs.document_json);
+      } catch (e) {
+        console.error(e);
+        setDocumentAll([]);
+      } finally {
+        setLoading(false);
+      }
     }
+    getDocandUser();
+  }, [token]);
+
+  useEffect(() => {
+    console.log("Updated documentAll:", documentAll);
+  }, [documentAll]);
+
+
+  //   const fakeData = [
+  //   {
+  //   id: 1,
+  //   doc_id: undefined,
+  //   department_name: '1',
+  //   destination_name: 'สำนักงานบริหารงานวิจัย ',
+  //   title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านกำแพงเพชร',
+  //   authorize_to: 'เบล กำแพงเพชร',
+  //   position: 'หัวหน้าชมรม',
+  //   affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+  //   authorize_text: 'ขอเงิน',
+  //   status_name: 'ตรวจสอบเอกสารเรียบร้อยเเล้ว',
+  //   createdAt: "2025-09-13T12:01:05.381Z",
+  //   date_of_signing: null
+  //   },
+  //   {
+  //   id: 2,
+  //   doc_id: undefined,
+  //   department_name: '1',
+  //   destination_name: 'สำนักงานบริหารงานวิจัย ',
+  //   title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านสุโขทัย',
+  //   authorize_to: 'น้อต สุโขทัย',
+  //   position: 'หัวหน้าชมรม',
+  //   affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+  //   authorize_text: 'ขอเงิน',
+  //   status_name: 'รอการตรวจสอบ',
+  //   createdAt: "2025-09-13T12:01:05.381Z",
+  //   date_of_signing: null
+  //   },
+  //   {
+  //   id: 3,
+  //   doc_id: undefined,
+  //   department_name: '1',
+  //   destination_name: 'สำนักงานบริหารงานวิจัย ',
+  //   title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
+  //   authorize_to: 'แก้ม จอมทอง',
+  //   position: 'หัวหน้าชมรม',
+  //   affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+  //   authorize_text: 'ขอเงิน',
+  //   status_name: 'รอการตรวจสอบ',
+  //   createdAt: "2025-09-13T12:01:05.381Z",
+  //   date_of_signing: null
+  //   }
     
-  ]
-  const [documentAll, setDocumentAll] = useState(fakeData);
+  // ]
+  // const [documentAll, setDocumentAll] = useState(fakeData);
 
 
 //   const handleCheck = async (docId) => {
@@ -167,7 +165,6 @@ function Auditor_Check() {
     setCheckPopupOpen(false);
   };
 
-  if (loading) return <div className="text-center mt-10">Loading...</div>;
 
   return (
     <div className="min-h-screen font-kanit bg-[#F8F8F8]">

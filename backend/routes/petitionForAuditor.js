@@ -374,9 +374,6 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
 
 
 
-
-
-
 //การเพิ่มเอกสารได้ แก้ไขเอกสารได้ ของuser โดยพนักงาน คือพนง สามารถเข้าไปแก้ไขเอกสารได้ แก้ไขคำผิด
 router.put('/update_document_ByAuditor/:docId', upload.array("attachments", 5), async (req, res) => {
     const {title, authorizeTo, position, affiliation, authorizeText} = req.body
@@ -458,7 +455,68 @@ router.put('/update_document_ByAuditor/:docId', upload.array("attachments", 5), 
     }
 });
 
+router.get('/history_theAuditByauditor', async (req, res) => {
+    try {
+        const find_st = await prisma.status.findUnique({
+            where : { status : "ตรวจสอบขั้นต้นเสร็จสิ้น" }
+        });
 
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentStatusHistory.findMany({
+            where: {
+                statusId: find_st.id,
+                changedBy: {
+                  departmentId: user.departmentId 
+                }
+            },
+            include: {
+                document: true,
+                changedBy: true,
+                status: true
+            },
+            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
+        });
+
+        const d_c = await prisma.documentStatusHistory.findMany({
+            where : { statusId : find_st.id }
+        })
+
+        console.log(d_c);
+
+        
+        const set_json = doc.map(h => ({
+            docId: h.documentId,
+            ChangeBy: h.changedBy.email || null,
+            status: h.status.status || null,
+            changeAt: h.changedAt,
+            note: h.note_t,
+            doc_title : h.document.title,
+            doc_id_doc : h.document.id_doc
+        }));
+
+
+        res.json({
+            message: "History in Destination of status : ตรวจสอบขั้นต้นเสร็จสิ้น",
+            data: set_json
+        });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
 
 

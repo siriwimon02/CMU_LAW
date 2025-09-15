@@ -360,7 +360,8 @@ router.get('/docStatus/:docId', async (req, res) => {
             where: { documentId: documentId },
             include : {
                 status : true,
-                changedBy : true
+                changedBy : true,
+                document : true
             },
             orderBy: { changedAt: 'asc' }
         });
@@ -371,7 +372,9 @@ router.get('/docStatus/:docId', async (req, res) => {
             ChangeBy: h.changedBy.email || null,
             status: h.status.status || null,
             changeAt: h.changedAt,
-            note: h.note_t
+            note: h.note_t,
+            doc_title : h.document.title,
+            doc_id_doc : h.document.id_doc
         }));
 
 
