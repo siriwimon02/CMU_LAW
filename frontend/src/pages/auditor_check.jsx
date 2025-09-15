@@ -4,10 +4,9 @@ import Header from '../components/trackingHeader';
 
 function Auditor_Check() {
     const token = localStorage.getItem("token");
-    const [userInfo, setUserInfo] = useState(null);
     // const [documentAll, setDocumentAll] = useState([]); // เริ่มเป็น array
   
-    // ถ้าไม่มี token ให้เด้งไป login
+    //ถ้าไม่มี token ให้เด้งไป login
     if (!token) {
       alert("Please Login or SignIn First!!!");
       return <Navigate to="/login" replace />;
@@ -18,18 +17,12 @@ function Auditor_Check() {
   // useEffect(() => {
   //   async function getDocandUser() {
   //     try {
-  //       const res1 = await fetch("http://localhost:3001/auth/user", {
-  //         headers: { Authorization: `Bearer ${token}` },
+  //       const res = await fetch("http://localhost:3001/petitionHeadAudit/wait_to_accept_byHeadaudit", {
+  //         headers: { Authorization: `${token}` },
   //       });
-  //       const user = await res1.json();
-
-  //       const res2 = await fetch("http://localhost:3001/wait_to_accept_byHeadaudit", {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       });
-  //       const docs = await res2.json();
-
-  //       setUserInfo(user);
+  //       const docs = await res.json();
   //       setDocumentAll(docs.document_json || []);
+  //       console.log(docs.document_json);
   //     } catch (e) {
   //       console.error(e);
   //       setDocumentAll([]);
@@ -39,6 +32,14 @@ function Auditor_Check() {
   //   }
   //   getDocandUser();
   // }, [token]);
+
+  // useEffect(() => {
+  //   console.log("Updated documentAll:", documentAll);
+  // }, [documentAll]);
+
+
+
+
     const fakeData = [
     {
     id: 1,
@@ -82,36 +83,91 @@ function Auditor_Check() {
     createdAt: "2025-09-13T12:01:05.381Z",
     date_of_signing: null
     }
+    
   ]
   const [documentAll, setDocumentAll] = useState(fakeData);
 
 
-  const handleCheck = (docId) => {
-    alert(`ตรวจสอบเอกสาร ID: ${docId} เรียบร้อยแล้ว`);
-    setDocumentAll(prev => prev.filter(d => d.id !== docId));
-  };
+//   const handleCheck = async (docId) => {
+//   try {
+//     const res = await fetch(`http://localhost:3001/update_st_audit_by_Headaudit/${docId}`, {
+//       method: "PUT",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`
+//       },
+//       body: JSON.stringify("-") // ถ้าไม่มีรายละเอียด
+//     });
+
+//     if (res.ok) {
+//       const data = await res.json();
+//       alert(`ตรวจสอบเอกสาร ID: ${docId} เรียบร้อยแล้ว`);
+
+//       // อัปเดต documentAll โดยเปลี่ยน status_name เป็นสถานะใหม่
+//       setDocumentAll(prev =>
+//         prev.map(d =>
+//           d.id === docId
+//             ? { ...d, status_name: "ตรวจสอบเอกสารเรียบร้อยเเล้ว" } // แทนด้วย status ที่ API คืนมา หรือค่า greenList
+//             : d
+//         )
+//       );
+//     }
+//   } catch (err) {
+//     console.error(err);
+//   }
+// };
 
   const greenList = ["ตรวจสอบเอกสารเรียบร้อยเเล้ว"];
   const orangeList = ["รอการตรวจสอบ", "อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า"];
   const redList = ["ไม่อนุมัติ"];
-   
-  const [popupOpen, setPopupOpen] = useState(false);
+  // state เก็บสถานะที่เลือก
+  const [filterStatus, setFilterStatus] = useState("ทั้งหมด");
+
+  // filter documents ตามสถานะที่เลือก
+  const filteredDocs = documentAll.filter((doc) => {
+    if (filterStatus === "ทั้งหมด") return true;
+    return doc.status_name === filterStatus;
+  });
+
+  // แก้ไข
+    
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [checkPopupOpen, setCheckPopupOpen] = useState(false);
+  const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [reason, setReason] = useState("");
 
-  const openPopup = (doc) => {
+  const openEditPopup = (doc) => {
     setSelectedDoc(doc);
-    setPopupOpen(true);
+    setEditPopupOpen(true);
   };
 
-  const submitReason = () => {
+  const submitEdit = () => {
     alert(`ส่งเอกสาร ID: ${selectedDoc.id} กลับแก้ไข: ${reason}`);
     setDocumentAll(prev => prev.filter(d => d.id !== selectedDoc.id));
-    setPopupOpen(false);
+    setEditPopupOpen(false);
     setReason("");
   };
 
-  // if (loading) return <div className="text-center mt-10">Loading...</div>;
+  //   ตรวจสอบ
+  const handleCheck = (doc) => {
+    setSelectedDoc(doc);
+    setCheckPopupOpen(true);
+  };
+
+
+  const submitCheck = () => {
+    alert(`ตรวจสอบเอกสาร ID: ${selectedDoc.id} เรียบร้อยแล้ว`);
+    setDocumentAll(prev =>
+      prev.map(d =>
+        d.id === selectedDoc.id
+          ? { ...d, status_name: "ตรวจสอบเอกสารเรียบร้อยเเล้ว" }
+          : d
+      )
+    );
+    setCheckPopupOpen(false);
+  };
+
+  if (loading) return <div className="text-center mt-10">Loading...</div>;
 
   return (
     <div className="min-h-screen font-kanit bg-[#F8F8F8]">
@@ -119,12 +175,24 @@ function Auditor_Check() {
       <div className="flex flex-col items-center justify-center mt-5 pb-10">
         <div className="bg-white rounded-2xl shadow-2xl border border-[#F5F5F5] w-[85vw] h-[85vh] justify-center items-center overflow-auto p-5">
           <p className="text-2xl font-bold mb-5">รายการเอกสารที่ต้องตรวจสอบ</p>
+          <div className="flex justify-left  mb-2">
+            <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="border border-[#B9B9B9] rounded-xl px-15 py-2 text-l"
+            >
+                <option value="ทั้งหมด">ทั้งหมด</option>
+                <option value="รอการตรวจสอบ">รอการตรวจสอบ</option>
+                <option value="ตรวจสอบเอกสารเรียบร้อยเเล้ว">ตรวจสอบแล้ว</option>
+                <option value="ไม่อนุมัติ">ไม่อนุมัติ</option>
+            </select>
+            </div>
 
           {documentAll.length === 0 && (
             <p className="text-2xl text-gray-500 flex justify-center">ไม่มีเอกสารที่ต้องตรวจสอบ</p>
           )}
 
-          {documentAll.map((doc) => {
+          {filteredDocs.map((doc) => {
             const created = doc.createdAt
               ? new Date(doc.createdAt).toLocaleString("th-TH", {
                   timeZone: "Asia/Bangkok",
@@ -160,13 +228,18 @@ function Auditor_Check() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => alert(`ดูรายละเอียด ID: ${doc.id}`)}
-                      className="bg-gray-800 text-white px-3 py-1 rounded hover:bg-gray-900 text-sm"
+                      className="bg-white border border-gray text-black px-4 py-2 rounded-xl flex items-center text-sm"
                     >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                    </svg>
                       ดูรายละเอียด
                     </button>
                     <button
                       onClick={() => alert(`ดูเอกสาร ID: ${doc.id}`)}
-                      className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 text-sm"
+                      className="bg-[#66009F] text-white px-4 py-2 rounded-xl hover:bg-purple-700 text-sm flex items-center"
                     >
                       ดูเอกสาร
                     </button>
@@ -174,50 +247,77 @@ function Auditor_Check() {
                     {showCheckButton && (
                       <>
                         <button
-                          onClick={() => handleCheck(doc.id)}
-                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+                          onClick={() => handleCheck(doc)}
+                          className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 text-sm flex items-center"
                         >
                           ตรวจสอบ
                         </button>
                         <button
-                          onClick={() => openPopup(doc)}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
+                           onClick={() => openEditPopup(doc)}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 text-sm flex items-center"
                         >
                           ส่งแก้ไข
                         </button>
                       </>
                     )}
-                    {popupOpen && selectedDoc && (
-                      <div className="fixed inset-0 flex items-center justify-center ">
-                        <div className="absolute inset-0 bg-black/20"></div>
-                        <div className="relative bg-white rounded-xl p-6 w-96 shadow-lg flex flex-col gap-1">
-
-                          <p className="text-2xl text-[#0073D9] font-bold">ส่งกลับเพื่อดำเนินการแก้ไข</p>
-                          <p className="text-sm text-black">เรื่อง: {selectedDoc.title}</p>
-                          <p className="text-sm text-black">ผู้ยื่นคำขอ: {selectedDoc.authorize_to}</p>
-                          <textarea
-                            className="border p-2 rounded h-24 resize-none"
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            placeholder="พิมพ์เหตุผลที่นี่..."
-                          />
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => setPopupOpen(false)}
-                              className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
-                            >
-                              ยกเลิก
-                            </button>
-                            <button
-                              onClick={submitReason}
-                              className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                            >
-                              ส่งแก้ไข
-                            </button>
-                          </div>
+                    {/* ตรวจสอบ */}
+                    {checkPopupOpen && selectedDoc && (
+                        <div className="fixed inset-0 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/20"></div>
+                            <div className="relative bg-white rounded-xl p-6 w-[400px] shadow-lg">
+                            <p className="text-[#05A967] text-2xl font-bold ">ตรวจสอบคำขอ</p>
+                            <p className="text-sm text-black">เรื่อง: {selectedDoc.title}</p>
+                            <p className="text-sm text-black">ผู้ยื่นคำขอ: {selectedDoc.authorize_to}</p>
+                            <div className="flex justify-end gap-2 mt-4">
+                                <button
+                                onClick={() => setCheckPopupOpen(false)}
+                                className="px-4 py-2 rounded-xl bg-gray-300 hover:bg-gray-400"
+                                >
+                                ยกเลิก
+                                </button>
+                                <button
+                                onClick={submitCheck}
+                                className="px-4 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700"
+                                >
+                                ยืนยันตรวจสอบ
+                                </button>
+                            </div>
+                            </div>
                         </div>
-                      </div>
-                    )}
+                        )}
+                    {/* แก้ไข */}
+                    {editPopupOpen && selectedDoc && (
+                        <div className="fixed inset-0 flex items-center justify-center ">
+                            <div className="absolute inset-0 bg-black/20"></div>
+                            <div className="relative bg-white rounded-xl p-6 w-96 shadow-lg flex flex-col gap-1">
+
+                            <p className="text-2xl text-[#0073D9] font-bold">ส่งกลับเพื่อดำเนินการแก้ไข</p>
+                            <p className="text-sm text-black">เรื่อง: {selectedDoc.title}</p>
+                            <p className="text-sm text-black">ผู้ยื่นคำขอ: {selectedDoc.authorize_to}</p>
+                            <textarea
+                                className="border p-2 rounded h-24 resize-none"
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="พิมพ์เหตุผลที่นี่..."
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button
+                                onClick={() => setEditPopupOpen(false)}
+                                className="px-4 py-2 rounded-xl bg-gray-300 hover:bg-gray-400"
+                                >
+                                ยกเลิก
+                                </button>
+                                <button
+                                onClick={submitEdit}
+                                className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                                >
+                                ส่งแก้ไข
+                                </button>
+                            </div>
+                            </div>
+                        </div>
+                        )}
+
                   </div>
                 </div>
               </div>

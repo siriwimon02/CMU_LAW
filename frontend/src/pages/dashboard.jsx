@@ -60,6 +60,10 @@ function Dashboard() {
     navigate('/autitor_check');
   }
 
+  const ClicktoEndorser = () => {
+    navigate('/seendorser');
+  }
+
 
   const handleClick = (allowedRoles, action) => {
     if (allowedRoles.includes(userInfo.role_n)) {
@@ -278,7 +282,7 @@ function Dashboard() {
         {/* block4 */}
         {/* ผู้อำนวยการกอง */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-            onClick={() => handleClick(["spv_auditor"], ClicktoPetition)}
+            onClick={() => handleClick(["spv_auditor"], ClicktoEndorser)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -352,7 +356,7 @@ function Dashboard() {
 
       {/* ผู้อำนวยการ*/}
       {/* onClick ยังไม่ถูกที่ ทุกอัน */}
-      {userInfo.role_n === "endorser" && (
+      {(userInfo.role_n === "endorser" || userInfo.role_n === "se_endorser") && (
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
         {/* block1 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl shadow-blue-400/50 rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"

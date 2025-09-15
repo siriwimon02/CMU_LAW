@@ -13,7 +13,7 @@ const router = express.Router();
 
 //doc ที่รอรับเข้า + อัพเดตสถานะให้ตรวจสอบขั้นต้น
 router.get('/wait_to_accept', async (req, res) => {
-    
+  
   try {
     const find_status1 = await prisma.status.findUnique({
       where : { status : "รอรับเข้ากอง" }
