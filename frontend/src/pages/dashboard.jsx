@@ -9,6 +9,7 @@ function Dashboard() {
   const [userInfo, setUserInfo] = useState(null);
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+   const [showPopup, setShowPopup] = useState(false);
 
   //ถ้าไม่ได้ Login เข้าไม่ได้
 
@@ -55,6 +56,20 @@ function Dashboard() {
     navigate('/admin_panel');
   }
 
+  const ClicktoHeadAuditor = () => {
+    navigate('/autitor_check');
+  }
+
+
+  const handleClick = (allowedRoles, action) => {
+    if (allowedRoles.includes(userInfo.role_n)) {
+      action(); // ถ้ามีสิทธิ์ → เรียกฟังก์ชันจริง
+    } else {
+      setShowPopup(true); // ถ้าไม่มีสิทธิ์ → เปิด popup
+    }
+  };
+
+
 
   if (!userInfo) {
     return <div>Loading...</div>;  // หรือ แสดง loading ขณะรอข้อมูล
@@ -63,7 +78,7 @@ function Dashboard() {
     
 
   return (
-    <div className="min-h-screen font-kanit bg-[#F8F8F8]">
+    <div className="min-h-screen font-kanit bg-[#F8F8F8] pb-10">
       <div className="flex justify-between items-center w-full px-5 py-4">
         <img
           src="/images/Logo.svg"
@@ -174,12 +189,30 @@ function Dashboard() {
       )}
 
       {/* ผู้ตรวจสอบ */}
+      {/*เตือนการเข้าถึง*/}
+      {showPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/20 z-50">
+          <div className="bg-white p-10 rounded-xl shadow-2xl w-[320px] text-center">
+            <p className="text-xl font-bold text-red-600 mb-4">
+              ไม่มีสิทธิ์ในการเข้าถึง
+            </p>
+            <button
+              onClick={() => setShowPopup(false)}
+              className="bg-[#66009F] text-white px-4 py-2 rounded-lg hover:bg-purple-800 transition"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+
+      )}
        {/* onClick ยังไม่ถูกที่ ทุกอัน */}
-       {(userInfo.role_n === "auditor" || userInfo.role_n === "spv_auditor")&& (
+       {(userInfo.role_n === "auditor" || userInfo.role_n === "spv_auditor" || userInfo.role_n === "head_auditor"  )&& (
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
           {/* block1 */}
+          {/* หัวหน้างาน */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoPetition}
+          onClick={() => handleClick(["head_auditor"], ClicktoHeadAuditor)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -195,12 +228,13 @@ function Dashboard() {
                 </path></svg>
              </div>
           </div>
-          <p className="text-[#66009F] font-bold text-2xl">หัวหน้า</p>
+          <p className="text-[#66009F] font-bold text-2xl">หัวหน้างาน</p>
           <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบ อนุมัติ คำขออนุมัติเอกสารตามขั้นตอนที่กำหนด</p>
         </div>
         {/* block2 */}
+        {/* พนักงาน */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoWatchPetition}
+           onClick={() => handleClick(["auditor"], ClicktoPetition)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -216,12 +250,13 @@ function Dashboard() {
                 </path></svg>
              </div>
           </div>
-          <p className="text-[#66009F] font-bold text-2xl">พนักงาน</p>
+          <p className="text-[#66009F] font-bold text-2xl">เจ้าหน้าที่</p>
           <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบ อนุมัติ คำขอเอกสารของพนักงาน</p>
         </div>
         {/* block3 */}
+        {/* ผู้อำนวยการกอง */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoWatchPetition}
+           onClick={() => handleClick(["spv_auditor"], ClicktoPetition)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -241,8 +276,9 @@ function Dashboard() {
           <p className="text-[#B9B9B9] mt-2 text-base">คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง</p>
         </div>
         {/* block4 */}
+        {/* ผู้อำนวยการกอง */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoWatchPetition}
+            onClick={() => handleClick(["spv_auditor"], ClicktoPetition)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
