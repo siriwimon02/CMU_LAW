@@ -41,7 +41,7 @@ echo "Postgres is up!"
 # echo "Cleaning old migrations..."
 # rm -rf prisma/migrations/* || true
 
-echo "Generating Prisma client..."
+echo "Generating Prisma client..."  
 npx prisma generate
 
 # echo "Resetting database..."

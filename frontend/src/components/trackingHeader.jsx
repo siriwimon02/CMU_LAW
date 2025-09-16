@@ -19,20 +19,22 @@ function Tracking() {
                         />
                     </div>
                     <button
-                        onClick={ClicktoDashboard}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-purple-800 transition"
-                        title="เมนู"
+                    onClick={ClicktoDashboard}
+                    className="bg-[#66009F] w-10 h-10 flex items-center justify-center rounded-xl shadow hover:bg-[#4A0073] transition"
+                    title="ย้อนกลับ"
                     >
-                        <svg
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
-                        className="h-5 w-5"
+                        className="w-5 h-5"
                         fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        >
+                        stroke="white"
+                        strokeWidth="2.5"
+                    >
                         <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                    </svg>
                     </button>
+
                     </div>
                 </header>
 

@@ -75,15 +75,15 @@ function Tracking() {
       
 
       {/* Main */}
-      <main className="flex-1 bg-gray-100 p-4 ">
+      <div className="w-full px-6 mt-6 flex gap-4">
         {/* กล่องให้เลือก */}
-        <div className="m-4">
+        <div className="">
           <label className="sr-only">เอกสารล่าสุด</label>
           <div className="relative w-full max-w-xs">
             <select 
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-3 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
               <option value="newest">เอกสารล่าสุด</option>
               <option value="oldest">เอกสารเก่าสุด</option>
@@ -100,6 +100,7 @@ function Tracking() {
               <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
+        </div>
         </div>
 
         {/* แสดงรายการเอกสาร */}
@@ -122,7 +123,7 @@ function Tracking() {
             return (
               <article
                 key={doc.id}
-                className="rounded-2xl bg-white shadow p-4 m-4"
+                className="rounded-lg bg-white shadow p-4 mx-6  mt-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1 text-gray-800">
@@ -148,7 +149,7 @@ function Tracking() {
                     
                     <button 
                       onClick={() => isModifiable ? ClickForModify(doc) : ClickForMoreDetail(doc)}
-                      className="mt-2 inline-flex items-center gap-2 self-start rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
+                      className="mt-2 inline-flex items-center gap-2 self-start rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
                       {isModifiable ? (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +191,6 @@ function Tracking() {
                       
           })}
 
-      </main>
     </div>
   );
 }

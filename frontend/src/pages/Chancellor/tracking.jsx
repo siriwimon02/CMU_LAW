@@ -1,62 +1,225 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import Header from "../../components/trackingHeader";
+import { Navigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import Header from '../../components/trackingHeader'
+import ApproveModal from '../../components/ApproveModal'
+import RejectModal from '../../components/RejectModal'
+function Tracking() {
+// 1.check role 2.tab bar 3.connect with db
+    const navigate = useNavigate();                    // hook 1
+    const token = localStorage.getItem("token");       // plain value
 
-const BRAND_PURPLE = "#66009F";
-export default function Tracking() {
-  const token = localStorage.getItem("token");
-  const [userInfo, setUserInfo] = useState(null);
-  const [status, setStatus] = useState("pending"); // เริ่มที่ 'รอการอนุมัติ'
+    // hooks must always run (same order every render)
+    const [userInfo, setUserInfo] = useState(null);    // hook 2
+    const [documentAll, setDocumentAll] = useState([]);// hook 3
+    const [approveOpen, setApproveOpen] = useState(false); // hook 4
+    const [selected, setSelected] = useState(null);    // hook 5
+    const [modalPhase, setModalPhase] = useState("confirm"); // "confirm" | "success"   
+    const [rejectOpen, setRejectOpen] = useState(false);
+    const [rejectPhase, setRejectPhase] = useState("confirm"); // "confirm" | "success"
 
-  const navigate = useNavigate();
+    // approve
+    
+    useEffect(() => {
+        if (!token) return;               
+        (async () => {
+        try {
+            const res1 = await fetch("http://localhost:3001/auth/user", {
+            headers: { Authorization: `${token}` },
+            });
+            const user = await res1.json();
 
-  if (!token) {
-    alert("Please Login or SignIn First!!!");
-    return <Navigate to="/login" replace />;
-  }
+            const res2 = await fetch("http://localhost:3001/petition", {
+            headers: { Authorization: `${token}` },
+            });
+            const docs = await res2.json();
 
-  useEffect(() => {
-    (async () => {
+            setUserInfo(user);
+            setDocumentAll(Array.isArray(docs) ? docs : docs.data || []);
+        } catch (e) {
+            console.error(e);
+            setDocumentAll([]);
+        }
+        })();
+    }, [token]);
+
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+    
+    // color of status
+    const greenList = ['ตรวจสอบเอกสารเรียบร้อยเเล้ว']
+    const orangeList = [ 'รอการอนุมัติ']
+    const redList = [ 'ไม่อนุมัติ' ]
+    
+    
+    // approve
+    const openApprove = (item) => {
+    setSelected(item);
+    setModalPhase("confirm");
+    setApproveOpen(true);
+    };
+
+    const closeApprove = () => {
+    setApproveOpen(false);
+    setModalPhase("confirm");
+    setSelected(null);
+    };
+
+    const confirmApprove = async () => {
+    try {
+        // TODO: call approve API here
+        // await fetch(...)
+
+        // แสดงหน้าสำเร็จ
+        setModalPhase("success");
+
+        // ปิดอัตโนมัติหลัง 10 วินาที
+        setTimeout(() => {
+        setApproveOpen(false);
+        setModalPhase("confirm");
+        setSelected(null);
+        }, 10000);
+    } catch (e) {
+        console.error(e);
+    }
+    };
+
+    // reject
+    // handlers
+    const openReject = (item) => {
+      setSelected(item);
+      setRejectPhase("confirm");
+      setRejectOpen(true);
+    };
+
+    const closeReject = () => {
+      setRejectOpen(false);
+      setRejectPhase("confirm");
+      setSelected(null);
+    };
+
+    const confirmReject = async (reason) => {
       try {
-        const res = await fetch("http://localhost:3001/auth/user", {
-          headers: { Authorization: `${token}` },
-        });
-        const data = await res.json();
-        setUserInfo(data);
+        // TODO: เรียก API ไม่อนุมัติจริง ๆ ที่นี่
+        // await fetch(`http://localhost:3001/petition/${selected.id}/reject`, {
+        //   method: "PATCH",
+        //   headers: { "Content-Type": "application/json", Authorization: `${token}` },
+        //   body: JSON.stringify({ reason }),
+        // });
+
+        // แสดงโหมดสำเร็จ (ไม่ปิดเอง)
+        setRejectPhase("success");
+
+        // **ไม่** setTimeout ปิดอัตโนมัติ ตามที่คุณต้องการ
       } catch (e) {
         console.error(e);
+        alert("เกิดข้อผิดพลาดในการไม่อนุมัติ");
       }
-    })();
-  }, [token]);
+    };
+  // navigate
+  const ClicktoDashboard = () => {
+    navigate('/dashboard');
+  }
 
-  if (!userInfo) return <div>Loading...</div>;
+   const ClickForMoreDetail = (doc) => {
+    navigate(`/detail/${doc.id}`);
+  }
 
-  //เนื้อหาการ์ดของหน้า tracking fake ขึ้นมาน้า
-  const cardMap = {
-    checked: {
-      requestNo: "POA-2025-0818-1631",
-      applicant: "Siriwimon Y.",
-      date: "18 ส.ค. 2025",
-      label: "ตรวจสอบเอกสารเรียบร้อย",
-      color: "#05A967",
+  
+
+  const ClickForReject = () =>{
+    alert("Reject na jaaa")
+  }
+
+  const fakeData = [
+    {
+    id: 1,
+    doc_id: undefined,
+    department_name: '1',
+    destination_name: 'สำนักงานบริหารงานวิจัย ',
+    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านกำแพงเพชร',
+    authorize_to: 'เบล กำแพงเพชร',
+    position: 'หัวหน้าชมรม',
+    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+    authorize_text: 'ขอเงิน',
+    status_name: 'ตรวจสอบเอกสารเรียบร้อยเเล้ว',
+    createdAt: "2025-09-13T12:01:05.381Z",
+    date_of_signing: null
     },
-    pending: {
-      requestNo: "POA-2025-0819-1122",
-      applicant: "Siraprapa K.",
-      date: "19 ส.ค. 2025",
-      label: "รออนุมัติ",
-      color: "#E48500", 
+    {
+    id: 2,
+    doc_id: undefined,
+    department_name: '1',
+    destination_name: 'สำนักงานบริหารงานวิจัย ',
+    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านสุโขทัย',
+    authorize_to: 'น้อต สุโขทัย',
+    position: 'หัวหน้าชมรม',
+    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+    authorize_text: 'ขอเงิน',
+    status_name: 'รอการอนุมัติ',
+    createdAt: "2025-09-13T12:01:05.381Z",
+    date_of_signing: null
     },
-    rejected: {
-      requestNo: "POA-2025-0818-1631",
-      applicant: "Siriwimon Y.",
-      date: "18 ส.ค. 2025",
-      label: "ไม่อนุมัติ",
-      color: "#CD0000",
+    {
+    id: 3,
+    doc_id: undefined,
+    department_name: '1',
+    destination_name: 'สำนักงานบริหารงานวิจัย ',
+    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
+    authorize_to: 'แก้ม จอมทอง',
+    position: 'หัวหน้าชมรม',
+    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+    authorize_text: 'ขอเงิน',
+    status_name: 'ไม่อนุมัติ',
+    createdAt: "2025-09-13T12:01:05.381Z",
+    date_of_signing: null
     },
-  };
-  const card = cardMap[status];
-  const goDetail = () => navigate(`/detail/${card.requestNo}`);
+    {
+    id: 4,
+    doc_id: undefined,
+    department_name: '1',
+    destination_name: 'สำนักงานบริหารงานวิจัย ',
+    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
+    authorize_to: 'อาย บ้านนอก ',
+    position: 'หัวหน้าชมรม',
+    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+    authorize_text: 'ขอเงิน',
+    status_name: 'ไม่อนุมัติ',
+    createdAt: "2025-09-13T12:01:05.381Z",
+    date_of_signing: null
+    },
+    {
+    id: 5,
+    doc_id: undefined,
+    department_name: '1',
+    destination_name: 'สำนักงานบริหารงานวิจัย ',
+    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
+    authorize_to: 'ปลิ้ม รังสิต',
+    position: 'หัวหน้าชมรม',
+    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+    authorize_text: 'ขอเงิน',
+    status_name: 'รอการอนุมัติ',
+    createdAt: "2025-09-13T12:01:05.381Z",
+    date_of_signing: null
+    },
+    {
+    id: 0,
+    doc_id: undefined,
+    department_name: '1',
+    destination_name: 'สำนักงานบริหารงานวิจัย ',
+    title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
+    authorize_to: 'Kamin NYC',
+    position: 'หัวหน้าชมรม',
+    affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
+    authorize_text: 'ขอเงิน',
+    status_name: 'ตรวจสอบเอกสารเรียบร้อยเเล้ว',
+    createdAt: "2025-09-13T12:01:05.381Z",
+    date_of_signing: null
+    }
+  ]
+
+  const BRAND_PURPLE = "#66009F";
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
@@ -66,7 +229,7 @@ export default function Tracking() {
       <div className="w-full px-6 mt-6 flex gap-4">
         {/* ตรวจสอบเอกสารเรียบร้อยแล้ว */}
         <button
-          onClick={() => setStatus("checked")}
+          // onClick={() => setStatus("checked")}
           className="bg-white border border-gray-200 rounded-lg px-5 py-3 shadow hover:bg-gray-50 flex items-center gap-2"
           title="ตรวจสอบเอกสารเรียบร้อยแล้ว"
         >
@@ -91,7 +254,7 @@ export default function Tracking() {
 
         {/* รอการอนุมัติ — เอาวงกลมม่วงออก เหลือไอคอนเดี่ยวตามที่ขอ */}
         <button
-          onClick={() => setStatus("pending")}
+          // onClick={() => setStatus("pending")}
           className="bg-white border border-gray-200 rounded-lg px-5 py-3 shadow hover:bg-gray-50 flex items-center gap-2"
           title="รอการอนุมัติ"
         >
@@ -114,7 +277,7 @@ export default function Tracking() {
 
         {/* ไม่อนุมัติ */}
         <button
-          onClick={() => setStatus("rejected")}
+          // onClick={() => setStatus("rejected")}
           className="bg-white border border-gray-200 rounded-lg px-5 py-3 shadow hover:bg-gray-50 flex items-center gap-2"
           title="ไม่อนุมัติ"
         >
@@ -137,91 +300,180 @@ export default function Tracking() {
         </button>
       </div>
 
-      {/* การ์ดข้อมูล — ใช้สไตล์เดียวกับ seendorserน้าา */}
-      <main className="flex-1">
-        <article className="w-full px-6 mt-6">
-          <div className="bg-white border border-gray-200 rounded-xl px-6 py-5 shadow-md">
-            <div className="flex flex-wrap md:flex-nowrap items-start md:items-center justify-between gap-4">
-              {/* ซ้าย: ข้อมูลของ tracking */}
-              <div className="leading-6 text-gray-900">
-                <p className="font-bold text-lg">
-                  เลขที่คำขอ: <span className="font-extrabold">{card.requestNo}</span>
-                </p>
-                <p>
-                  ผู้ยื่นคำขอ: <span className="font-regular">{card.applicant}</span>
-                </p>
-                <p>วันที่ยื่นคำขอ: {card.date}</p>
-                <p className="font-regular mt-1" style={{ color: card.color }}>
-                  {card.label}
-                </p>
-              </div>
+        {/* แสดงรายการเอกสาร */}
+        {fakeData.map((item) => {
+          const created = item.createdAt
+            ? new Date(item.createdAt).toLocaleString("th-TH", { 
+                timeZone: "Asia/Bangkok",
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-";
+            //separate color, statusClass is string of color background
+          const statusClass =
+            greenList.includes(item.status_name)
+              ? "text-emerald-600"
+              : orangeList.includes(item.status_name)
+              ? "text-orange-600"
+              : redList.includes(item.status_name)
+              ? "text-red-600"
+              : "text-gray-600";
+            const check = orangeList.includes(item.status_name);
+          return (
+            <article key={item.id} className="rounded-md bg-white shadow p-4 mx-6  mt-4 mb-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between  ">
+                <div className="space-y-1 text-gray-800">
+                  <p className="font-bold">
+                    เลขที่คำขอ: <span className="font-extrabold">{item.request_no ?? item.id}</span>
+                  </p>
+                  <p>
+                    ผู้ที่ยื่นคำขอ:{" "}
+                    <span className="">
+                      {item.authorize_to}
+                    </span>
+                  </p>
+                  <p>วันที่ยื่นคำขอ: {created}</p>
+                  <p className={statusClass}>
+                    <span className="font-medium">{item.status_name ?? "ไม่สามารถตรวจสอบได้"}</span>
+                  </p>
+                </div>
 
-              {/* ขวา: ปุ่มการกระทำ(เหมือน seendorser)น้าา + ปุ่มอนุมัติ/ไม่อนุมัติเมื่อ pending */}
-              <div className="flex items-center gap-4">
-                {/* ดูรายละเอียด */}
+                
+                <div className="flex flex-wrap gap-2 items-center self-start">
                 <button
-                  onClick={goDetail}
+                  onClick={() => ClickForMoreDetail(item)}
                   className="bg-white border border-gray-300 text-gray-900 rounded-lg px-4 py-2 shadow-md hover:bg-gray-50 flex items-center gap-2"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="7" />
-                    <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                    <path d="M21 21l-4.3-4.3" />
                   </svg>
                   ดูรายละเอียด
                 </button>
-
-                {/* โชว์เฉพาะตอนรออนุมัติ */}
-                {status === "pending" && (
-                  <>
+                {/* if it's orange group */}
+                {check && (
+                    <>
                     <button
-                      onClick={() => setStatus("checked")}
-                      className="bg-[#05A967] text-white rounded-lg px-4 py-2 shadow-md hover:bg-[#048a52] flex items-center gap-2"
+                        type="button"
+                        onClick={() => openApprove(item)}
+                        className="bg-[#05A967] text-white rounded-lg px-4 py-2 shadow-md hover:bg-[#048a52] flex items-center gap-2"
                     >
-                      {/* check */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-5 h-5 text-white"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                      >
-                        <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      อนุมัติ
+                        
+                    
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#FFFFFF]">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        อนุมัติ
                     </button>
 
                     <button
-                      onClick={() => setStatus("rejected")}
+                      onClick={() => openReject(item)}
                       className="bg-[#CD0000] text-white rounded-lg px-4 py-2 shadow-md hover:bg-[#a60000] flex items-center gap-2"
                     >
-                      
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-5 h-5 text-white"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                      >
-                        <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#FFFFFF]">
+                        <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
                       </svg>
-                      ไม่อนุมัติ
+                        ไม่อนุมัติ
                     </button>
-                  </>
+                    </>
                 )}
+                </div>
+
+
               </div>
-            </div>
-          </div>
-        </article>
-      </main>
+            </article>
+          );
+        })}
+          
+          
+        {/* {documentAll.length > 0 &&
+          documentAll.map((doc) => {
+            const created = doc.createdAt
+              ? new Date(doc.createdAt).toLocaleString("th-TH", {
+                  timeZone: "Asia/Bangkok",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-";            
+            return (
+              <article
+                key={doc.id}
+                className="rounded-2xl bg-white shadow p-4 mb-4"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1 text-gray-800">
+                    <p className="font-bold">
+                      เลขที่คำขอ:{" "}
+                      <span className="font-extrabold">{doc.request_no ?? doc.id}</span>
+                    </p>
+                    <p>
+                      ผู้ที่ยื่นคำขอ: <span className="font-semibold">{userInfo?.firstname} {userInfo?.lastname}</span>
+                    </p>
+                    <p>วันที่ยื่นคำขอ: {created} </p>
+                    <p className={ 
+                      greenList.includes(doc.status_name) ? "text-emerald-600"
+                      : orangeList.includes(doc.status_name) ? "text-orange-600"    
+                      : redList.includes(doc.status_name) ? "text-red-600":"text-red-600"
+                    }>
+                      <span className="font-medium">
+                        {doc.status_name ?? "ไม่สามารถตรวจสอบได้"}
+                      </span>
+                    </p>
+                  </div>
+                    <button 
+                      onClick={() => ClickForMoreDetail(doc)}
+                      className="mt-2 inline-flex items-center gap-2 self-start rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          >
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="M21 21l-4.3-4.3" />
+                        </svg>
+                      
+                        ดูรายละเอียด
+                      
+                    </button>
+                </div>
+              </article>
+            ); 
+           })} */}
+
+      {/* </main> */}
+        <ApproveModal
+    open={approveOpen}
+    view={modalPhase}
+    item={selected}
+    user={userInfo}
+    onClose={closeApprove}
+    onConfirm={confirmApprove}
+    />
+
+      <RejectModal
+    open={rejectOpen}
+    view={rejectPhase}
+    item={selected}
+    user={userInfo}
+    onClose={closeReject}
+    onConfirm={confirmReject}
+    closeOnOverlay={true}   // ห้ามปิดด้วยคลิกฉากหลัง
+    // closeOnEsc={false}       // ห้ามปิดด้วย ESC
+  />
     </div>
+
+
+
+
   );
 }
+
+export default Tracking;
