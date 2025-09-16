@@ -49,7 +49,7 @@ function Dashboard() {
   }
 
   const ClicktoWatchPetition = () =>{
-    navigate('/petition');
+    navigate('/employeePaper');
   }
 
   const ClicktoAdminedit = () => {
