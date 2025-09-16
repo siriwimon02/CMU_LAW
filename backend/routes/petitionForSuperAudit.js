@@ -4,8 +4,8 @@ dotenv.config({ path: '../.env.dev' });
 
 import express from 'express';
 import prisma from '../prismaClient.js';
-import { parse } from 'path';
-import e from 'express';
+
+
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/wait_to_accept', async (req, res) => {
     });
 
     const find_status2 = await prisma.status.findUnique({
-      where : { status : "ส่งต่อไปยังกองอื่น" }
+      where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
     });
 
     const user = await prisma.user.findUnique({
@@ -35,10 +35,6 @@ router.get('/wait_to_accept', async (req, res) => {
       where : { des_name : user_dep.department_name }
     });
     console.log(user_dep, find_des);
-
-    const find_d = await prisma.destination.findMany();
-    console.log(find_d, "checkkkkkkkk");
-
 
     if (!find_des) {
       return res.status(401).json( {message : "user not live in destination department"} )
@@ -71,7 +67,7 @@ router.get('/wait_to_accept', async (req, res) => {
               document: { connect: { id: doc.id } },
               status: { connect: { id: find_status1.id } }, // ใช้ status ใหม่
               changedBy: { connect: { id: user.id } },
-              note_t: "เปลี่ยนสถานะจาก 'ส่งต่อไปยังกองอื่น' เป็น 'รอรับเข้ากอง'"
+              note_t: "เอกสารที่รอรับเข้ากอง"
             }
           })
         )
@@ -124,8 +120,7 @@ router.get('/wait_to_accept', async (req, res) => {
             affiliation: doc.affiliation,
             authorize_text: doc.authorize_text,
             status_name: stt.status,
-            createdAt: doc.createdAt,
-            date_of_signing: doc.date_of_signing
+            createdAt: doc.createdAt
         };
         document_json.push(setdoc);
         // console.log(setdoc);
@@ -267,7 +262,7 @@ router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
           document: { connect: { id: updatedDoc.id } },
           status:   { connect: { id: updatedDoc.statusId } },
           changedBy: { connect: { id: user.id } },
-          note_t:   "อัพเดตสถานะจาก 'รอรับเข้ากอง' เป็น 'รับเข้ากองเรียบร้อยแล้ว'"
+          note_t:   "เอกสารรับเข้ากองเรียบร้อยแล้ว"
         }
     });
 
@@ -290,7 +285,7 @@ router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
 router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
   try {
     const find_status1 = await prisma.status.findUnique({
-      where : { status : "ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น" }
+      where : { status : "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น" }
     });
     const find_status2 = await prisma.status.findUnique({
       where : { status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
@@ -342,7 +337,7 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
               document: { connect: { id: doc.id } },
               status: { connect: { id: find_status2.id } }, 
               changedBy: { connect: { id: user.id } },
-              note_t: "เปลี่ยนสถานะจาก 'ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น' เป็น 'อยู่ระหว่างการตรวจสอบขั้นสุดท้าย'"
+              note_t: "รอตรวจสอบเอกสาร จาก ผอ.กอง"
             }
           })
         )
@@ -396,7 +391,6 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
             authorize_text: doc.authorize_text,
             status_name: stt.status,
             createdAt: doc.createdAt,
-            date_of_signing: doc.date_of_signing
         };
         document_json.push(setdoc);
         // console.log(setdoc);
@@ -537,7 +531,7 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
               document: { connect: { id: updatedDoc.id } },
               status:   { connect: { id: updatedDoc.statusId } },
               changedBy: { connect: { id: user.id } },
-              note_t:   "อัพเดตสถานะจาก 'อยู่ระหว่างการตรวจสอบขั้นสุดท้าย' เป็น 'ตรวจสอบขั้นสุดท้ายเสร็จสิ้น'"
+              note_t:   "ตรวจสอบเอกสารเรียบร้อยแล้วในขั้นสุดท้าย โดย ผอ.กอง"
             }
         });
 
@@ -574,7 +568,7 @@ router.put('/change_destination/:docId', async( req, res) => {
     });
 
     const find_status2 = await prisma.status.findUnique({
-      where: { status: "ส่งต่อไปยังกองอื่น" }
+      where: { status: "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
     });
 
     const user = await prisma.user.findUnique({
@@ -628,7 +622,7 @@ router.put('/change_destination/:docId', async( req, res) => {
           document: { connect: { id: updatedDoc.id } },
           status:   { connect: { id: updatedDoc.statusId } },
           changedBy: { connect: { id: user.id } },
-          note_t: `ส่งไปยังกอง ${new_des.des_name} รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
+          note_t: `ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
         }
     });
 
@@ -698,7 +692,7 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
               document: { connect: { id: updatedDoc.id } },
               status:   { connect: { id: updatedDoc.statusId } },
               changedBy: { connect: { id: user.id } },
-              note_t: `รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${test_edit_suggesttion || "-"}`
+              note_t: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${test_edit_suggesttion || "-"}`
             }
         });
 
@@ -714,6 +708,9 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
 
 
 
+
+
+// ประวัติการรรับเอกสารเข้ากอง
 router.get('/history_accept', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -741,7 +738,9 @@ router.get('/history_accept', async (req, res) => {
                 }
             },
             include: {
-                document: true,
+                document: {
+                  include : { status : true }
+                },
                 changedBy: true,
                 status: true
             },
@@ -756,7 +755,8 @@ router.get('/history_accept', async (req, res) => {
             changeAt: h.changedAt,
             note: h.note_t,
             doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc
+            doc_id_doc : h.document.id_doc,
+            doc_StatusNow : h.document.status.status
         }));
 
 
@@ -772,10 +772,11 @@ router.get('/history_accept', async (req, res) => {
 });
 
 
+//ประวัติการส่งไปเอกสารไปกองอื่น
 router.get('/history_change_des', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
-            where : { status : "ส่งต่อไปยังกองอื่น" }
+            where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
         });
 
         const user = await prisma.user.findUnique({
@@ -799,7 +800,10 @@ router.get('/history_change_des', async (req, res) => {
                 }
             },
             include: {
-                document: {include : { destination : true }},
+                document: {include : { 
+                  destination : true,
+                  status : true 
+                }},
                 changedBy: true,
                 status: true
             },
@@ -822,12 +826,13 @@ router.get('/history_change_des', async (req, res) => {
             note: h.note_t,
             doc_title : h.document.title,
             doc_id_doc : h.document.id_doc,
-            new_des : h.document.destination.des_name
+            new_des : h.document.destination.des_name,
+            doc_StatusNow : h.document.status.status
         }));
 
 
         res.json({
-            message: "History in Destination of status : ส่งต่อไปยังกองอื่น",
+            message: "History in Destination of status : ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง",
             data: set_json
         });
         
@@ -839,10 +844,11 @@ router.get('/history_change_des', async (req, res) => {
 
 
 
+//ประวัติการตรวจสอบเอกสารขั้นสุดท้ายเรียบร้อยแล้ว
 router.get('/history_thelastAudit', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
-            where : { status : "ตรวจสอบขั้นต้นเสร็จสิ้น" }
+            where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
         });
 
         const user = await prisma.user.findUnique({
@@ -866,7 +872,7 @@ router.get('/history_thelastAudit', async (req, res) => {
                 }
             },
             include: {
-                document: true,
+                document: {include : {status : true}},
                 changedBy: true,
                 status: true
             },
@@ -881,12 +887,75 @@ router.get('/history_thelastAudit', async (req, res) => {
             changeAt: h.changedAt,
             note: h.note_t,
             doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc
+            doc_id_doc : h.document.id_doc,
+            doc_StatusNow : h.document.status.status
         }));
 
 
         res.json({
-            message: "History in Destination of status : ตรวจสอบขั้นต้นเสร็จสิ้น",
+            message: "History in Destination of status : ตรวจสอบขั้นสุดท้ายเสร็จสิ้น",
+            data: set_json
+        });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+router.get('/history_sendtoeditBySpvauditor', async (req, res) => {
+    try {
+        const find_st = await prisma.status.findUnique({
+            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+        });
+
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+     
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        console.log(find_des);
+
+        const doc = await prisma.documentStatusHistory.findMany({
+            where: {
+                statusId: find_st.id,
+                document: {
+                    destinationId: find_des.id
+                }
+            },
+            include: {
+                document: {include: {status : true}},
+                changedBy: true,
+                status: true
+            },
+            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
+        });
+        
+        const set_json = doc.map(h => ({
+            docId: h.documentId,
+            ChangeBy: h.changedBy.email || null,
+            status: h.status.status || null,
+            changeAt: h.changedAt,
+            note: h.note_t,
+            doc_title : h.document.title,
+            doc_id_doc : h.document.id_doc,
+            doc_StatusNow : h.document.status.status
+        }));
+
+
+        res.json({
+            message: "History in Destination of status : ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย",
             data: set_json
         });
         

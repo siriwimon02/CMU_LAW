@@ -38,7 +38,7 @@ app.use('/auth', authUser);
 app.use('/petition', authMiddle, checkRole([2]), petition); //user
 app.use('/petitionAudit', authMiddle, checkRole([5]), petition_Audit); //สำหรับคนตรวจสอบ
 app.use('/petitionSuperAudit', authMiddle, checkRole([3]), petition_SuperAudit); //สำหรับผอ กอง
-app.use('/petitionHeadAudit', authMiddle, checkRole([4]), petition_HeadAudit)
+app.use('/petitionHeadAudit', authMiddle, checkRole([4]), petition_HeadAudit);
 
 
 

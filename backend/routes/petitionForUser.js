@@ -115,6 +115,11 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
 });
 
 
+
+
+
+
+
 //ดึงdata ทั้งหมดที่ User กรอก
 router.get('/', async (req, res) => {
     console.log(req.user.id);
@@ -326,59 +331,49 @@ router.get('/docStatus/:docId', async (req, res) => {
             return res.status(404).json({ error: "user not create this document" });
         }
 
-
-        const find_status1 = await prisma.status.findUnique({
-            where : {status : "ตรวจสอบขั้นต้นเสร็จสิ้น"}
-        });
-
-        const find_status2 = await prisma.status.findUnique({
-            where : {status : "อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า"}
-        });
-
-        const find_status3 = await prisma.status.findUnique({
-            where : {status : "ตรวจสอบและอนุมัติโดยหัวหน้าเสร็จสิ้น"}
-        });
-
-        const find_status4 = await prisma.status.findUnique({
-            where : {status : "ส่งกลับให้แก้ไขจากการตรวจสอบโดยหัวหน้า"}
-        });
-
-        const find_status5 = await prisma.status.findUnique({
-            where : {status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย"}
-        });
-
-        const find_status6 = await prisma.status.findUnique({
-            where : {status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
-        });
-
-        const find_status7 = await prisma.status.findUnique({
-            where : {status : "ตรวจสอบโดยอธิการบดีเสร็จสิ้น"}
-        });
-
-
         const find_statusHistory = await prisma.documentStatusHistory.findMany({
             where: { documentId: documentId },
-            include : {
-                status : true,
-                changedBy : true,
-                document : true
+            include: {
+                status: true,
+                changedBy: {include : {department : true}},
+                document: {
+                    include: {destination : true}
+                }
             },
             orderBy: { changedAt: 'asc' }
         });
 
+        // เก็บผลลัพธ์ทั้งหมดไว้ใน array
+        const history_json = [];
 
-        const set_json = find_statusHistory.map(h => ({
-            docId: h.documentId,
-            ChangeBy: h.changedBy.email || null,
-            status: h.status.status || null,
-            changeAt: h.changedAt,
-            note: h.note_t,
-            doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc
-        }));
+        for (const h of find_statusHistory) {
+            if (h.status.status === 'ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง') {
+                history_json.push({
+                    docId: h.documentId,
+                    ChangeBy: h.changedBy?.email || null,
+                    status: h.status.status || null,
+                    changeAt: h.changedAt,
+                    note: h.note_t,
+                    doc_title: h.document.title,
+                    doc_id_doc: h.document.id_doc,
+                    new_destination: h.document.destination.des_name,
+                    old_destination: h.changedBy.department.department_name
+                });
+            } else {
+                history_json.push({
+                    docId: h.documentId,
+                    ChangeBy: h.changedBy?.email || null,
+                    status: h.status.status || null,
+                    changeAt: h.changedAt,
+                    note: h.note_t,
+                    doc_title: h.document.title,
+                    doc_id_doc: h.document.id_doc
+                });
+            }
+        }
 
-
-        res.json({ message : "find document history status", set_json})
+        // ส่งออกเป็น array ทั้งหมด
+        res.json({ message: "find document history status", data: history_json });
 
     } catch (err) {
         console.error(err);
