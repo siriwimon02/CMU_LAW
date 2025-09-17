@@ -16,7 +16,7 @@ import TrackingForChancellor from "../pages/Chancellor/tracking"
 // admin
 import Admin_Panel from '../pages/admin/admin_panel';
 // ผู้อำนวยการคัดกรองเอกสาร
-import Seendorser from "../pages/seendorser";
+import SpvAuditor from "../pages/spvauditor";
 
 
 export default function AppRoutes() {
@@ -41,7 +41,7 @@ export default function AppRoutes() {
         {/* อธิการบดี */}
         <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
         {/* ผู้อำนวยการคัดกรองเอกสาร */}
-        <Route path="/seendorser" element={<Seendorser />} />
+        <Route path="/spvauditor" element={<SpvAuditor />} />
       </Routes>
     </Router>
   );
