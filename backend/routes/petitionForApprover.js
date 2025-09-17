@@ -9,43 +9,41 @@ import multer from "multer";
 const router = express.Router();
 
 
-
-//----------------------------------------------เอกสารที่รอตรวจสอบก่อนเสนออธิการบดี------------------------------------//
-router.get("/wait_audit_BySeApprover", async (req, res) => {
+//-----------------------------------------เอกสารที่ต้องอนุมัติ หรือรอการอนุมัติ-------------------------//
+router.get('/wait_to_approve', async (req, res) => {
     try {
 
         const user = await prisma.user.findUnique({
             where : { id : req.user.id }
-        });
+        })
 
         const find_st1 = await prisma.status.findUnique({
-            where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
+            where : { status : "ตรวจสอบก่อนเสนออธิการบดีเสร็จสิ้น" }
         });
 
         const find_st2 = await prisma.status.findUnique({
-            where : { status : "อยู่ระหว่างการตรวจสอบก่อนเสนออธิการบดี" }
+            where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
         });
 
         const find_doc = await prisma.documentPetition.findMany({
             where : { statusId : find_st1.id }
         });
 
-        
         if (find_doc.length > 0) {
+            //อัพเดตสถานะเป็นรอการพิจารณาอนุมัติจากอธิการบดี
             await prisma.documentPetition.updateMany({
                 where : { statusId : find_st1.id },
-                data : {
-                    statusId : find_st2.id
-                }
+                data : { statusId : find_st2.id }
             })
 
-            for (const doc of find_doc){
+            //เก็บประวัติสถานะ
+            for (const doc of find_doc) {
                 await prisma.documentStatusHistory.create({
                     data : {
                         document: { connect: { id: doc.id } },
                         status:   { connect: { id: find_st2.id } },
                         changedBy: { connect: { id: user.id } },
-                        note_t: "เอกสารอยู่ระหว่างการตรวจสอบก่อนเสนอให้อธิการบดีอนุมัติ"
+                        note_t: "เอกสารอยู่ระหว่างการพิจารณาอนุมัติ จากอธิการบดี"
                     }
                 })
             }
@@ -90,39 +88,37 @@ router.get("/wait_audit_BySeApprover", async (req, res) => {
 
 
 
-//----------------------------------------------------ดูเอกสารเฉพาะ ID นี้------------------------------//
+
+//----------------------------------------------ดูเอกสารเฉพาะเอกสารนี้-------------------------------------//
 router.get('/document/:docId', async (req, res) => {
     const documentId = parseInt(req.params.docId, 10); 
     if (isNaN(documentId)) {
-      return res.status(400).json({ error: "docId is invalid integer" });
+        return res.status(400).json({ error: "docId is invalid integer" });
     }
 
     try {
-        const find_st1 = await prisma.status.findUnique({
-            where : { status : "อยู่ระหว่างการตรวจสอบก่อนเสนออธิการบดี" }
+        const find_st = await prisma.status.findUnique({
+            where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
         });
 
         const find_doc = await prisma.documentPetition.findUnique({
-            where : { 
-                id : documentId
-            },
+            where : { id : documentId },
             include: {
                 user: true,
                 department: true,
                 destination: true,
-                status: true
             }
         });
+        console.log(find_doc);
 
         if (!find_doc) {
             return res.status(404).json({ message: "not found document" });
         }
 
-        if (find_doc.statusId !== find_st1.id) {
+        if (find_doc.statusId !== find_st.id) {
             return res.status(401).json( { message : "Document not found or not in correct status" } )
         }
 
-   
         const set_doc = {
             id : find_doc.id,
             doc_id : find_doc.doc_id,
@@ -138,7 +134,7 @@ router.get('/document/:docId', async (req, res) => {
             createAt : find_doc.createdAt
         }
 
-        res.json({ message : "find document to audit before approve", set_doc})
+        res.json({ message : "This document to already to approve", set_doc})
 
     } catch (err) {
         console.error(err);
@@ -152,8 +148,10 @@ router.get('/document/:docId', async (req, res) => {
 
 
 
-//-------------------------------------ตรวจสอบเอกสารเรียบร้อยแล้ว--------------------------------//
-router.put('/audit_before_approve/:docId', async (req, res) => {
+
+//-----------------------------------------อนุมัติเอกสาร โดยอธิการบดี-----------------------------------------//
+router.put('/approve_document/:docId', async (req, res) => {
+
     const documentId = parseInt(req.params.docId, 10); 
 
     if (isNaN(documentId)) {
@@ -161,101 +159,40 @@ router.put('/audit_before_approve/:docId', async (req, res) => {
     }
 
     try {
+
         const user = await prisma.user.findUnique({
             where : { id : req.user.id }
-        });
+        })
 
         const find_st1 = await prisma.status.findUnique({
-            where : { status : "อยู่ระหว่างการตรวจสอบก่อนเสนออธิการบดี" }
+            where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
         });
 
         const find_st2 = await prisma.status.findUnique({
-            where : { status : "ตรวจสอบก่อนเสนออธิการบดีเสร็จสิ้น" }
-        });
-
-        const find_doc = await prisma.documentPetition.findUnique({
-            where : { id : documentId }
+            where : { status : "อธิการบดีอนุมัติแล้ว" }
         })
 
-        if ( !find_doc ) {
+        const find_doc = await prisma.documentPetition.findUnique({
+            where : { id : documentId },
+            include: {
+                user: true,
+                department: true,
+                destination: true,
+            }
+        });
+
+        if (!find_doc) {
             return res.status(404).json({ message: "not found document" });
         }
-
-        if (find_doc.statusId !== find_st1.id) {
-            return res.status(401).json( { message : "Document not found or not in correct status" } )
-        }
-
-        const update_stDoc = await prisma.documentPetition.update({
-            where : { 
-                id : documentId,
-                statusId : find_st1.id
-            },
-            data : {
-                statusId : find_st2.id
-            }
-        });
-
-        //เก็บประวัติการเปลี่ยนแปลงสถานะของเอกสาร
-        await prisma.documentStatusHistory.create({
-            data : {
-                document: { connect: { id: documentId } },
-                status:   { connect: { id: find_st2.id } },
-                changedBy: { connect: { id: user.id } },
-                note_t: "ตรวจสอบเอกสารเรียบร้อยแล้ว รอการพิจารณาอนุมัติจากอธิการบดี"
-            }
-        })
-
-        res.json({ message: "Document audited before approval", update_stDoc });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-
-
-
-
-//------------------------------------------ส่งเอกสารที่จะเสนออธิการบดี ส่งกลับไปแก้ไข--------------------------//
-router.put('/editDoc_before_approve/:docId', async (req, res) => {
-    const documentId = parseInt(req.params.docId, 10); 
-    const {text_edit_suggesttion} = req.body;
-    if (isNaN(documentId)) {
-        return res.status(400).json({ error: "docId is invalid integer" });
-    }
-    try {
-
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id }
-        });
-
-
-        const find_st1 = await prisma.status.findUnique({
-            where : { status : "อยู่ระหว่างการตรวจสอบก่อนเสนออธิการบดี" }
-        });
-
-        const find_st2 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับเพื่อแก้ไขก่อนเสนออธิการบดี" }
-        });
-
-        const find_doc = await prisma.documentPetition.findUnique({
-            where : { id : documentId }
-        })
 
         console.log(find_doc);
 
-        if ( !find_doc ) {
-            return res.status(404).json({ message: "not found document" });
-        }
-
         if (find_doc.statusId !== find_st1.id) {
             return res.status(401).json( { message : "Document not found or not in correct status" } )
         }
 
-        const update_stDoc = await prisma.documentPetition.update({
+        //อัพเดตสถานะเป็นอนุมัติเรียบร้อยแล้ว
+        const update_doc = await prisma.documentPetition.update({
             where : { 
                 id : documentId,
                 statusId : find_st1.id
@@ -265,17 +202,95 @@ router.put('/editDoc_before_approve/:docId', async (req, res) => {
             }
         });
 
-        //เก็บประวัติการเปลี่ยนแปลงสถานะของเอกสาร
+        //เก็บประวัติสถานะ
         await prisma.documentStatusHistory.create({
             data : {
-                document: { connect: { id: documentId } },
-                status:   { connect: { id: find_st2.id } },
+                document: { connect: { id: update_doc.id } },
+                status:   { connect: { id: update_doc.statusId } },
                 changedBy: { connect: { id: user.id } },
-                note_t: `ส่งเอกสารกลับไปแก้ไข ก่อนกลับมาพิจารณาเพื่อเสนออธิการบดี รายละเอียดเพิ่มเติม: ${text_edit_suggesttion || "-"}`
+                note_t: "อธิการบดี ได้ทำการอนุมัติเอกสารคำร้องนี้เรียบร้อยแล้ว"
             }
+        });
+
+        res.json({ message: "Document approved", update_doc });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+
+
+
+
+
+
+//---------------------------------------------ปฎิเสธคำร้อง----------------------------------------//
+router.put('/reject_document/:docId', async (req, res) => {
+
+    const documentId = parseInt(req.params.docId, 10); 
+    const { text_suggesttion } = req.body;
+
+    if (isNaN(documentId)) {
+        return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    try {
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id }
         })
 
-        res.json({ message: "Send Document to edit before approval", update_stDoc });
+        const find_st1 = await prisma.status.findUnique({
+            where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
+        });
+
+        const find_st2 = await prisma.status.findUnique({
+            where : { status : "อธิการบดีปฏิเสธคำร้อง" }
+        })
+
+        const find_doc = await prisma.documentPetition.findUnique({
+            where : { id : documentId },
+            include: {
+                user: true,
+                department: true,
+                destination: true,
+            }
+        });
+
+        if (!find_doc) {
+            return res.status(404).json({ message: "not found document" });
+        }
+
+        if (find_doc.statusId !== find_st1.id) {
+            return res.status(401).json( { message : "Document not found or not in correct status" } )
+        }
+
+        //อัพเดตสถานะเป็นอนุมัติเรียบร้อยแล้ว
+        const update_doc = await prisma.documentPetition.update({
+            where : { 
+                id : documentId,
+                statusId : find_st1.id 
+            },
+            data : {
+                statusId : find_st2.id
+            }
+        });
+
+        //เก็บประวัติสถานะ
+        await prisma.documentStatusHistory.create({
+            data : {
+                document: { connect: { id: update_doc.id } },
+                status:   { connect: { id: update_doc.statusId } },
+                changedBy: { connect: { id: user.id } },
+                note_t: `อธิการบดี ได้ทำปฎิเสธเอกสารคำร้องนี้ รายละเอียดเพิ่มเติม: ${text_suggesttion || "-"}`
+            }
+        });
+        
+        res.json({ message: "Rejected Document", update_doc });
 
     } catch (err) {
         console.error(err);
@@ -359,4 +374,5 @@ router.get('/docStatus/:docId', async (req, res) => {
     }
 });
 
-export default router
+
+export default router;

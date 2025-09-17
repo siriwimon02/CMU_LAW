@@ -11,6 +11,8 @@ import petition from './routes/petitionForUser.js';
 import petition_Audit from './routes/petitionForAuditor.js';
 import petition_SuperAudit from './routes/petitionForSuperAudit.js';
 import petition_HeadAudit from './routes/petitionForHeadAuditor.js';
+import petition_SeEndorsor from './routes/petitionForSecAprover.js';
+import petition_Endorsor from './routes/petitionForApprover.js';
 import checkRole from './middleware/checkRole.js';
 
 
@@ -34,12 +36,23 @@ app.get('/', (req, res) => {
 });
 
 
-app.use('/auth', authUser);
-app.use('/petition', authMiddle, checkRole([2]), petition); //user
-app.use('/petitionAudit', authMiddle, checkRole([5]), petition_Audit); //สำหรับคนตรวจสอบ
-app.use('/petitionSuperAudit', authMiddle, checkRole([3]), petition_SuperAudit); //สำหรับผอ กอง
-app.use('/petitionHeadAudit', authMiddle, checkRole([4]), petition_HeadAudit);
+// [
+//   { id: 1, role_name: 'admin' },
+//   { id: 2, role_name: 'user' },
+//   { id: 3, role_name: 'spv_auditor' },
+//   { id: 4, role_name: 'head_auditor' },
+//   { id: 5, role_name: 'auditor' },
+//   { id: 6, role_name: 'endorser' },
+//   { id: 7, role_name: 'se_endorser' }
+// ]
 
+app.use('/auth', authUser);
+app.use('/petition', authMiddle, checkRole(["user"]), petition); //user
+app.use('/petitionAudit', authMiddle, checkRole(["auditor"]), petition_Audit); //สำหรับคนตรวจสอบ
+app.use('/petitionSuperAudit', authMiddle, checkRole(["spv_auditor"]), petition_SuperAudit); //สำหรับผอ กอง
+app.use('/petitionHeadAudit', authMiddle, checkRole(["head_auditor"]), petition_HeadAudit);
+app.use('/petitionSeApprove', authMiddle, checkRole(["se_endorser"]), petition_SeEndorsor);
+app.use('/petitionApproveDoc', authMiddle, checkRole(["endorser"]), petition_Endorsor);
 
 
 app.get('/checkrole', authMiddle, checkRole([2, 3]), (req, res) => {
@@ -99,6 +112,7 @@ app.get('/api/user', authMiddle, checkRole([1]), async (req, res) => {
   res.json(userAll);
   console.log(userAll);
 });
+
 
 //------------------------------ edit role user -----------------------------//
 app.put('/api/updateRole', authMiddle, checkRole([1]), async (req, res) => {
@@ -179,9 +193,6 @@ app.get('/api/doc_attactment', authMiddle, checkRole([3, 4, 5]), async(req, res)
   if (!find_des) {
       return res.status(403).json({ message: "User is not in destination department" });
   }
-
-
-
 });
 
 

@@ -9,9 +9,8 @@ import { userInfo } from 'os';
 
 const router = express.Router();
 
-//---------------------------------------------------new code -----------------------------------------------------//
 
-//doc ที่รอรับเข้า + อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า หาเอกสารที่ ตรวจเสร็จจากเอกสารขั้นต้นแล้ว
+//------------------------doc ที่รอรับเข้า + อยู่ระหว่างการตรวจสอบและอนุมัติโดยหัวหน้า หาเอกสารที่ ตรวจเสร็จจากเอกสารขั้นต้นแล้ว--------------//
 router.get('/wait_to_accept_byHeadaudit', async (req, res) => {
     
   try {
@@ -136,7 +135,11 @@ router.get('/wait_to_accept_byHeadaudit', async (req, res) => {
 
 
 
-//ดึง data มาทีละอัน
+
+
+
+
+//-----------------------------------------------------ดึง data มาทีละอัน--------------------------------------//
 router.get('/document/:docId', async (req, res) => {
     try {
         const documentId = parseInt(req.params.docId, 10); 
@@ -208,7 +211,13 @@ router.get('/document/:docId', async (req, res) => {
 });
 
 
-//อัพเดตสถานะ ตรวจสอบของหัวหน้างาน 
+
+
+
+
+
+
+//-------------------------------------------อัพเดตสถานะ ตรวจสอบของหัวหน้างาน------------------------------//
 router.put('/update_st_audit_by_Headaudit/:docId', async (req, res) => {
     const text_suggesttion = req.body;
     try {
@@ -348,6 +357,12 @@ router.put('/edit_ByheadAuditor/:docId', async (req, res) => {
 
 
 
+
+
+
+
+
+//---------------------------------------------ดูประวัติเอกสารที่ได้ทำการตรวจสอบเรียบร้อยแล้ว-----------------------//
 router.get('/history_theAuditByHeadauditor', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -408,6 +423,11 @@ router.get('/history_theAuditByHeadauditor', async (req, res) => {
 });
 
 
+
+
+
+
+//----------------------------------------------------ดูประวัติเอกสารที่ได้ส่งกลับไปแก้ไข-----------------------------------//
 router.get('/history_sendtoeditByHeadauditor', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -455,7 +475,6 @@ router.get('/history_sendtoeditByHeadauditor', async (req, res) => {
             doc_StatusNow : h.document.status.status
         }));
 
-
         res.json({
             message: "History in Destination of status : ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
             data: set_json
@@ -468,6 +487,94 @@ router.get('/history_sendtoeditByHeadauditor', async (req, res) => {
 });
 
 
+
+
+//-------------------------------------------------ส่งประวัติติดตามสถานะของเอกสาร-----------------------------------------//
+router.get('/docStatus/:docId', async (req, res) => {
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+        return res.status(400).json({ error: "docId ต้องเป็นตัวเลข" });
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include : {
+              department : true
+            }
+        });
+
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(402).json({ message: "User is not in destination department" });
+        }
+
+        const doc = await prisma.documentPetition.findUnique({
+            where : { id : documentId },
+            include : { destination : true }
+        })
+
+        if ( !doc ){
+          return res.status(404).json({ message : "not found document" });
+        }
+
+        if ( find_des.id !== doc.destinationId ){
+          return res.status(401).json({ message: "Document not found in this destination department" });
+        }
+
+        const find_statusHistory = await prisma.documentStatusHistory.findMany({
+            where: { documentId: documentId },
+            include: {
+                status: true,
+                changedBy: {include : {department : true}},
+                document: {
+                    include: {destination : true}
+                }
+            },
+            orderBy: { changedAt: 'asc' }
+        });
+
+        // เก็บผลลัพธ์ทั้งหมดไว้ใน array
+        const set_json = [];
+        for (const h of find_statusHistory) {
+            if (h.status.status === 'ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง') {
+                set_json.push({
+                    docId: h.documentId,
+                    ChangeBy: h.changedBy?.email || null,
+                    status: h.status.status || null,
+                    changeAt: h.changedAt,
+                    note: h.note_t,
+                    doc_title: h.document.title,
+                    doc_id_doc: h.document.id_doc,
+                    new_destination: h.document.destination.des_name,
+                    old_destination: h.changedBy.department.department_name
+                });
+            } else {
+                set_json.push({
+                    docId: h.documentId,
+                    ChangeBy: h.changedBy?.email || null,
+                    status: h.status.status || null,
+                    changeAt: h.changedAt,
+                    note: h.note_t,
+                    doc_title: h.document.title,
+                    doc_id_doc: h.document.id_doc
+                });
+            }
+        }
+        
+        // ส่งออกเป็น array ทั้งหมด
+        console.log("history", set_json)
+        res.json({ message: "find document history status", set_json });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+
+});
 
 
 

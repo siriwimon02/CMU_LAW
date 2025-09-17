@@ -48,9 +48,13 @@ router.post('/register', async (req, res) => {
       },
     });
 
+    const findRole_name = await prisma.roleOfUser.findUnique({
+      where : { id : user.rId }
+    })
+
     // สร้าง JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role_id: role_id},
+      { id: user.id, email: user.email, role_name : findRole_name.role_name},
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -74,12 +78,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: "User not found" });
     }
 
+    const findRole_name = await prisma.roleOfUser.findUnique({
+      where : { id : user.rId }
+    })
+
     // สร้าง JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role_id: user.rId},
+      { id: user.id, email: user.email, role_name : findRole_name.role_name},
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
+
 
     console.log('token', token);
     res.json({ token });

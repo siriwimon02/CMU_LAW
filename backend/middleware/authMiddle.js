@@ -20,7 +20,7 @@ function authMiddleware(req, res, next){
             }
 
             req.user = decoded;
-            console.log(decoded.id, decoded.role_id, decoded.email);
+            console.log(decoded.id, decoded.role_name, decoded.email);
             next();
         });        
     } catch (err){

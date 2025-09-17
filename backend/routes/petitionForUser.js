@@ -23,8 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-//ฟอร์มเอกสารใหม่ เข้ามาใหม่
-// ฟอร์มเอกสารใหม่ เข้ามาใหม่
+//---------------------------------------ฟอร์มเอกสารใหม่ เข้ามาใหม่--------------------------------------------//
 router.post('/', upload.array("attachments", 5), async (req, res) => {
   try {
     const userid = req.user.id;
@@ -120,7 +119,9 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
 
 
 
-//ดึงdata ทั้งหมดที่ User กรอก
+
+
+//---------------------------------------------------ดึงdata ทั้งหมดที่ User กรอก--------------------------------------//
 router.get('/', async (req, res) => {
     console.log(req.user.id);
     const petition_doc = await prisma.documentPetition.findMany({
@@ -169,7 +170,7 @@ router.get('/', async (req, res) => {
 });
 
 
-//ตอนคลิกดูรายละเอียดเอกสารแต่ละอัน กับ ดึง data ตอนแก้ไข
+//--------------------------------------ตอนคลิกดูรายละเอียดเอกสารแต่ละอัน กับ ดึง data ตอนแก้ไข---------------------------//
 router.get('/:docId', async (req, res) => {
     // console.log(req.user.id);
     const user = await prisma.user.findUnique({
@@ -223,7 +224,11 @@ router.get('/:docId', async (req, res) => {
 
 
 
-// หน้าบ้านต้องส่ง docId มาด้วย เช่น PUT /documents/5
+
+
+
+
+//--------------------------------------หน้าบ้านต้องส่ง docId มาด้วย เช่น PUT /documents/5-------------------------//
 router.put('/edit/:docId', upload.array("attachments", 5),async (req, res) => {
     const documentId = parseInt(req.params.docId, 10); 
     if (isNaN(documentId)) {
@@ -308,6 +313,10 @@ router.put('/edit/:docId', upload.array("attachments", 5),async (req, res) => {
 });
 
 
+
+
+
+//-------------------------------------------------ส่งประวัติติดตามสถานะของเอกสาร-----------------------------------------//
 router.get('/docStatus/:docId', async (req, res) => {
     const documentId = parseInt(req.params.docId, 10); 
     if (isNaN(documentId)) {
@@ -344,11 +353,10 @@ router.get('/docStatus/:docId', async (req, res) => {
         });
 
         // เก็บผลลัพธ์ทั้งหมดไว้ใน array
-        const history_json = [];
-
+        const set_json = [];
         for (const h of find_statusHistory) {
             if (h.status.status === 'ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง') {
-                history_json.push({
+                set_json.push({
                     docId: h.documentId,
                     ChangeBy: h.changedBy?.email || null,
                     status: h.status.status || null,
@@ -360,7 +368,7 @@ router.get('/docStatus/:docId', async (req, res) => {
                     old_destination: h.changedBy.department.department_name
                 });
             } else {
-                history_json.push({
+                set_json.push({
                     docId: h.documentId,
                     ChangeBy: h.changedBy?.email || null,
                     status: h.status.status || null,
@@ -371,9 +379,10 @@ router.get('/docStatus/:docId', async (req, res) => {
                 });
             }
         }
-
+        
         // ส่งออกเป็น array ทั้งหมด
-        res.json({ message: "find document history status", data: history_json });
+        console.log("history", set_json)
+        res.json({ message: "find document history status", set_json });
 
     } catch (err) {
         console.error(err);

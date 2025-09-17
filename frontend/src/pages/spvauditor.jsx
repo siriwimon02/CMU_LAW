@@ -11,8 +11,9 @@ function SpvAuditor() {
   const token = localStorage.getItem("token");       // plain value
 
   // hooks must always run (same order every render)
-  const [userInfo, setUserInfo] = useState(null);    // hook 2
   const [documentAll, setDocumentAll] = useState([]);// hook 3
+  const [history_accept, sethistory_accept] = useState([]);
+  const [history_change_des, sethistory_change_des] = useState([]);
   const [approveOpen, setApproveOpen] = useState(false); // hook 4
   const [selected, setSelected] = useState(null);    // hook 5
   const [modalPhase, setModalPhase] = useState("confirm"); // "confirm" | "success"
@@ -23,40 +24,57 @@ function SpvAuditor() {
   // ตัวกรองจากปุ่มด้านบน: 'all' | 'orange' | 'blue' | 'green'
   const [filterStatus, setFilterStatus] = useState('all');
 
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   useEffect(() => {
     if (!token) return;
     (async () => {
       try {
-        const res1 = await fetch("http://localhost:3001/auth/user", {
+        const res1 = await fetch("http://localhost:3001/petitionSuperAudit/wait_to_accept", {
           headers: { Authorization: `${token}` },
         });
-        const user = await res1.json();
 
-        const res2 = await fetch("http://localhost:3001/petition", {
+        const res2 = await fetch("http://localhost:3001/petitionSuperAudit/history_accept", {
           headers: { Authorization: `${token}` },
         });
-        const docs = await res2.json();
 
-        setUserInfo(user);
-        setDocumentAll(Array.isArray(docs) ? docs : docs.data || []);
+        const res3 = await fetch("http://localhost:3001/petitionSuperAudit/history_change_des", {
+          headers: { Authorization: `${token}` },
+        });
+
+        const doc_wait_accept = await res1.json();
+        const doc_accepted = await res2.json();
+        const doc_changed_des = await res3.json();
+
+        console.log(doc_wait_accept);
+        console.log(doc_accepted);
+        console.log(doc_changed_des);
+
+        setDocumentAll(doc_wait_accept.document_json || []);
+        sethistory_accept(doc_accepted.document_json || []);
+        sethistory_change_des(doc_changed_des.document_json || []);
       } catch (e) {
-        console.error(e);
+        console.error("Fetch petitions failed", e.message);
+        alert(`เกิดข้อผิดพลาด: ${e.message}`); // 👈 แจ้งเตือนผู้ใช้
         setDocumentAll([]);
+        sethistory_accept([]);
+        sethistory_change_des([]);
       }
     })();
   }, [token]);
+  const data = documentAll
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+
 
   // ฟังก์ชันช่วยเช็คสถานะ (รองรับข้อความไดนามิก)
   const isBlueStatus = (s) =>
   s === 'ส่งไปยังหน่วยงานอื่นเเล้ว' ||
   s?.startsWith('ส่งไปยัง') ||
-  s?.startsWith('ส่งต่อไปยัง');
-  const isGreenStatus = (s) => s === 'ส่งต่อไปที่ผู้ตรวจสอบเเล้ว';
-  const isOrangeStatus = (s) => s === 'รอคัดกรอง';
+  s?.startsWith('ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง');
+  const isGreenStatus = (s) => s === 'รับเข้ากองเรียบร้อย';
+  const isOrangeStatus = (s) => s === 'รอรับเข้ากอง';
 
   // ====== Handlers: ส่งไปหน่วยงานอื่น (ป๊อปอัพ ForwardToAuditorButton เดิม) ======
   const openApprove = (item) => {
@@ -70,6 +88,7 @@ function SpvAuditor() {
     setSelected(null);
   };
 
+
   // ====== Handlers: ส่งต่อไปยังผู้ตรวจสอบ -> เปิดป๊อปอัพ ForwardToDepartment ======
   const openReject = (item) => {
     setSelected(item);
@@ -77,72 +96,16 @@ function SpvAuditor() {
     setRejectOpen(true);
   };
 
+
   const closeReject = () => {
     setRejectOpen(false);
     setSelected(null);
     setDeptView("form");
   };
 
-  // mock data
-  const fakeData = [
-    {
-      id: 1,
-      department_name: '1',
-      destination_name: 'สำนักงานบริหารงานวิจัย ',
-      title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านกำแพงเพชร',
-      authorize_to: 'เบล กำแพงเพชร',
-      position: 'หัวหน้าชมรม',
-      affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-      authorize_text: 'ขอเงิน',
-      status_name: 'ส่งไปยังกองกฎหมาย',
-      createdAt: "2025-09-13T12:01:05.381Z",
-      date_of_signing: null
-    },
-    {
-      id: 2,
-      department_name: '1',
-      destination_name: 'สำนักงานบริหารงานวิจัย ',
-      title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านสุโขทัย',
-      authorize_to: 'น้อต สุโขทัย',
-      position: 'หัวหน้าชมรม',
-      affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-      authorize_text: 'ขอเงิน',
-      status_name: 'รอคัดกรอง',
-      createdAt: "2025-09-13T12:01:05.381Z",
-      date_of_signing: null
-    },
-    {
-      id: 3,
-      department_name: '1',
-      destination_name: 'สำนักงานบริหารงานวิจัย ',
-      title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
-      authorize_to: 'แก้ม จอมทอง',
-      position: 'หัวหน้าชมรม',
-      affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-      authorize_text: 'ขอเงิน',
-      status_name: 'ส่งต่อไปที่ผู้ตรวจสอบเเล้ว',
-      createdAt: "2025-09-13T12:01:05.381Z",
-      date_of_signing: null
-    },
-    {
-      id: 4,
-      department_name: '1',
-      destination_name: 'สำนักงานบริหารงานวิจัย ',
-      title: 'การเบิกเงินค่ากล้องถ่ายรูป 1 ล้านบาทของชมรมคนบ้านจอมทอง',
-      authorize_to: 'อาย socute',
-      position: 'หัวหน้าชมรม',
-      affiliation: 'วิทยาการคอมพิวเตอร์ที่แม่บังคับมาเรียน',
-      authorize_text: 'ขอเงิน',
-      status_name: 'ส่งต่อไปที่ผู้ตรวจสอบเเล้ว',
-      createdAt: "2025-09-13T12:01:05.381Z",
-      date_of_signing: null
-    }
-  ];
 
   const BRAND_PURPLE = "#66009F";
 
-  // เตรียมข้อมูล + ตัวกรอง
-  const data = (documentAll && documentAll.length > 0) ? documentAll : fakeData;
 
   const statusMap = {
     orange: 'รอคัดกรอง',
@@ -152,15 +115,16 @@ function SpvAuditor() {
 
   const filteredItems = (() => {
     if (filterStatus === 'all') return data;
+
     if (filterStatus === 'orange') {
       return data.filter(it => isOrangeStatus(it.status_name));
     }
     if (filterStatus === 'blue') {
       // รวมทั้ง "ส่งไปยังหน่วยงานอื่นแล้ว" แบบเดิม และ "ส่งต่อไปยัง{หน่วยงาน}"
-      return data.filter(it => isBlueStatus(it.status_name));
+      return history_change_des.filter(it => isBlueStatus(it.status_name));
     }
     if (filterStatus === 'green') {
-      return data.filter(it => isGreenStatus(it.status_name));
+      return history_accept.filter(it => isGreenStatus(it.status_name));
     }
     return data;
   })();
@@ -289,6 +253,7 @@ function SpvAuditor() {
           </article>
         );
       })}
+
 
       {/* ===== ป๊อปอัพเดิม: ส่งคำขอไปยังหน่วยงานอื่น (ฟ้า) ===== */}
       <ForwardToAuditorButton

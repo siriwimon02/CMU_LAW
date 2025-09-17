@@ -4,14 +4,14 @@ dotenv.config({ path: '../.env.dev' });
 
 import express from 'express';
 import prisma from '../prismaClient.js';
-
+import { error } from 'console';
 
 
 const router = express.Router();
 
-//---------------------------------------------------new code -----------------------------------------------------//
 
-//doc ที่รอรับเข้า + อัพเดตสถานะให้ตรวจสอบขั้นต้น
+
+//----------------------------------------------doc ที่รอรับเข้า + อัพเดตสถานะให้ตรวจสอบขั้นต้น-----------------------------------//
 router.get('/wait_to_accept', async (req, res) => {
   
   try {
@@ -134,6 +134,11 @@ router.get('/wait_to_accept', async (req, res) => {
 });
 
 
+
+
+
+
+
 //---------------------------------------------------------ดึง data แต่ละ ID--------------------------------------//
 router.get('/document/:docId', async (req, res) => {
   try {
@@ -206,8 +211,14 @@ router.get('/document/:docId', async (req, res) => {
 
 
 
+
+
+
+
+
+
 //------------------------------------------update status รับเข้ากองเรียบร้อยแล้ว--------------------------------//
-router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
+router.put('/update_st_ToAccpet/:docId', async (req, res) => {
   try {
     const documentId = parseInt(req.params.docId, 10); 
     if (isNaN(documentId)) {
@@ -280,6 +291,12 @@ router.put('/update_st_audit_by_spv/:docId', async (req, res) => {
 
 
 
+
+
+
+
+
+
 //------------------------------------------------ตรวจสอบเอกสารขั้นสุดท้ายก่อนส่งไปให้ อธิการบดี-------------------------------------//
 //doc ที่รอตรวจสอบ
 router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
@@ -291,6 +308,9 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
       where : { status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
     });
 
+    const find_status3 = await prisma.status.findUnique({
+      where : { status : "ส่งกลับเพื่อแก้ไขก่อนเสนออธิการบดี" }
+    });
 
     const user = await prisma.user.findUnique({
       where : { id : req.user.id }
@@ -313,83 +333,61 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
     const document_audit_1st = await prisma.documentPetition.findMany({
       where : {
         destinationId : find_des.id,
-        statusId : find_status1.id 
+        statusId : { in : [find_status1.id, find_status3.id] }
       }
     });
     console.log(document_audit_1st);
 
-    //อัพเดตสถานะการตรวจสอบจากหัวหน้า เป็น อยุ่ระหว่างตรวจสอบอันสุดท้าย
+    
     if (document_audit_1st.length > 0){
-      await prisma.documentPetition.updateMany({
-        where : {
-          destinationId : find_des.id,
-          statusId : find_status1.id 
-        }, data : {
-          statusId : find_status2.id
-        }
-      });
-
-      // เก็บ document status action log
-      await Promise.all(
-        document_audit_1st.map(doc =>
-          prisma.documentStatusHistory.create({
-            data: {
-              document: { connect: { id: doc.id } },
-              status: { connect: { id: find_status2.id } }, 
-              changedBy: { connect: { id: user.id } },
-              note_t: "รอตรวจสอบเอกสาร จาก ผอ.กอง"
-            }
-          })
-        )
-      );
+      for (const doc of document_audit_1st) {
+        //อัพเดตสถานะการตรวจสอบจากหัวหน้า เป็น อยุ่ระหว่างตรวจสอบอันสุดท้าย
+        await prisma.documentPetition.update({
+          where : { id : doc.id },
+          data : {
+            statusId : find_status2.id
+          }
+        });
+        
+        // เก็บ document status action log
+        await prisma.documentStatusHistory.create({
+          data : {
+            document: { connect: { id: doc.id } },
+            status: { connect: { id: find_status2.id } }, 
+            changedBy: { connect: { id: user.id } },
+            note_t: "รอตรวจสอบเอกสาร จาก ผอ.กอง"
+          }
+        });
+      }
     }
 
     const document_audit_2st = await prisma.documentPetition.findMany({
       where : {
         destinationId : find_des.id,
         statusId : find_status2.id 
+      }, include: {
+        department: true,
+        destination: true,
+        status: true,
+        user: true
       }
     })
     console.log(document_audit_2st);
 
     const document_json = [];
     for(const doc of document_audit_2st){
-        const dep = await prisma.department.findUnique({
-            where:{
-                id: doc.departmentId
-            }
-        });
-
-        const des = await prisma.destination.findUnique({
-            where:{
-                id:doc.destinationId
-            }
-        });
-
-        const stt = await prisma.status.findUnique({
-            where:{
-                id:doc.statusId
-            }
-        });
-
-        const user_email = await prisma.user.findUnique({
-            where:{
-                id: doc.userId
-            }
-        });
-
         const setdoc = {
-            id:doc.id,
-            doc_id:doc.doc_id,
-            department_name: dep.department_name,
-            destination_name: des.des_name,
-            user_email: user_email.email,
-            title:doc.title,
+            id: doc.id,
+            doc_id: doc.doc_id,
+            department_name: doc.department.department_name,
+            destination_name: doc.destination.des_name,
+            user_email: doc.user.email,
+            title: doc.title,
             authorize_to: doc.authorize_to,
             position: doc.position,
             affiliation: doc.affiliation,
             authorize_text: doc.authorize_text,
-            status_name: stt.status,
+            status_name: doc.status.status,
             createdAt: doc.createdAt,
         };
         document_json.push(setdoc);
@@ -404,6 +402,12 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
 });
 
 
+
+
+
+
+
+//-------------------------------------------------ดูเอกสารที่ต้องตรวจสอบ โดยผอ.กอง----------------------------//
 router.get('/document_forlastAudit/:docId', async (req, res) => {
     try {
         const documentId = parseInt(req.params.docId, 10); 
@@ -477,7 +481,7 @@ router.get('/document_forlastAudit/:docId', async (req, res) => {
 
 
 
-//อัพเดตยืนการตรวจเอกสารรอบสุดท้าย
+//----------------------------------------------อัพเดตยืนการตรวจเอกสารรอบสุดท้าย----------------------------//
 router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
     try {
         const documentId = parseInt(req.params.docId, 10); 
@@ -510,6 +514,8 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
+        console.log(doc);
+
 
         if (!doc || doc.destinationId !== find_des.id) {
           return res.status(404).json({ message: "Document not found in this destination department" });
@@ -518,6 +524,7 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
         if (doc.statusId !== find_status1.id){
           return res.status(404).json({ message: "Document not found or not in correct status" });
         }
+
 
         //อัพเดตสถานะ
         const updatedDoc = await prisma.documentPetition.update({
@@ -542,6 +549,11 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
 
 
 
@@ -636,7 +648,13 @@ router.put('/change_destination/:docId', async( req, res) => {
 
 
 
-//-------------------------ส่งเอกสาร กลับไปแก้ไขที่ role audit----------------------------//
+
+
+
+
+
+
+//--------------------------------------------ส่งเอกสาร กลับไปแก้ไขที่ role audit----------------------------//
 router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
     const {test_edit_suggesttion} = req.body;
     try {
@@ -710,7 +728,9 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
 
 
 
-// ประวัติการรรับเอกสารเข้ากอง
+
+
+//-----------------------------------------ประวัติการรรับเอกสารเข้ากอง------------------------------------//
 router.get('/history_accept', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -772,7 +792,9 @@ router.get('/history_accept', async (req, res) => {
 });
 
 
-//ประวัติการส่งไปเอกสารไปกองอื่น
+
+
+//--------------------------------------------ประวัติการส่งไปเอกสารไปกองอื่น----------------------------------//
 router.get('/history_change_des', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -844,7 +866,11 @@ router.get('/history_change_des', async (req, res) => {
 
 
 
-//ประวัติการตรวจสอบเอกสารขั้นสุดท้ายเรียบร้อยแล้ว
+
+
+
+
+//------------------------------------------ประวัติการตรวจสอบเอกสารขั้นสุดท้ายเรียบร้อยแล้ว-------------------------------//
 router.get('/history_thelastAudit', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -905,6 +931,13 @@ router.get('/history_thelastAudit', async (req, res) => {
 
 
 
+
+
+
+
+
+
+//---------------------------------------------ประวัติการส่งเอกสารไปแก้ไข ให้user เป็นคนแก้ไข--------------------------------//
 router.get('/history_sendtoeditBySpvauditor', async (req, res) => {
     try {
         const find_st = await prisma.status.findUnique({
@@ -969,5 +1002,98 @@ router.get('/history_sendtoeditBySpvauditor', async (req, res) => {
 
 
 
+
+
+
+
+//-------------------------------------------------ส่งประวัติติดตามสถานะของเอกสาร-----------------------------------------//
+router.get('/docStatus/:docId', async (req, res) => {
+    const documentId = parseInt(req.params.docId, 10); 
+    if (isNaN(documentId)) {
+        return res.status(400).json({ error: "docId ต้องเป็นตัวเลข" });
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include : {
+              department : true
+            }
+        });
+
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+
+        if (!find_des) {
+            return res.status(402).json({ message: "User is not in destination department" });
+        }
+
+        const doc = await prisma.documentPetition.findUnique({
+            where : { id : documentId },
+            include : { destination : true }
+        })
+
+        if ( !doc ){
+          return res.status(404).json({ message : "not found document" });
+        }
+
+        if ( find_des.id !== doc.destinationId ){
+          return res.status(401).json({ message: "Document not found in this destination department" });
+        }
+
+        const find_statusHistory = await prisma.documentStatusHistory.findMany({
+            where: { documentId: documentId },
+            include: {
+                status: true,
+                changedBy: {include : {department : true}},
+                document: {
+                    include: {destination : true}
+                }
+            },
+            orderBy: { changedAt: 'asc' }
+        });
+
+        // เก็บผลลัพธ์ทั้งหมดไว้ใน array
+        const set_json = [];
+        for (const h of find_statusHistory) {
+            if (h.status.status === 'ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง') {
+                set_json.push({
+                    docId: h.documentId,
+                    ChangeBy: h.changedBy?.email || null,
+                    status: h.status.status || null,
+                    changeAt: h.changedAt,
+                    note: h.note_t,
+                    doc_title: h.document.title,
+                    doc_id_doc: h.document.id_doc,
+                    new_destination: h.document.destination.des_name,
+                    old_destination: h.changedBy.department.department_name
+                });
+            } else {
+                set_json.push({
+                    docId: h.documentId,
+                    ChangeBy: h.changedBy?.email || null,
+                    status: h.status.status || null,
+                    changeAt: h.changedAt,
+                    note: h.note_t,
+                    doc_title: h.document.title,
+                    doc_id_doc: h.document.id_doc
+                });
+            }
+        }
+        
+        // ส่งออกเป็น array ทั้งหมด
+        console.log("history", set_json)
+        res.json({ message: "find document history status", set_json });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+
+});
+
+
 export default router;
+
 
