@@ -49,7 +49,7 @@ function Dashboard() {
   }
 
   const ClicktoWatchPetition = () =>{
-    navigate('/employeePaper');
+    navigate('/petition');
   }
 
   const ClicktoAdminedit = () => {
@@ -57,7 +57,7 @@ function Dashboard() {
   }
 
   const ClicktoHeadAuditor = () => {
-    navigate('/autitor_check');
+    navigate('/auditor_check');
   }
 
   const ClicktoSpvauditor = () => {
@@ -136,7 +136,7 @@ function Dashboard() {
         <div className="flex flex-col items-center justify-center mt-10 gap-5 ">
           {/* block1 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoPetition}
+          onClick={() => handleClick(["user"], ClicktoPetition)} 
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -169,7 +169,7 @@ function Dashboard() {
         </div>
         {/* block2 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClickToTracking}
+          onClick={() => handleClick(["user"], ClickToTracking)}
         >
           <div className="mb-5">
               <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -309,7 +309,7 @@ function Dashboard() {
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
         {/* block1 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoAdminedit }
+          onClick={() => handleClick(["admin"], ClicktoAdminedit)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -328,7 +328,7 @@ function Dashboard() {
         {/* block2 */}
         {/* onClick ยังไม่ถูกที่ */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoWatchPetition}
+          onClick={() => handleClick(["admin"], ClicktoAdminedit)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -360,7 +360,7 @@ function Dashboard() {
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
         {/* block1 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl shadow-blue-400/50 rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={ClicktoPetition}
+          onClick={() => handleClick(["endorser"],["se_endorser"], ClicktoAdminedit)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
