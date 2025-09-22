@@ -122,7 +122,7 @@ function Tracking() {
     navigate('/dashboard');
   }
 
-   const ClickForMoreDetail = (doc) => {
+  const ClickForMoreDetail = (doc) => {
     navigate(`/detail/${doc.id}`);
   }
 
