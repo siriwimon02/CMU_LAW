@@ -99,7 +99,7 @@ app.get('/auth/user', authMiddle, async(req, res) => {
 
 
 //-----------------------------------user all -------------------------------//
-app.get('/api/user', authMiddle, checkRole([1]), async (req, res) => {
+app.get('/api/user', authMiddle, checkRole(["admin"]), async (req, res) => {
   const userAll = await prisma.user.findMany({
       include: {
         role: {
@@ -115,16 +115,19 @@ app.get('/api/user', authMiddle, checkRole([1]), async (req, res) => {
 
 
 //------------------------------ edit role user -----------------------------//
-app.put('/api/updateRole', authMiddle, checkRole([1]), async (req, res) => {
+app.put('/api/updateRole', authMiddle, checkRole(["admin"]), async (req, res) => {
   try {
     const { user_id, role_id } = req.body;
     if (!user_id || !role_id) {
       return res.status(400).json({ error: 'user_id and role_id are required' });
     }
+
     const updatedUser = await prisma.user.update({
       where: { id: parseInt(user_id) },
-      data: { roleId: parseInt(role_id) }
+      data: { rId: parseInt(role_id) },
+      include: { role: true }
     });
+
     res.json({ message: 'Role updated successfully', user: updatedUser });
   } catch (error) {
     console.error('Error updating role:', error);
@@ -133,8 +136,9 @@ app.put('/api/updateRole', authMiddle, checkRole([1]), async (req, res) => {
 });
 
 
+
 //-------------------------------- delete user -------------------------------//
-app.delete('/api/user/:id', authMiddle, checkRole([1]), async (req, res) => {
+app.delete('/api/user/:id', authMiddle, checkRole(["admin"]), async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     await prisma.user.delete({

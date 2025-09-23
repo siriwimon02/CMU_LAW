@@ -21,12 +21,18 @@ function Admin_Panel() {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
+                console.log("TOKEN:", token);
                 const res = await fetch("/api/user", {
                     headers: {
-                        'Authorization': `${token}`
+                        "Content-Type": "application/json",
+                        "Authorization": token
                     }
-                })
-                if (!res.ok) throw new Error("Failed to fetch users");
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    console.error("Error fetching users:", errText);
+                    throw new Error("Failed to fetch users");
+                }
                 const data = await res.json();
                 setUsers(data);
             } catch (err) {
@@ -34,7 +40,6 @@ function Admin_Panel() {
                 navigate("/login");
             }
         };
-
         if (token) {
             fetchUsers();
         } else {
@@ -49,10 +54,11 @@ function Admin_Panel() {
 
         try {
             const res = await fetch(`/api/user/${userId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `${token}`
-            }
+                method: 'DELETE',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": token
+                }
             });
 
             if (!res.ok) throw new Error('Failed to delete user');

@@ -5,12 +5,16 @@ const EditUserRole = ({ isVisible, onClose, user, onUpdate }) => {
   const [roles, setRoles] = useState([]);
   const [form, setForm] = useState({ role_id: "" });
 
-  // Load roles
+  useEffect(() => {
+    if (user) setForm({ role_id: user.rId });
+  }, [user]); 
+
+  // fetch roles
   useEffect(() => {
     async function fetchRoles() {
       try {
         const res = await fetch('/api/roleofuser', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: token } // ตรงกับ backend
         });
         const data = await res.json();
         setRoles(data);
@@ -18,11 +22,6 @@ const EditUserRole = ({ isVisible, onClose, user, onUpdate }) => {
     }
     fetchRoles();
   }, [token]);
-
-  // Set initial role
-  useEffect(() => {
-    if (user) setForm({ role_id: user.role.id });
-  }, [user]);
 
   const handleChange = e => setForm({ role_id: Number(e.target.value) });
 
@@ -33,7 +32,7 @@ const EditUserRole = ({ isVisible, onClose, user, onUpdate }) => {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `${token}`
         },
         body: JSON.stringify({ user_id: user.id, role_id: form.role_id }),
       });
@@ -51,10 +50,25 @@ const EditUserRole = ({ isVisible, onClose, user, onUpdate }) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">แก้ไขสิทธิ์ผู้ใช้งาน</h2>
-        <div className="mb-4">ชื่อผู้ใช้: {user.firstname}</div>
-        <div className="mb-4">อีเมล: {user.email}</div>
+        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">แก้ไขสิทธิ์ผู้ใช้งาน</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="mb-4 flex items-center gap-2">
+          <span >ชื่อผู้ใช้:</span>
+          <span className="font-bold text-[#66009F]">{user.firstname}</span>
+        </div>
+
+        <div className="mb-4 flex items-center gap-2">
+          <span>อีเมล:</span>
+          <span className="font-bold text-[#66009F]">{user.email}</span>
+        </div>
+
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -64,7 +78,7 @@ const EditUserRole = ({ isVisible, onClose, user, onUpdate }) => {
               {roles.map(r => <option key={r.id} value={r.id}>{r.role_name}</option>)}
             </select>
           </div>
-          <button type="submit" className="w-full bg-purple-700 text-white py-2 rounded">บันทึก</button>
+          <button type="submit" className="w-full bg-[#66009F] text-white py-2 rounded-md border border-[#A6A6A6] shadow-md hover:bg-white hover:text-[#66009F] transition-colors">บันทึก</button>
         </form>
       </div>
     </div>

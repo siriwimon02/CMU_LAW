@@ -35,7 +35,7 @@ const AddUserModal = ({ isVisible, onClose}) => {
               <option>Admin ผู้ดูแลระบบ</option>
             </select>
           </div>
-          <button type="submit" className="w-full bg-[#66009F] text-white py-2 rounded-md hover:bg-[#4d007a] transition-colors">
+          <button type="submit" className="w-full bg-white text-[#66009F] py-2 rounded-md border border-[#A6A6A6] shadow-md hover:bg-[#66009F] hover:text-white transition-colors">
             บันทึกการเปลี่ยนแปลง
           </button>
         </form>
