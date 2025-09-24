@@ -17,6 +17,12 @@ import Admin_Panel from '../pages/admin/admin_panel';
 import SuperAuditorTracking from "../pages/superAuditor/superAuditorTracking";
 // auditor (NOT)
 import AuditorTracking from '../pages/auditor/auditorTracking';
+// ผู้อำนวยการคัดกรองเอกสาร
+import SpvAuditor from "../pages/spvauditor";
+import SpvFinalAudited from '../pages/spv_finalaudited';
+
+// auditor
+import Employee_Paper from '../pages/employee_paper';
 import DetailForAuditor from '../pages/auditor/moreDetail';
 import ViewAuditor from '../pages/auditor/viewPetition';
 // head auditor (BEL)
@@ -56,6 +62,10 @@ export default function AppRoutes() {
         <Route path="/admin_panel" element={<Admin_Panel/>} />
         {/* อธิการบดี */}
         <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
+        {/* ผู้อำนวยการคัดกรองเอกสาร */}
+        <Route path="/spvauditor" element={<SpvAuditor />} />
+        <Route path="/view/:id" element={<ViewPetition/>}/>
+        <Route path="/finalaudit" element={<SpvFinalAudited />} />
       </Routes>
     </Router>
   );

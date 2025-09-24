@@ -20,17 +20,17 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
             where : { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
         });
 
-        // const findstatus3 = await prisma.status.findUnique({
-        //     where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
-        // })
+        const findstatus3 = await prisma.status.findUnique({
+            where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
+        })
 
-        // const findstatus4 = await prisma.status.findUnique({
-        //     where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
-        // })
+        const findstatus4 = await prisma.status.findUnique({
+            where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
+        })
 
-        // const findstatus5 = await prisma.status.findUnique({
-        //     where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
-        // })
+        const findstatus5 = await prisma.status.findUnique({
+            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
+        })
 
         const findstatus6 = await prisma.status.findUnique({
             where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว"}
@@ -98,7 +98,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
         const document_audit_2st = await prisma.documentPetition.findMany({
             where : {
                 destinationId : find_des.id,
-                statusId : findstatus2.id,
+                statusId : { in : [findstatus2.id, findstatus3.id, findstatus4.id, findstatus5.id] },
                 auditIdBy : user.id 
             }, include : {
                 department : true,
@@ -295,8 +295,17 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
             return res.status(404).json({ message: "Document not found in this destination department" });
         }
 
-        if (doc.statusId !== find_status1.id || doc.statusId !== findstatus3.id || doc.statusId !== findstatus4.id || doc.statusId !== findstatus5.id) {
-            return res.status(403).json({ message: "Document is not in the correct status for this action" });
+        const allowedStatuses = [
+          find_status1.id,
+          findstatus3.id,
+          findstatus4.id,
+          findstatus5.id,
+        ];
+
+        if (!allowedStatuses.includes(doc.statusId)) {
+          return res.status(403).json({
+            message: "Document is not in the correct status for this action",
+          });
         }
 
         if (doc.auditIdBy !== user.id) {
@@ -1150,7 +1159,7 @@ router.get('/history_audited', async (req, res) => {
 
       // เจ้าของเอกสาร
       owneremail: h.document.user?.email || null,
-      ownername: `${h.document.user?.firstname || ""} ${h.document.user?.lastname || ""}`.trim(),
+      ownername : `${h.document.user?.firstname || ""} ${h.document.user?.lastname || ""}`.trim(),
 
 
       // สถานะ
@@ -1261,6 +1270,7 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
 
       // ผู้ที่เกี่ยวข้อง
 
+      title : h.document.title,
       
       editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
       editedByemail: h.editedBy.email,
@@ -1287,7 +1297,7 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
       //   doc_current_title: h.document.title
       // }
     }));
-
+    console.log(set_json)
     res.json(set_json)
   } catch (err) {
     console.error(err);

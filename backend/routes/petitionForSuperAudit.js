@@ -544,7 +544,7 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
     for(const doc of document_audit_2st){
         const setdoc = {
             id: doc.id,
-            doc_id: doc.doc_id,
+            doc_id: doc.id_doc,
             department_name: doc.department.department_name,
             destination_name: doc.destination.des_name,
             owneremail: doc.user.email,
@@ -1029,7 +1029,7 @@ router.get('/history_final_audited', async (req, res) => {
 
 
 //-------------------------------------ประวัติที่ส่งกลับไปแก้ไข--------------------------------------//
-router.get('/history_send_back_edit_headauditor', async (req, res) => {
+router.get('/history_send_back_edit_spvauditor', async (req, res) => {
 
   try {
     const find_st1 = await prisma.status.findUnique({
@@ -1105,6 +1105,7 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
 
       // ผู้ที่เกี่ยวข้อง
 
+      title : h.document.title,
       
       editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
       editedByemail: h.editedBy.email,
@@ -1131,7 +1132,7 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
       //   doc_current_title: h.document.title
       // }
     }));
-
+    console.log(set_json);
     res.json(set_json)
   } catch (err) {
     console.error(err);

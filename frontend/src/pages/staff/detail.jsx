@@ -75,8 +75,8 @@ function Detail() {
         const user = await u.json();
         setUserInfo(user);
 
-        const s = await fetch(`http://localhost:3001/petition/docStatus/${id}`, {
-            headers: { Authorization: `${token}` },
+        const s = await fetch(`http://localhost:3001/history_status/${id}`, {
+          headers: { Authorization: `${token}` },
         });
         if (!s.ok) throw new Error('Failed to fetch doc status');
         const hist = await s.json();

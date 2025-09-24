@@ -68,6 +68,10 @@ function Dashboard() {
     navigate('/auditTracking')
   }
 
+  const ClickToFinalAudit = () => {
+    navigate('/finalaudit')
+  }
+
 
   const handleClick = (allowedRoles, action) => {
     if (allowedRoles.includes(userInfo.role_n)) {
@@ -261,10 +265,11 @@ function Dashboard() {
           <p className="text-[#66009F] font-bold text-2xl">เจ้าหน้าที่</p>
           <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบ อนุมัติ คำขอเอกสารของพนักงาน</p>
         </div>
+
         {/* block3 */}
         {/* ผู้อำนวยการกอง */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-           onClick={() => handleClick(["spv_auditor"], ClicktoPetition)}
+           onClick={() => handleClick(["spv_auditor"], ClickToFinalAudit)}
         >
           <div className="mb-5">
              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
@@ -283,6 +288,7 @@ function Dashboard() {
           <p className="text-[#66009F] font-bold text-2xl">ผู้อำนวยการกองตรวจสอบเอกสาร</p>
           <p className="text-[#B9B9B9] mt-2 text-base">คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง</p>
         </div>
+
         {/* block4 */}
         {/* ผู้อำนวยการกอง */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"

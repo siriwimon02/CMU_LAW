@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Header from "../../components/trackingHeader";
 
 function Employee_Paper() {
+  
   // ===== Auth token (ไม่ใส่ Bearer) =====
   const authHeader = (localStorage.getItem("token") || "").replace(/^"+|"+$/g, "").trim();
   if (!authHeader) return <Navigate to="/login" replace />;
