@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Header from "../components/trackingHeader";
 
 function Employee_Paper() {
@@ -12,14 +12,15 @@ function Employee_Paper() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
-
+  
   // data
   const [documentAll, setDocumentAll] = useState([]);
   const [historyChangeDes, setHistoryChangeDes] = useState([]);
   const [historyAccept, setHistoryAccept] = useState([]);
-
+  
   // destinations (ถ้า API นี้มีอยู่)
   const [destinations, setDestinations] = useState([]);
+  const navigate = useNavigate();
 
   // ===== Utils =====
   const formatThaiDateTime = (iso) => {
@@ -192,7 +193,7 @@ function Employee_Paper() {
       alert("เกิดข้อผิดพลาดในการโหลดรายละเอียด");
     }
   };
-
+  // console.log(authHeader)
   // ดูเอกสารแนบ/ข้อมูลเอกสารแบบย่อ
   const viewDocs = async (doc) => {
     try {
@@ -210,6 +211,14 @@ function Employee_Paper() {
       alert("เกิดข้อผิดพลาดในการดึงเอกสาร");
     }
   };
+
+  const ClickForMoreDetail = (doc) => {
+    navigate(`/petitionDetailForAuditor/${doc.id}`);
+  }
+  // view petition
+  const ClickForViewPet = (doc) => {
+    navigate(`/viewAuditor/${doc.id}`);
+  }
 
   // ตรวจสอบเสร็จสิ้น (Approve)
   const approveDoc = async (doc) => {
@@ -278,6 +287,7 @@ function Employee_Paper() {
     };
     input.click();
   };
+  
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
@@ -380,7 +390,7 @@ function Employee_Paper() {
                   <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
                     <button
                       type="button"
-                      onClick={() => viewDetail(doc)}
+                      onClick={() => ClickForMoreDetail(doc)}
                       className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
@@ -393,7 +403,7 @@ function Employee_Paper() {
 
                     <button
                       type="button"
-                      onClick={() => viewDocs(doc)}
+                      onClick={() => ClickForViewPet(doc)}
                       className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg"

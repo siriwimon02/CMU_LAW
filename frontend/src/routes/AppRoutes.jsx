@@ -4,7 +4,6 @@ import Register from '../pages/register';
 import Login from '../pages/login';
 import Auditor_Check from '../pages/auditor_check';
 import Petition from '../pages/petition';
-import Employee_Paper from '../pages/employee_paper';
 import Dashboard from '../pages/dashboard';
 // user
 import FormPetition from '../pages/staff/form_petition';
@@ -17,7 +16,15 @@ import TrackingForChancellor from "../pages/Chancellor/tracking"
 import Admin_Panel from '../pages/admin/admin_panel';
 // ผู้อำนวยการคัดกรองเอกสาร
 import SpvAuditor from "../pages/spvauditor";
+// auditor
+import Employee_Paper from '../pages/employee_paper';
+import DetailForAuditor from '../pages/auditor/moreDetail';
+import ViewAuditor from '../pages/auditor/viewPetition';
+// head auditor
+import ViewHeadAuditor from '../pages/headAuditor/viewPetition';
+import DetailForHeadAuditor from '../pages/headAuditor/moreDetail';
 
+import ViewPetition from "../pages/viewPetition";
 
 export default function AppRoutes() {
 
@@ -30,7 +37,13 @@ export default function AppRoutes() {
         <Route path='/dashboard' element={<Dashboard/>} />
         <Route path="/petition" element={<Petition/>} />
         <Route path="/auditor_check" element={<Auditor_Check/>} />
+        {/* head auditor */}
+        <Route path="/viewHeadAuditor/:id" element={<ViewHeadAuditor/>}/>
+        <Route path="/detailForHeadAuditor/:id" element={<DetailForAuditor/>}/>
+        {/* auditor */}
         <Route path="/employeePaper" element={<Employee_Paper/>} />
+        <Route path="/petitionDetailForAuditor/:id" element={<DetailForAuditor/>}/>
+        <Route path="/viewAuditor/:id" element={<ViewAuditor/>}/>
         {/* staff */}
         <Route path="/formPetition" element={<FormPetition/>} />
         <Route path="/tracking" element={<Tracking/>} />
@@ -42,6 +55,7 @@ export default function AppRoutes() {
         <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
         {/* ผู้อำนวยการคัดกรองเอกสาร */}
         <Route path="/spvauditor" element={<SpvAuditor />} />
+        <Route path="/view/:id" element={<ViewPetition/>}/>
       </Routes>
     </Router>
   );
