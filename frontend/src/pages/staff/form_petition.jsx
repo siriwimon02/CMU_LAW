@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
+import Button from "../../components/backToDashboardButton"
+import Icon from "../../components/docIcon"
 // import { Icon } from '@iconify/react';
 
 function FormPetition() {
@@ -242,61 +244,14 @@ function FormPetition() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* ซ้าย: ไอคอน + หัวข้อ */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: "#E0E5F9",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                borderRadius: 6,
-                boxShadow: "0 4px 12px rgba(157, 146, 198, 0.8)"
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
-            </div>
+            <Icon/>
             <h1 style={{ fontSize: "28px", fontWeight: 500, margin: 0 }}>
               ยื่นคำขอมอบอำนาจ
             </h1>
           </div>
 
           {/* ขวา: ปุ่มย้อนกลับ */}
-          <a
-            href="http://localhost:5173/dashboard"
-            aria-label="ย้อนกลับไปแดชบอร์ด"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 40,               // ✅ จัตุรัส
-              height: 40,              // ✅ จัตุรัส
-              background: '#66009F',   // ✅ พื้นหลังม่วง
-              color: '#FFFFFF',        // ✅ currentColor ของ SVG จะเป็นสีขาว
-              borderRadius: 10,        // ✅ มนเล็กน้อย (ถ้าอยากคมสนิทใช้ 0)
-              textDecoration: 'none',
-              boxShadow: '0 4px 12px rgba(108, 106, 108, 0.35)',
-              transition: 'transform .06s ease, box-shadow .12s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(102,0,159,0.45)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(102,0,159,0.35)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            {/* ไอคอนย้อนกลับสีขาว */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                viewBox="0 0 24 24">
-              <g fill="none">
-                <path d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.17-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
-                <path fill="currentColor"
-                      d="M3.283 10.94a1.5 1.5 0 0 0 0 2.12l5.656 5.658a1.5 1.5 0 1 0 2.122-2.122L7.965 13.5H19.5a1.5 1.5 0 0 0 0-3H7.965l3.096-3.096a1.5 1.5 0 1 0-2.122-2.121z"/>
-              </g>
-            </svg>
-          </a>
+          <Button/>
         </div>
 
         <h1 style={{ fontSize: '25px', fontWeight: 'bold', color: '#66009F' }}>
