@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import Header from '../components/trackingHeader';
+import Header from '../../components/trackingHeader';
 
 function Auditor_Check() {
     const token = localStorage.getItem("token");

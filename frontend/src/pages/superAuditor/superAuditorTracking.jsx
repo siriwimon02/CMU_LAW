@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import Header from "../components/trackingHeader";
-import ForwardToAuditorButton from "../components/ForwardToAuditorButton";
-import ForwardToDepartmentButton from "../components/ForwardToDepartmentButton";
+import Header from "../../components/trackingHeader";
+import ForwardToAuditorButton from "../../components/ForwardToAuditorButton";
+import ForwardToDepartmentButton from "../../components/ForwardToDepartmentButton";
 
 function SpvAuditor() {
   // ไม่ใส่ Bearerจ้าาาาาา

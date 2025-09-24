@@ -36,17 +36,17 @@ done
 echo "Postgres is up!"
 
 # # # ให้สิทธิ์ migrations ก่อน (กันปัญหา permission denied)
-# chown -R node:node prisma/migrations || true
+chown -R node:node prisma/migrations || true
 
-# echo "Cleaning old migrations..."
-# rm -rf prisma/migrations/* || true
+echo "Cleaning old migrations..."
+rm -rf prisma/migrations/* || true
 
 echo "Generating Prisma client..."  
 npx prisma generate
 
 
-# echo "Resetting database..."
-# npx prisma migrate reset --force
+echo "Resetting database..."
+npx prisma migrate reset --force
 
 
 echo "Creating fresh migration..."
