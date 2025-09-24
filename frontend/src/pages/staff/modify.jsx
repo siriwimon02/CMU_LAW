@@ -22,6 +22,8 @@ function Modify() {
   const [position, setPosition] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [authorizeText, setAuthorizeText] = useState("");
+  const [needPresidentCard, setNeedPresidentCard] = useState(false);
+  const [needUniversityHouse, setNeedUniversityHouse] = useState(false);
 
   // (ออปชัน) เก็บชื่อสถานะไว้โชว์ถ้าต้องการ
   const [statusName, setStatusName] = useState("");
@@ -38,11 +40,12 @@ function Modify() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:3001/petition/${id}`, {
+        const res = await fetch(`http://localhost:3001/petition/document/${id}`, {
           headers: { Authorization: `${token}` },
         });
         if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
-        const doc = await res.json();
+        const data = await res.json();
+        const doc = data.setdoc;   // ดึง setdoc ออกมาใช้จริง
         if (!alive) return;
 
         // เช็กสิทธิ์ตั้งแต่ตรงนี้
@@ -67,7 +70,20 @@ function Modify() {
         setPosition(doc.position ?? "");
         setAffiliation(doc.affiliation ?? "");
         setAuthorizeText(doc.authorize_text ?? "");
+
+        if (Array.isArray(doc.documentNeed)) {
+          const hasPresidentCard = doc.documentNeed.some(
+            (d) => d.requiredDocument?.name.includes("บัตรประจำตัวอธิการบดี") 
+          );
+          const hasUniversityHouse = doc.documentNeed.some(
+            (d) => d.requiredDocument?.name.includes("ทะเบียนบ้านมหาวิทยาลัยเชียงใหม่")
+          );
+          setNeedPresidentCard(hasPresidentCard);
+          setNeedUniversityHouse(hasUniversityHouse);
+        }
+
         setError("");
+
       } catch (e) {
         setError(e.message || String(e));
       } finally {
@@ -76,6 +92,8 @@ function Modify() {
     })();
     return () => { alive = false; };
   }, [id, token, navigate]);
+
+
 
   // ------- ทางเลือกที่ 2 (ถ้าไม่อยาก navigate ใน effect) -------
   // ถ้าอยาก “ดักตอน render” แทน ให้คอมเมนต์ navigate() ใน effect ทิ้ง
@@ -108,6 +126,10 @@ function Modify() {
       if (position)      form.append("position", position.trim());
       if (affiliation)   form.append("affiliation", affiliation.trim());
       if (authorizeText) form.append("authorizeText", authorizeText.trim());
+          
+      form.append("needPresidentCard", needPresidentCard);
+      form.append("needUniversityHouse", needUniversityHouse);
+
       for (const f of files) form.append("attachments", f);
 
       const res = await fetch(`http://localhost:3001/petition/edit/${id}`, {
@@ -234,6 +256,33 @@ function Modify() {
                   className="w-full resize-y rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
+
+              {/* เอกสารที่ต้องการใช้ประกอบ คำร้อง */}
+              <div>
+                <label className="mb-1 block text-[15px] text-gray-700">
+                  <span className="font-medium">6. เอกสารประกอบคำร้อง</span>
+                  <span className="text-red-600"> *</span>
+                </label>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={needPresidentCard}
+                    onChange={(e) => setNeedPresidentCard(e.target.checked)}
+                  />
+                  <span>สำเนาบัตรประจำตัวอธิการบดี (บัตรประจำตัวพนักงาน)</span>
+                </label>
+
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={needUniversityHouse}
+                    onChange={(e) => setNeedUniversityHouse(e.target.checked)}
+                  />
+                  <span>สำเนาทะเบียนบ้านมหาวิทยาลัยเชียงใหม่</span>
+                </label>
+                <p>หมายเหตุ : การพิจารณาให้เอกสารหรือไม่นั้น ขึ้นอยู่กับดุลพินิจของหน่วยงาน</p>
+              </div>
+
 
               {/* Upload */}
               <div>

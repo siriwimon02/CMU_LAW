@@ -25,11 +25,18 @@ model User {
   department      Department              @relation(fields: [departmentId], references: [id])
   rId             Int
   role            RoleOfUser              @relation(fields: [rId], references: [id])
-  documents       DocumentPetition[]
-  actionLogs      DocumentActionsLog[]
-  statusChanges   DocumentStatusHistory[] @relation("ChangedBy")
-  attachments     DocumentAttachment[]
+
+  documents           DocumentPetition[]
+  actionLogs          DocumentActionsLog[]
+  statusChanges       DocumentStatusHistory[] @relation("ChangedBy")
+  attachments         DocumentAttachment[]
+  petitionEdits       DocumentPetitionHistory[]
+  petitionTranfers    DocumentPetitionHistoryTranfers[]
+  auditDocuments      DocumentPetition[] @relation("AuditBy")
+  headAuditDocuments  DocumentPetition[] @relation("HeadAuditBy")
 }
+
+
 
 model Department {
   id                Int             @id @default(autoincrement())
@@ -38,93 +45,252 @@ model Department {
   documents         DocumentPetition[]
 }
 
+
+
 model RoleOfUser {
-  id          Int         @id @default(autoincrement())
-  role_name   String      @unique
-  users       User[]
-  permissions RolePermission[]
+  id              Int         @id @default(autoincrement())
+  role_name       String      @unique
+  users           User[]
 }
 
-model Permission {
-  id         Int             @id @default(autoincrement())
-  permission String          @db.VarChar(255)
-  roles      RolePermission[]
-}
 
-model RolePermission {
-  id            Int        @id @default(autoincrement())
-  permissionId  Int
-  roleId        Int
-  permission    Permission @relation(fields: [permissionId], references: [id])
-  role          RoleOfUser @relation(fields: [roleId], references: [id])
-}
+
+
 
 model DocumentPetition {
-  id              Int                  @id @default(autoincrement())
-  id_doc          Int
+  id              Int      @id @default(autoincrement())
+  id_doc          String?   @unique @db.VarChar(255)
+
   departmentId    Int
-  department      Department           @relation(fields: [departmentId], references: [id])
+  department      Department @relation(fields: [departmentId], references: [id])
+
   destinationId   Int
-  destination     Destination          @relation(fields: [destinationId], references: [id])
-  title           String
-  authorize_to    String               @db.VarChar(255)
-  position        String               @db.VarChar(255)
-  affiliation     String               @db.VarChar(255)
-  authorize_text  String
+  destination     Destination @relation(fields: [destinationId], references: [id])
+
+  title           String   @db.VarChar(255)
+  authorize_to    String   @db.VarChar(255)
+  position        String   @db.VarChar(255)
+  affiliation     String   @db.VarChar(255)
+  authorize_text  String   @db.VarChar(255)
+
   userId          Int
-  user            User                 @relation(fields: [userId], references: [id])
+  user            User @relation(fields: [userId], references: [id])
+
+  auditIdBy     Int?   
+  auditBy       User? @relation("AuditBy", fields: [auditIdBy], references: [id])
+
+  headauditIdBy Int?   
+  headauditBy   User? @relation("HeadAuditBy", fields: [headauditIdBy], references: [id])
+
   statusId        Int
-  status          Status               @relation(fields: [statusId], references: [id])
-  createdAt       DateTime             @default(now())
+  status          Status @relation(fields: [statusId], references: [id])
+
+  createdAt       DateTime @default(now())
   date_of_signing DateTime?
-  attachments     DocumentAttachment[]
-  actionLogs      DocumentActionsLog[]
-  statusHistory   DocumentStatusHistory[]
+
+  attachments                       DocumentAttachment[]
+  actionLogs                        DocumentActionsLog[]
+  statusHistory                     DocumentStatusHistory[]
+  petitionEdits                     DocumentPetitionHistory[]
+  documentPetitionHistoryTranfers   DocumentPetitionHistoryTranfers[]
+  documentNeeds                     DocumentNeed[]
+
+  @@index([departmentId])
+  @@index([destinationId])
+  @@index([userId])
+  @@index([auditIdBy])
+  @@index([headauditIdBy])
+  @@index([statusId])
+  @@index([createdAt])
 }
 
+
+
+model RequiredDocument {
+  id              Int                @id @default(autoincrement())
+  name            String             @unique @db.VarChar(255)  // เช่น "บัตรอธิการบดี", "ทะเบียนบ้านมหาวิทยาลัย"
+  documentNeeds   DocumentNeed[]
+}
+
+
+model DocumentNeed {
+  id                 Int                @id @default(autoincrement())
+
+  documentId         Int
+  document           DocumentPetition   @relation(fields: [documentId], references: [id])
+
+  requiredDocumentId Int
+  requiredDocument   RequiredDocument   @relation(fields: [requiredDocumentId], references: [id])
+
+  //เก็บว่าตอนนี้ พนักงานอัพโหลดเอกสารให้หรือยัง 
+  isProvided         Boolean            @default(false) 
+  providedAt         DateTime?  
+}
+
+
+
 model Status {
-  id        Int                 @id @default(autoincrement())
-  status    String              @unique
+  id              Int                 @id @default(autoincrement())
+  status          String              @unique @db.VarChar(255)
+
   documents DocumentPetition[]
   statusChanges DocumentStatusHistory[]
 }
 
+
+
+
 model Destination {
-  id        Int                 @id @default(autoincrement())
-  des_name  String              @unique
-  documents DocumentPetition[]
+  id            Int                 @id @default(autoincrement())
+  des_name      String              @unique
+
+  documents     DocumentPetition[]
+  transferFroms DocumentPetitionHistoryTranfers[] @relation("TransferFrom")
+  transferTos   DocumentPetitionHistoryTranfers[] @relation("TransferTo")
 }
+
+
+
 
 model DocumentActionsLog {
-  id        Int                @id @default(autoincrement())
+  id        Int                     @id @default(autoincrement())
+
   userId    Int
-  user      User               @relation(fields: [userId], references: [id])
+  user      User                    @relation(fields: [userId], references: [id])
+
   docId     Int
-  document  DocumentPetition   @relation(fields: [docId], references: [id])
-  action    String             @db.VarChar(255)
-  time_act  DateTime           @default(now())
-  node_text String
+  document  DocumentPetition        @relation(fields: [docId], references: [id])
+
+  action    String                  @db.VarChar(255)
+  time_act  DateTime                @default(now())
+  node_text String                  @db.Text
+
+  @@index([userId])
+  @@index([docId])
+  @@index([time_act])
 }
+
+
+
+model AttachmentType {
+  id            Int                   @id @default(autoincrement())
+  type_name     String                @unique @db.VarChar(255)
+
+  attachments   DocumentAttachment[]
+}
+
+
 
 model DocumentAttachment {
-  id          Int              @id @default(autoincrement())
-  file_path   String
-  file_name   String
-  docId       Int
-  document    DocumentPetition @relation(fields: [docId], references: [id])
-  userId      Int
-  user        User             @relation(fields: [userId], references: [id])
-  time_upload DateTime         @default(now())
+  id                    Int                   @id @default(autoincrement())
+
+  file_path             String
+  file_name             String
+
+  docId                 Int
+  document              DocumentPetition      @relation(fields: [docId], references: [id])
+
+  userId                Int
+  user                  User                  @relation(fields: [userId], references: [id])
+
+  attachment_typeId     Int
+  attachmentType        AttachmentType        @relation(fields: [attachment_typeId], references: [id])
+
+  time_upload           DateTime              @default(now())
+
+  @@index([attachment_typeId])
+  @@index([docId])
+  @@index([userId])
 }
 
+
+
+
+
 model DocumentStatusHistory {
-  id          Int       @id @default(autoincrement())
-  documentId  Int
-  document    DocumentPetition @relation(fields: [documentId], references: [id])
-  statusId    Int
-  status      Status     @relation(fields: [statusId], references: [id])
-  changeById  Int
-  changedBy   User       @relation("ChangedBy", fields: [changeById], references: [id])
-  changedAt   DateTime   @default(now())
-  note_t      String
+  id              Int               @id @default(autoincrement())
+
+  documentId      Int
+  document        DocumentPetition  @relation(fields: [documentId], references: [id])
+
+  statusId        Int
+  status          Status            @relation(fields: [statusId], references: [id])
+
+  changeById      Int
+  changedBy       User              @relation("ChangedBy", fields: [changeById], references: [id])
+  changedAt       DateTime          @default(now())
+
+  note_text       String?            @db.Text
+
+  petitionEdits       DocumentPetitionHistory[]
+  petitionTranfers    DocumentPetitionHistoryTranfers[]
+
+
+  @@index([documentId])
+  @@index([statusId])
+  @@index([changeById])
+  @@index([changedAt])
 }
+
+
+
+
+
+model DocumentPetitionHistory {
+  id                Int                      @id @default(autoincrement())
+  documentId        Int
+  document          DocumentPetition         @relation(fields: [documentId], references: [id])
+
+
+  title             String                @db.VarChar(255)
+  authorize_to      String                @db.VarChar(255)
+  position          String                @db.VarChar(255)
+  affiliation       String                @db.VarChar(255)
+  authorize_text    String                @db.Text
+
+  editById          Int
+  editedBy          User                  @relation(fields: [editById], references: [id])
+  editAt            DateTime              @default(now())
+
+  his_statusId      Int
+  statusHistory     DocumentStatusHistory @relation(fields: [his_statusId], references: [id])
+
+  note_text         String?                @db.Text
+
+  @@index([documentId])
+  @@index([editById])
+  @@index([editAt])
+
+}
+
+
+
+
+
+model DocumentPetitionHistoryTranfers {
+  id                  Int                     @id @default(autoincrement())
+  documentId          Int
+  document            DocumentPetition        @relation(fields: [documentId], references: [id])
+  
+  transferFromId      Int
+  transferFrom        Destination             @relation("TransferFrom", fields: [transferFromId], references: [id])
+
+  transferToId        Int
+  transferTo          Destination             @relation("TransferTo", fields: [transferToId], references: [id])
+
+  transferById        Int
+  transferBy          User                    @relation(fields: [transferById], references: [id])
+
+
+  his_statusId        Int
+  statusHistory       DocumentStatusHistory   @relation(fields: [his_statusId], references: [id])
+
+  note_text           String?                 @db.Text
+
+  @@index([documentId])
+  @@index([transferFromId])
+  @@index([transferToId])
+  @@index([transferById])
+  @@index([his_statusId])
+
+} 

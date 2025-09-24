@@ -60,33 +60,8 @@ function Detail() {
   else if (greenList.includes(statusHistory[statusHistory.length-1]?.status)) fontColor = "text-[#01B56D]";
   else if (orangeList.includes(statusHistory[statusHistory.length-1]?.status)) fontColor = "text-[#E48500]";
 
-  // date formatter
-  function formatThaiDate(iso) {
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso ?? "";
-
-    const datePart = d.toLocaleDateString("th-TH", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
-
-    // Format time, strip an existing "น." if the engine adds it, then append once.
-    let timePart = d.toLocaleTimeString("th-TH", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    timePart = timePart.replace(/\s*น\.\s*$/u, ""); // remove trailing "น." if present
-
-    return `${datePart}  ${timePart} น.`;
-  } catch {
-    return iso ?? "";
-  }
-}
-
-
+  
+  
   useEffect(() => {
     async function run() {
       try {
@@ -101,14 +76,12 @@ function Detail() {
         setUserInfo(user);
 
         const s = await fetch(`http://localhost:3001/petition/docStatus/${id}`, {
-          headers: { Authorization: `${token}` },
+            headers: { Authorization: `${token}` },
         });
         if (!s.ok) throw new Error('Failed to fetch doc status');
-        const payload = await s.json();
+        const hist = await s.json();
+        setStatusHistory(Array.isArray(hist) ? hist : []);
 
-        const hist = Array.isArray(payload.set_json) ? payload.set_json : [];
-        // hist.sort((a, b) => new Date(b.changeAt) - new Date(a.changeAt)); // newest first (optional)
-        setStatusHistory(hist);
       } catch (err) {
         console.error(err);
         setError(err?.message || "Fetch failed");
@@ -154,7 +127,7 @@ function Detail() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
             <div className="rounded-2xl bg-[#F6F8FF] p-5 border-l-[5px] border-[#66009F] shadow-sm">
               <p className="text-[#66009F] font-semibold text-lg">เลขที่คำขอ</p>
-              <p className="text-gray-500 mt-2">{statusHistory[0]?.doc_id_doc ?? "-"}</p>
+              <p className="text-gray-500 mt-2">{statusHistory[0]?.idformal ?? "-"}</p>
             </div>
 
             <div className="rounded-2xl bg-[#F6F8FF] p-5 border-l-[5px] border-[#66009F] shadow-sm">
@@ -181,6 +154,8 @@ function Detail() {
             </p>
           </div>
 
+
+
           {/* list */}
           {statusHistory.length === 0 ? (
             <div className="rounded-2xl border border-dashed p-8 text-center text-gray-700">
@@ -188,28 +163,131 @@ function Detail() {
             </div>
           ) : (
             statusHistory.map((item, idx) => {
-              const { bg, border } = getStatusClasses(item.status);
+              if (!item) return null; // กัน null
+              const { bg, border } = getStatusClasses(item.status || "");
               return (
                 <div className="my-6" key={item.docId ?? idx}>
-                  <div className="flex">
-                    <div className={`w-full md:w-1/2 rounded-lg p-5 shadow-sm relative border-l-[6px] ${border} ${bg}`}>
-                      <p className="font-semibold text-gray-800 text-lg">{item.status}</p>
-                      <p className="text-gray-700 text-md">{item.doc_title ?? '-'}</p>
-                      <p className="text-sm  text-gray-600 text-md">
-                        {item.changeAt ? formatThaiDate(item.changeAt) : '-'}
-                      </p>
-                      {item.note && <p className="text-sm text-gray-700">หมายเหตุ: {item.note}</p>}
-                      {/* <p className="text-xs mt-1 text-gray-600">เปลี่ยนโดย: {item.ChangeBy}</p> */}
-                    </div>
+                  <div
+                    className={`w-full md:w-1/2 rounded-lg p-5 shadow-sm relative border-l-[6px] ${border} ${bg}`}
+                  >
+                    <p className="font-semibold text-gray-800 text-lg">
+                      {item.status ?? "-"}
+                    </p>
+                    {renderStatusDetail(item)}
                   </div>
                 </div>
               );
             })
           )}
+
         </div>
       </div>
     </>
   );
 }
+
+
+
+function renderStatusDetail(item) {
+  // 1) กรณี "ส่งกลับ"
+  if (item.status.includes("ส่งกลับ")) {
+    return (
+      <div className="mt-2 space-y-1">
+        {item.note && <p className="text-sm text-red-700">หมายเหตุ: {item.note}</p>}
+        <p className="text-sm text-gray-700">
+          แก้ไขโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
+        </p>
+        <p className="text-sm text-gray-500">
+          เวลาแก้ไข: {item.editAt ? formatThaiDate(item.editAt) : "-"}
+        </p>
+        <hr className="my-2" />
+        <p className="text-sm text-gray-600">📌 ข้อมูลเดิม</p>
+        <ul className="text-sm text-gray-500 list-disc list-inside">
+          <li>เรื่อง: {item.oldTitle}</li>
+          <li>ผู้รับมอบ: {item.oldAuthorize_to}</li>
+          <li>ตำแหน่ง: {item.oldPosition}</li>
+          <li>สังกัด: {item.oldAffiliation}</li>
+          <li>รายละเอียด: {item.oldAuthorize_text}</li>
+        </ul>
+      </div>
+    );
+  }
+
+  // 2) กรณี "แก้ไขเอกสารแล้ว / อัปโหลดเพิ่มเติมแล้ว"
+  if (item.status.includes("แก้ไขเอกสารแล้ว") || item.status.includes("อัปโหลดเอกสารเพิ่มเติมแล้ว")) {
+    return (
+      <div className="mt-2 space-y-1">
+        <p className="text-sm text-green-700">
+          แก้ไขล่าสุดโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
+        </p>
+        <p className="text-sm text-gray-500">
+          เวลา: {item.editAt ? formatThaiDate(item.editAt) : "-"}
+        </p>
+      </div>
+    );
+  }
+
+  // 3) กรณี "ส่งต่อไปยังหน่วยงาน"
+  if (item.status.includes("ส่งต่อไปยังหน่วยงาน")) {
+    return (
+      <div className="mt-2 space-y-1">
+        <p className="text-sm text-blue-700">
+          จาก: {item.transferFrom} → ไปยัง: {item.transferTo}
+        </p>
+        <p className="text-sm text-gray-700">
+          โดย: {item.transferByname} {item.transferBylname} ({item.transferByemail})
+        </p>
+        <p className="text-sm text-gray-500">
+          เวลา: {item.transferAt ? formatThaiDate(item.transferAt) : "-"}
+        </p>
+        {item.note && <p className="text-sm text-gray-600">หมายเหตุ: {item.note}</p>}
+      </div>
+    );
+  }
+
+  // 4) กรณีสถานะทั่วไป (ตรวจสอบ / อนุมัติ / รับเข้ากอง ฯลฯ)
+  return (
+    <div className="mt-2 space-y-1">
+      <p className="text-sm text-gray-700">
+        โดย: {item.changeBy_name} {item.changeBy_lname} ({item.changeBy_email})
+      </p>
+      <p className="text-sm text-gray-500">
+        เวลา: {item.changeAt ? formatThaiDate(item.changeAt) : "-"}
+      </p>
+      {item.date_of_signing && (
+        <p className="text-sm text-gray-600">
+          วันที่ลงนาม: {formatThaiDate(item.date_of_signing)}
+        </p>
+      )}
+      {item.note && <p className="text-sm text-gray-600">หมายเหตุ: {item.note}</p>}
+    </div>
+  );
+}
+
+
+function formatThaiDate(iso) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso ?? "";
+
+    const datePart = d.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+
+    let timePart = d.toLocaleTimeString("th-TH", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    timePart = timePart.replace(/\s*น\.\s*$/u, "");
+
+    return `${datePart} ${timePart} น.`;
+  } catch {
+    return iso ?? "";
+  }
+}
+
 
 export default Detail;

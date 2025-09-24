@@ -13,6 +13,7 @@ function FormPetition() {
     return <Navigate to="/login" replace />;
   }
 
+
   const [destinations, setDestinations] = useState([]);
   const [destinationId, setDestination] = useState('');
   const [title, setTitle] = useState('');
@@ -20,6 +21,8 @@ function FormPetition() {
   const [position, setPosition] = useState('');
   const [affiliation, setAffiliation] = useState('');
   const [authorize_text, setAuthorize_text] = useState('');
+  const [needPresidentCard, setNeedPresidentCard] = useState(false);
+  const [needUniversityHouse, setNeedUniversityHouse] = useState(false);
   const [agree, setAgree] = useState(false);
 
   const [error, setError] = useState('');
@@ -76,6 +79,7 @@ function FormPetition() {
     }
   }, [confirmOpen, modalStep]);
 
+
   const resetForm = () => {
     setDestination('');
     setTitle('');
@@ -83,15 +87,28 @@ function FormPetition() {
     setPosition('');
     setAffiliation('');
     setAuthorize_text('');
+    setNeedPresidentCard(false);
+    setNeedUniversityHouse(false);
     setAgree(false);
-    setAttachments([]); // ✅ รีเซ็ตไฟล์แนบ
+    setAttachments([]);
   };
+
+  // state ใหม่
+  const [fileError, setFileError] = useState("");
 
   // ✅ ใหม่: เปลี่ยนไฟล์
   const handleFilesChange = (e) => {
     const files = Array.from(e.target.files || []);
-    // รวมกับของเดิม (กันผู้ใช้เลือกหลายรอบ)
-    setAttachments(prev => [...prev, ...files]);
+    const combined = [...attachments, ...files];
+
+    if (combined.length > 5) {
+      setFileError("ไม่สามารถแนบไฟล์เกิน 5 ไฟล์ได้");
+      return; // ❌ ไม่อัปเดต state ถ้าเกิน
+    }
+
+    setFileError(""); // ✅ ล้าง error ถ้าไม่เกิน
+    setAttachments(combined);
+
     // เคลียร์ค่า input เพื่อให้เลือกไฟล์ชื่อซ้ำได้ในครั้งถัดไป
     e.target.value = '';
   };
@@ -124,6 +141,8 @@ function FormPetition() {
       formData.append('position', position.trim());
       formData.append('affiliation', affiliation.trim());
       formData.append('authorize_text', authorize_text.trim());
+      formData.append('needPresidentCard', needPresidentCard ? "true" : "false");
+      formData.append('needUniversityHouse', needUniversityHouse ? "true" : "false");
 
       // แนบไฟล์หลายไฟล์
       attachments.forEach((file, idx) => {
@@ -159,45 +178,6 @@ function FormPetition() {
     }
   };
 
-  // แยกฟังก์ชันยิงจริงตอนกด "ยืนยันการส่ง"
-  // const sendPetition = async () => {
-  //   setLoading(true);
-  //   setError('');
-  //   setOkMsg('');
-  //   try {
-  //     const payload = {
-  //       destinationId: Number(destinationId),
-  //       title: title.trim(),
-  //       authorize_to: authorize_to.trim(),
-  //       position: position.trim(),
-  //       affiliation: affiliation.trim(),
-  //       authorize_text: authorize_text.trim(),
-  //     };
-
-  //     const res = await fetch('http://localhost:3001/petition', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         Authorization: `${token}`, // ถ้าหลังบ้านต้อง Bearer ให้เปลี่ยนเป็น `Bearer ${token}`
-  //       },
-  //       body: JSON.stringify(payload),
-  //     });
-
-  //     const data = await res.json().catch(() => ({}));
-  //     if (!res.ok) {
-  //       setError(data.message || `ส่งคำร้องไม่สำเร็จ (HTTP ${res.status})`);
-  //     } else {
-  //       setOkMsg(data.message || 'บันทึกและส่งหนังสือมอบอำนาจสำเร็จ');
-  //       setConfirmOpen(false); // ปิดป็อปอัปเมื่อสำเร็จ
-  //       resetForm();
-  //     }
-  //   } catch (err) {
-  //     setError('Server error: ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   // เปลี่ยน handleSubmit เดิม ให้เปิดป็อปอัปแทน
   const handleOpenConfirm = (e) => {
     e.preventDefault();
@@ -210,6 +190,7 @@ function FormPetition() {
     setModalStep('confirm');   // ✅ โหมดยืนยัน
     setConfirmOpen(true);
   };
+
 
 
   return (
@@ -370,20 +351,33 @@ function FormPetition() {
           </select>
 
 
-          {/* 7. เลขที่เอกสาร */}
-          <h4 style={{ marginTop: 16 }}>7. เลขลำดับเอกสาร</h4>
-          <input
-            type="text"
-            value="POA-2025-0818-1631"
-            readOnly
-            style={{
-              width: '100%',
-              padding: 10,
-              border: '1px solid #E5E5E5',
-              backgroundColor: '#F7F7F7',
-              borderRadius: 6
-            }}
-          />
+
+          {/* เอกสารที่ต้องการใช้ประกอบ คำร้อง */}
+          <h4 style={{ marginTop: 16 }}>7. เอกสารประกอบคำร้อง</h4>
+          <div>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={needPresidentCard}
+                onChange={(e) => setNeedPresidentCard(e.target.checked)}
+              />
+              <span>สำเนาบัตรประจำตัวอธิการบดี (บัตรประจำตัวพนักงาน)</span>
+            </label>
+
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={needUniversityHouse}
+                onChange={(e) => setNeedUniversityHouse(e.target.checked)}
+              />
+              <span>สำเนาทะเบียนบ้านมหาวิทยาลัยเชียงใหม่</span>
+            </label>
+
+            <p>หมายเหตุ : การพิจารณาให้เอกสารหรือไม่นั้น ขึ้นอยู่กับดุลพินิจของหน่วยงาน</p>
+          </div>
+
+
+
 
           {/* ✅ ใหม่: แนบเอกสารเพิ่มเติม (หลายไฟล์) — อยู่ "ด้านบน" ช่องยืนยัน */}
           <h4 style={{ marginTop: 16 }}>8. แนบเอกสารเพิ่มเติม (ถ้ามี)</h4>
@@ -402,10 +396,11 @@ function FormPetition() {
               // เลือกนามสกุลที่พบบ่อย ปรับได้ตามนโยบายองค์กร
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
             />
+
             {attachments.length > 0 && (
               <div style={{ marginTop: 10 }}>
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                  ไฟล์ที่เลือก ({attachments.length}):
+                  ไฟล์ที่เลือก ({attachments.length}/5):
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {attachments.map((f, idx) => (
@@ -433,7 +428,16 @@ function FormPetition() {
                 </ul>
               </div>
             )}
+
+            {fileError && (
+              <div style={{ color: "red", marginTop: 6, fontSize: 14 }}>
+                {fileError}
+              </div>
+            )}
+
           </div>
+
+
 
           {/* ยืนยันความถูกต้อง */}
           <div style={{ marginTop: 16 }}>
@@ -629,3 +633,6 @@ function FormPetition() {
 }
 
 export default FormPetition;
+
+
+

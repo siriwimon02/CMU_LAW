@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.dev' });
 
 import cors from 'cors';
-import express from 'express';
+import express, { application } from 'express';
 import prisma from './prismaClient.js';
 import authUser from './routes/authUser.js';
 import authMiddle from './middleware/authMiddle.js';
@@ -11,8 +11,6 @@ import petition from './routes/petitionForUser.js';
 import petition_Audit from './routes/petitionForAuditor.js';
 import petition_SuperAudit from './routes/petitionForSuperAudit.js';
 import petition_HeadAudit from './routes/petitionForHeadAuditor.js';
-import petition_SeEndorsor from './routes/petitionForSecAprover.js';
-import petition_Endorsor from './routes/petitionForApprover.js';
 import checkRole from './middleware/checkRole.js';
 
 
@@ -51,8 +49,8 @@ app.use('/petition', authMiddle, checkRole(["user"]), petition); //user
 app.use('/petitionAudit', authMiddle, checkRole(["auditor"]), petition_Audit); //สำหรับคนตรวจสอบ
 app.use('/petitionSuperAudit', authMiddle, checkRole(["spv_auditor"]), petition_SuperAudit); //สำหรับผอ กอง
 app.use('/petitionHeadAudit', authMiddle, checkRole(["head_auditor"]), petition_HeadAudit);
-app.use('/petitionSeApprove', authMiddle, checkRole(["se_endorser"]), petition_SeEndorsor);
-app.use('/petitionApproveDoc', authMiddle, checkRole(["endorser"]), petition_Endorsor);
+
+
 
 
 app.get('/checkrole', authMiddle, checkRole([2, 3]), (req, res) => {
@@ -115,7 +113,7 @@ app.get('/api/user', authMiddle, checkRole(["admin"]), async (req, res) => {
 
 
 //------------------------------ edit role user -----------------------------//
-app.put('/api/updateRole', authMiddle, checkRole(["admin"]), async (req, res) => {
+app.get('/api/updateRole', authMiddle, checkRole(["admin"]), async (req, res) => {
   try {
     const { user_id, role_id } = req.body;
     if (!user_id || !role_id) {
@@ -182,22 +180,197 @@ app.get('/api/destination', async(req, res) => {
 
 
 //-------------------------- Get Document Attactment-----------------------------------//
-app.get('/api/doc_attactment', authMiddle, checkRole([3, 4, 5]), async(req, res) => {
-  const user = await prisma.user.findUnique({
-    where : { id : req.user.id },
-    include: { department: true }
-  });
+app.get('/api/doc_attactment', async(req, res) => {
+  const find_attachment = await prisma.documentAttachment.findMany();
+  res.json(find_attachment);
+});
 
-  const find_des = await prisma.destination.findUnique({
-      where : { des_name : user.department.department_name }
-  });
+//-------------------------- Get Document Attactment-----------------------------------//
+app.get('/api/history/status', async(req, res) => {
+  const find_his_story = await prisma.documentStatusHistory.findMany();
+  res.json(find_his_story);
+});
 
-  console.log(user, find_des);
+app.get('/api/history/document', async (req, res) => {
+  try {
+    const find_his_story = await prisma.documentPetition.findMany({
+      include: {
+        status: true,           // ดึง relation status
+        department: true,       // ถ้าอยากได้ department ด้วย
+        destination: true,      // หรือ relation อื่น ๆ
+        user: true
+      }
+    });
 
-  if (!find_des) {
-      return res.status(403).json({ message: "User is not in destination department" });
+    res.json(find_his_story);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
+
+
+
+
+//----------------------------------ดึง path file ดาวโหลด Only-----------------------------//
+
+
+
+
+
+
+
+
+
+
+//---------------------------------history status-----------------------------------------//
+app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]) , async (req, res) =>{
+
+    const documentId = parseInt(req.params.docId, 10);
+
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    try {
+
+      const find_history_status = await prisma.documentStatusHistory.findMany({
+        where : { documentId : documentId }
+      });
+
+      const find_st1 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+      });
+
+      const find_st2 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง" }
+      });
+
+      const find_st3 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+      });
+
+      const find_st4 = await prisma.status.findUnique({
+        where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว" }
+      });
+
+      const find_st5 = await prisma.status.findUnique({
+        where : { status : "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติมแล้ว" }
+      });
+
+      const find_st6 = await prisma.status.findUnique({
+        where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
+      });
+
+      const history_all = []
+      for ( const his of find_history_status ) {
+        if ( his.statusId === find_st1.id || his.statusId === find_st2.id 
+          || his.statusId === find_st3.id || his.statusId === find_st5.id 
+          || his.statusId === find_st4.id 
+        ){
+          const find_his_edit = await prisma.documentPetitionHistory.findMany({
+            where: { his_statusId: his.id },
+            include: {
+              editedBy: { select: { email: true, firstname: true, lastname: true } },
+              statusHistory: {
+                include: {
+                  status: { select: { status: true } }
+                }
+              },
+              document: true
+            }
+          });
+
+          const result = find_his_edit.map(item => ({
+            historyId: item.id,
+            documentId: item.documentId,
+            docFormalId: item.document.id_doc,
+            historyTitle: item.title,                   // title ตอนแก้
+            currentTitle: item.document.title,          // title ปัจจุบัน
+            status: item.statusHistory.status.status,   // ชื่อสถานะ
+            //statusNote: item.statusHistory.note_text,   // Note ของ statusHistory
+            note: item.note_text, 
+            editedByemail : item.editedBy.email,                      // Note ของการแก้ไข
+            editedByname : item.editedBy.firstname,
+            editedBylname : item.editedBy.lastname,
+            editAt: item.editAt,
+
+            //ประวัติเอกสารเก่า
+            oldTitle : item.title,
+            oldAuthorize_to : item.authorize_to,
+            oldPosition : item.position,
+            oldAffiliation : item.affiliation,
+            oldAuthorize_text : item.authorize_text
+          }));
+
+          history_all.push(result[0]);
+        }
+
+        else if ( his.statusId === find_st6.id ) {
+          const find_his_change_des = await prisma.documentPetitionHistoryTranfers.findFirst({
+            where: { his_statusId: his.id },
+            include: {
+              transferFrom: { select: { des_name: true } },
+              transferTo: { select: { des_name: true } },
+              transferBy: { select: { email: true, firstname: true, lastname: true } },
+              statusHistory: {
+                include: {
+                  status: { select: { status: true } }  // <<-- ดึงชื่อสถานะด้วย
+              }},
+              document : true
+            }
+          });
+          const set_json = {
+            docId : find_his_change_des.document.id,
+            idformal : find_his_change_des.document.id_doc,
+            status : find_his_change_des.statusHistory.status.status,
+            transferFrom : find_his_change_des.transferFrom.des_name,
+            transferTo : find_his_change_des.transferTo.des_name,
+            transferByemail : find_his_change_des.transferBy.email,
+            transferByname : find_his_change_des.transferBy.firstname,
+            transferBylname : find_his_change_des.transferBy.lastname,
+            transferAt : find_his_change_des.statusHistory.changedAt,
+            note : find_his_change_des.note_text
+          }
+
+          history_all.push(set_json);
+        }
+        
+        else {
+          const find_his = await prisma.documentStatusHistory.findUnique({
+            where : { id : his.id },
+            include : {
+              status : {select : { status : true }},
+              changedBy : { select : { email : true, firstname : true, lastname : true } }, 
+              document : true
+            }
+          });
+
+          const set_json = {
+            docId : find_his.document.id,
+            idformal : find_his.document.id_doc,
+            status : find_his.status.status,
+            changeBy_email : find_his.changedBy.email,
+            changeBy_name : find_his.changedBy.firstname,
+            changeBy_lname : find_his.changedBy.lastname,
+            changeAt : find_his.changedAt,
+            date_of_signing : find_his.date_of_signing,
+            note : find_his.note_text
+          }
+          history_all.push(set_json)
+        }
+      }
+      console.log(history_all);
+      res.json(history_all);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
 
 
 app.listen(PORT, () => {

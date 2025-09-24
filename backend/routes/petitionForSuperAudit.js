@@ -4,16 +4,15 @@ dotenv.config({ path: '../.env.dev' });
 
 import express from 'express';
 import prisma from '../prismaClient.js';
-import { error } from 'console';
+import { title } from 'process';
 
 
 const router = express.Router();
 
 
-
 //----------------------------------------------doc ที่รอรับเข้า + อัพเดตสถานะให้ตรวจสอบขั้นต้น-----------------------------------//
 router.get('/wait_to_accept', async (req, res) => {
-  
+
   try {
     const find_status1 = await prisma.status.findUnique({
       where : { status : "รอรับเข้ากอง" }
@@ -36,10 +35,10 @@ router.get('/wait_to_accept', async (req, res) => {
     });
     console.log(user_dep, find_des);
 
+
     if (!find_des) {
       return res.status(401).json( {message : "user not live in destination department"} )
     }
-
 
     //หา document ที่มาจากกองอื่นเพื่ออัพเดตสถานะ
     const document_audit_1st = await prisma.documentPetition.findMany({
@@ -49,6 +48,7 @@ router.get('/wait_to_accept', async (req, res) => {
       }
     });
     console.log(document_audit_1st);
+
 
     if (document_audit_1st.length > 0) {
       await prisma.documentPetition.updateMany({
@@ -67,7 +67,7 @@ router.get('/wait_to_accept', async (req, res) => {
               document: { connect: { id: doc.id } },
               status: { connect: { id: find_status1.id } }, // ใช้ status ใหม่
               changedBy: { connect: { id: user.id } },
-              note_t: "เอกสารที่รอรับเข้ากอง"
+              note_text: "เอกสารที่รอรับเข้ากอง"
             }
           })
         )
@@ -78,61 +78,39 @@ router.get('/wait_to_accept', async (req, res) => {
       where : {
         destinationId : find_des.id,
         statusId : find_status1.id 
+      }, include : {
+        department : true,
+        destination : true,
+        user : true,
+        status: true,
       }
     })
     console.log(document_audit_2st);
 
     const document_json = [];
     for(const doc of document_audit_2st){
-        const dep = await prisma.department.findUnique({
-            where:{
-                id: doc.departmentId
-            }
-        });
-
-        const des = await prisma.destination.findUnique({
-            where:{
-                id:doc.destinationId
-            }
-        });
-
-        const stt = await prisma.status.findUnique({
-            where:{
-                id:doc.statusId
-            }
-        });
-
-        const user_email = await prisma.user.findUnique({
-            where:{
-                id: doc.userId
-            }
-        });
-
         const setdoc = {
             id:doc.id,
-            doc_id:doc.doc_id,
-            department_name: dep.department_name,
-            destination_name: des.des_name,
-            user_email: user_email.email,
+            doc_id : doc.id_doc,
+            department_name: doc.department.department_name,
+            destination_name: doc.destination.des_name,
+            owneremail : doc.user.email,
             title:doc.title,
             authorize_to: doc.authorize_to,
             position: doc.position,
             affiliation: doc.affiliation,
             authorize_text: doc.authorize_text,
-            status_name: stt.status,
-            createdAt: doc.createdAt
-        };
+            status_name: doc.status.status,
+            createdAt: doc.createdAt,
+        }
         document_json.push(setdoc);
-        // console.log(setdoc);
     }
-    // console.log(document_json);
     res.json({ message : "find document waiting to accpet in department already", document_json})
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 
 
@@ -147,14 +125,7 @@ router.get('/document/:docId', async (req, res) => {
       return res.status(400).json({ error: "docId is invalid integer" });
     }
 
-    const find_status1 = await prisma.status.findUnique({
-      where: { status: "รอรับเข้ากอง" }
-    });
-
-    if (!find_status1) {
-      return res.status(500).json({ message: "Status not found" });
-    }
-
+    
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       include: { department: true }
@@ -171,10 +142,14 @@ router.get('/document/:docId', async (req, res) => {
     const doc = await prisma.documentPetition.findUnique({
       where: { id: documentId },
       include: {
-        department: true,
-        destination: true,
+        department : true,
+        destination : true,
+        user : true,
         status: true,
-        user: true
+        auditBy : true,
+        headauditBy : true,
+        attachments: { include : { attachmentType : true } },
+        documentNeeds: { include: { requiredDocument : true } } 
       }
     });
 
@@ -182,25 +157,44 @@ router.get('/document/:docId', async (req, res) => {
       return res.status(404).json({ message: "Document not found in this destination department" });
     }
 
-    if (doc.statusId !== find_status1.id){
-      return res.status(404).json({ message: "Document not found or not in correct status" });
-    }
 
     const setdoc = {
       id: doc.id,
-      doc_id: doc.doc_id,
+      doc_id: doc.id_doc,
       department_name: doc.department.department_name,
       destination_name: doc.destination.des_name,
-      user_email: doc.user.email,
+
+      // owner
+      owneremail: doc.user?.email || null,
+      ownername: `${doc.user?.firstname || ""} ${doc.user?.lastname || ""}`.trim(),
+
+      // เนื้อหาเอกสาร
       title: doc.title,
       authorize_to: doc.authorize_to,
       position: doc.position,
       affiliation: doc.affiliation,
       authorize_text: doc.authorize_text,
+
+      // สถานะปัจจุบัน
       status_name: doc.status.status,
+
+      // audit
+      auditByemail: doc.auditBy?.email ?? null,
+      auditByname: doc.auditBy
+        ? `${doc.auditBy.firstname} ${doc.auditBy.lastname}`.trim()
+        : null,
+
+      // head audit
+      headauditByemail: doc.headauditBy?.email ?? null,
+      headauditByname: doc.headauditBy
+        ? `${doc.headauditBy.firstname} ${doc.headauditBy.lastname}`.trim()
+        : null,
+
       createdAt: doc.createdAt,
-      date_of_signing: doc.date_of_signing
+      documentNeed: doc.documentNeeds,
+      document_attachments: doc.attachments
     };
+
 
     res.json({ message: "Document waiting to be accepted in department", setdoc });
   } catch (err) {
@@ -215,15 +209,25 @@ router.get('/document/:docId', async (req, res) => {
 
 
 
-
-
 //------------------------------------------update status รับเข้ากองเรียบร้อยแล้ว--------------------------------//
 router.put('/update_st_ToAccpet/:docId', async (req, res) => {
+  const {set_auditId} = req.body;
+
+  if (!set_auditId || isNaN(set_auditId)) {
+    return res.status(400).json({ message: "Auditor ID is required and must be a valid number" });
+  }
+
+  const auditor = await prisma.user.findUnique({ where: { id: set_auditId } });
+  if (!auditor) {
+      return res.status(404).json({ message: "Auditor not found" });
+  }
+
+  const documentId = parseInt(req.params.docId, 10); 
+  if (isNaN(documentId)) {
+    return res.status(400).json({ message: "docId is invalid integer" });
+  }
+
   try {
-    const documentId = parseInt(req.params.docId, 10); 
-    if (isNaN(documentId)) {
-      return res.status(400).json({ error: "docId is invalid integer" });
-    }
 
     const find_status1 = await prisma.status.findUnique({
       where: { status: "รอรับเข้ากอง" }
@@ -234,19 +238,16 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
     });
 
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
-
-    const user_dep = await prisma.department.findUnique({
-      where: { id: user.departmentId }
+      where: { id: req.user.id },
+      include: { department: true }
     });
 
     const find_des = await prisma.destination.findUnique({
-      where: { des_name: user_dep.department_name }
+      where: { des_name: user.department.department_name }
     });
 
     if (!find_des) {
-      return res.status(403).json({ message: "User is not in this destination department" });
+      return res.status(403).json({ message: "User is not in destination department" });
     }
 
     const doc = await prisma.documentPetition.findUnique({
@@ -261,10 +262,13 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
       return res.status(404).json({ message: "Document not found or not in correct status" });
     }
 
-    //อัพเดตสถานะ
+    //อัพเดตสถานะ + เพิ่มรายชื่อพนักงานที่ต้องตรวจสอบเอกสารนี้
     const updatedDoc = await prisma.documentPetition.update({
       where: { id: documentId },
-      data: { statusId: find_status2.id }
+      data: { 
+        status: { connect: { id: find_status2.id } },
+        auditBy : { connect : { id : auditor.id } } 
+      }
     });
 
     // เก็บ document status action log
@@ -273,7 +277,7 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
           document: { connect: { id: updatedDoc.id } },
           status:   { connect: { id: updatedDoc.statusId } },
           changedBy: { connect: { id: user.id } },
-          note_t:   "เอกสารรับเข้ากองเรียบร้อยแล้ว"
+          note_text:   "เอกสารรับเข้ากองเรียบร้อยแล้ว"
         }
     });
 
@@ -286,268 +290,6 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
-});
-
-
-
-
-
-
-
-
-
-
-//------------------------------------------------ตรวจสอบเอกสารขั้นสุดท้ายก่อนส่งไปให้ อธิการบดี-------------------------------------//
-//doc ที่รอตรวจสอบ
-router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
-  try {
-    const find_status1 = await prisma.status.findUnique({
-      where : { status : "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น" }
-    });
-    const find_status2 = await prisma.status.findUnique({
-      where : { status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
-    });
-
-    const find_status3 = await prisma.status.findUnique({
-      where : { status : "ส่งกลับเพื่อแก้ไขก่อนเสนออธิการบดี" }
-    });
-
-    const user = await prisma.user.findUnique({
-      where : { id : req.user.id }
-    });
-
-    const user_dep = await prisma.department.findUnique({
-      where : { id : user.departmentId }
-    })
-
-    const find_des = await prisma.destination.findUnique({
-      where : { des_name : user_dep.department_name }
-    });
-
-
-    if (!find_des) {
-      return res.status(401).json( {message : "user not live in destination department"} )
-    }
-
-    //หา document ที่มาdoc ที่ผ่านการตรวจสอบจากหัวหน้ากองแล้ว
-    const document_audit_1st = await prisma.documentPetition.findMany({
-      where : {
-        destinationId : find_des.id,
-        statusId : { in : [find_status1.id, find_status3.id] }
-      }
-    });
-    console.log(document_audit_1st);
-
-    
-    if (document_audit_1st.length > 0){
-      for (const doc of document_audit_1st) {
-        //อัพเดตสถานะการตรวจสอบจากหัวหน้า เป็น อยุ่ระหว่างตรวจสอบอันสุดท้าย
-        await prisma.documentPetition.update({
-          where : { id : doc.id },
-          data : {
-            statusId : find_status2.id
-          }
-        });
-        
-        // เก็บ document status action log
-        await prisma.documentStatusHistory.create({
-          data : {
-            document: { connect: { id: doc.id } },
-            status: { connect: { id: find_status2.id } }, 
-            changedBy: { connect: { id: user.id } },
-            note_t: "รอตรวจสอบเอกสาร จาก ผอ.กอง"
-          }
-        });
-      }
-    }
-
-    const document_audit_2st = await prisma.documentPetition.findMany({
-      where : {
-        destinationId : find_des.id,
-        statusId : find_status2.id 
-      }, include: {
-        department: true,
-        destination: true,
-        status: true,
-        user: true
-      }
-    })
-    console.log(document_audit_2st);
-
-    const document_json = [];
-    for(const doc of document_audit_2st){
-        const setdoc = {
-            id: doc.id,
-            doc_id: doc.doc_id,
-            department_name: doc.department.department_name,
-            destination_name: doc.destination.des_name,
-            user_email: doc.user.email,
-            title: doc.title,
-            authorize_to: doc.authorize_to,
-            position: doc.position,
-            affiliation: doc.affiliation,
-            authorize_text: doc.authorize_text,
-            status_name: doc.status.status,
-            createdAt: doc.createdAt,
-        };
-        document_json.push(setdoc);
-        // console.log(setdoc);
-    }
-    // console.log(document_json);
-    res.json({ message : "find document waiting to the last audit", document_json})
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
-
-
-
-
-
-//-------------------------------------------------ดูเอกสารที่ต้องตรวจสอบ โดยผอ.กอง----------------------------//
-router.get('/document_forlastAudit/:docId', async (req, res) => {
-    try {
-        const documentId = parseInt(req.params.docId, 10); 
-        if (isNaN(documentId)) {
-          return res.status(400).json({ error: "docId is invalid integer" });
-        }
-
-        const find_status1 = await prisma.status.findUnique({
-          where: { status: "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
-        });
-
-        if (!find_status1) {
-          return res.status(500).json({ message: "Status not found" });
-        }
-
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-     
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
-
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in destination department" });
-        }
-
-        const doc = await prisma.documentPetition.findUnique({
-            where : { id:documentId },
-            include : {
-                department: true,
-                destination: true,
-                status: true,
-                user: true
-            }
-        });
-        console.log(doc);
-
-        if (!doc || doc.destinationId !== find_des.id) {
-          return res.status(404).json({ message: "Document not found in this destination department" });
-        }
-
-        if (doc.statusId !== find_status1.id){
-          return res.status(404).json({ message: "Document not found or not in correct status" });
-        }
-
-        const setdoc = {
-            id: doc.id,
-            doc_id: doc.doc_id,
-            department_name: doc.department.department_name,
-            destination_name: doc.destination.des_name,
-            user_email: doc.user.email,
-            title: doc.title,
-            authorize_to: doc.authorize_to,
-            position: doc.position,
-            affiliation: doc.affiliation,
-            authorize_text: doc.authorize_text,
-            status_name: doc.status.status,
-            createdAt: doc.createdAt,
-            date_of_signing: doc.date_of_signing
-        };
-        res.json({ message: "Document waiting to be accepted in department", setdoc });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-
-
-//----------------------------------------------อัพเดตยืนการตรวจเอกสารรอบสุดท้าย----------------------------//
-router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
-    try {
-        const documentId = parseInt(req.params.docId, 10); 
-        if (isNaN(documentId)) {
-            return res.status(400).json({ error: "docId is invalid integer" });
-        }
- 
-        const find_status1 = await prisma.status.findUnique({
-            where: { status: "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
-        });
-
-        const find_status2 = await prisma.status.findUnique({
-            where: { status: "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
-        });
-
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-     
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
-
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in this destination department" });
-        }
-
-        const doc = await prisma.documentPetition.findUnique({
-            where: { id: documentId }
-        });
-
-        console.log(doc);
-
-
-        if (!doc || doc.destinationId !== find_des.id) {
-          return res.status(404).json({ message: "Document not found in this destination department" });
-        }
-
-        if (doc.statusId !== find_status1.id){
-          return res.status(404).json({ message: "Document not found or not in correct status" });
-        }
-
-
-        //อัพเดตสถานะ
-        const updatedDoc = await prisma.documentPetition.update({
-            where: { id: documentId },
-            data: { statusId: find_status2.id }
-        });
-
-        // เก็บ document status action log
-        await prisma.documentStatusHistory.create({
-            data: {
-              document: { connect: { id: updatedDoc.id } },
-              status:   { connect: { id: updatedDoc.statusId } },
-              changedBy: { connect: { id: user.id } },
-              note_t:   "ตรวจสอบเอกสารเรียบร้อยแล้วในขั้นสุดท้าย โดย ผอ.กอง"
-            }
-        });
-
-        res.json({ message: "Document status updated to the first audit is already", updatedDoc});
-        
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
 });
 
 
@@ -584,19 +326,16 @@ router.put('/change_destination/:docId', async( req, res) => {
     });
 
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
-
-    const user_dep = await prisma.department.findUnique({
-      where: { id: user.departmentId }
+      where: { id: req.user.id },
+      include: { department: true }
     });
 
     const find_des = await prisma.destination.findUnique({
-      where: { des_name: user_dep.department_name }
+      where: { des_name: user.department.department_name }
     });
 
     if (!find_des) {
-      return res.status(403).json({ message: "User is not in this destination department" });
+      return res.status(404).json({ message: "User is not in destination department" });
     }
 
     const doc = await prisma.documentPetition.findUnique({
@@ -604,11 +343,11 @@ router.put('/change_destination/:docId', async( req, res) => {
     });
 
     if (!doc || doc.destinationId !== find_des.id) {
-      return res.status(404).json({ message: "Document not found in this destination department" });
+      return res.status(403).json({ message: "Document not found in this destination department" });
     }
 
     if (doc.statusId !== find_status1.id){
-      return res.status(404).json({ message: "Document not found or not in correct status" });
+      return res.status(403).json({ message: "Document is not in the correct status for transfer" });
     }
 
     if ( new_destinationId === doc.destinationId ) {
@@ -624,26 +363,73 @@ router.put('/change_destination/:docId', async( req, res) => {
         }
     });
 
-    const new_des = await prisma.destination.findUnique({
-      where : { id : new_destinationId }
-    });
-
     // เก็บ document status action log
-    await prisma.documentStatusHistory.create({
+    const history_st = await prisma.documentStatusHistory.create({
         data: {
           document: { connect: { id: updatedDoc.id } },
           status:   { connect: { id: updatedDoc.statusId } },
           changedBy: { connect: { id: user.id } },
-          note_t: `ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
+          note_text: `ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
         }
     });
+
+    //เก็บประวัติการเปลี่ยน destination ของเอกสารนี้
+    const his_destination_doc = await prisma.documentPetitionHistoryTranfers.create({
+      data : {
+        document : { connect : { id : doc.id } },
+        transferFrom : { connect : { id : doc.destinationId } },
+        transferTo : { connect : { id : new_destinationId } },
+        transferBy : { connect : {id : user.id} },
+        statusHistory : { connect : { id : history_st.id } },
+        note_text : `รายละเอียดเพิ่มเติม : ${text_suggest}`
+      }
+    });
+    console.log("keep history status",history_st);
+    console.log("keep Old destination Id", his_destination_doc);
 
     res.json({ message: "Document has been forwarded to another department", updatedDoc });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
+});
 
+
+
+
+
+//-----------------------------------ดูรายชื่อพนักงานที่ส่งไป-----------------------//
+router.get('/api/auditor', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+        where : { id : req.user.id },
+        include: { department: true }
+    });
+
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
+    }
+
+    const find_role = await prisma.roleOfUser.findUnique({
+      where : { role_name : "auditor" }
+    });
+
+    const find_auditor = await prisma.user.findMany({
+      where : {
+        rId : find_role.id,
+        departmentId : user.departmentId
+      }
+    });
+
+    res.json({ message : "Get Auditor Already", find_auditor })
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 
@@ -654,9 +440,140 @@ router.put('/change_destination/:docId', async( req, res) => {
 
 
 
-//--------------------------------------------ส่งเอกสาร กลับไปแก้ไขที่ role audit----------------------------//
-router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
-    const {test_edit_suggesttion} = req.body;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//------------------------------------------------ตรวจสอบเอกสารขั้นสุดท้ายก่อนส่งไปให้ อธิการบดี-------------------------------------//
+//doc ที่รอตรวจสอบ
+router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
+  try {
+    const find_status1 = await prisma.status.findUnique({
+      where : { status : "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น" }
+    });
+    const find_status2 = await prisma.status.findUnique({
+      where : { status : "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
+    });
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id }
+    });
+
+    const user_dep = await prisma.department.findUnique({
+      where : { id : user.departmentId }
+    })
+
+    const find_des = await prisma.destination.findUnique({
+      where : { des_name : user_dep.department_name }
+    });
+
+
+    if (!find_des) {
+      return res.status(401).json( {message : "user not live in destination department"} )
+    }
+
+    //หา document ที่มาdoc ที่ผ่านการตรวจสอบจากหัวหน้ากองแล้ว
+    const document_audit_1st = await prisma.documentPetition.findMany({
+      where : {
+        destinationId : find_des.id,
+        statusId : find_status1.id
+      }
+    });
+    console.log(document_audit_1st);
+
+    
+    if (document_audit_1st.length > 0){
+      for (const doc of document_audit_1st) {
+        //อัพเดตสถานะการตรวจสอบจากหัวหน้า เป็น อยุ่ระหว่างตรวจสอบอันสุดท้าย
+        await prisma.documentPetition.update({
+          where : { id : doc.id },
+          data : {
+            statusId : find_status2.id
+          }
+        });
+        
+        // เก็บ document status action log
+        await prisma.documentStatusHistory.create({
+          data : {
+            document: { connect: { id: doc.id } },
+            status: { connect: { id: find_status2.id } }, 
+            changedBy: { connect: { id: user.id } },
+            note_text: "รอตรวจสอบเอกสาร จาก ผอ.กอง"
+          }
+        });
+      }
+    }
+
+    const document_audit_2st = await prisma.documentPetition.findMany({
+      where : {
+        destinationId : find_des.id,
+        statusId : find_status2.id 
+      }, include: {
+        department: true,
+        destination: true,
+        status: true,
+        user: true,
+        auditBy : true,
+        headauditBy : true,
+      }
+    })
+    console.log(document_audit_2st);
+
+    const document_json = [];
+    for(const doc of document_audit_2st){
+        const setdoc = {
+            id: doc.id,
+            doc_id: doc.doc_id,
+            department_name: doc.department.department_name,
+            destination_name: doc.destination.des_name,
+            owneremail: doc.user.email,
+            title: doc.title,
+            authorize_to: doc.authorize_to,
+            position: doc.position,
+            affiliation: doc.affiliation,
+            authorize_text: doc.authorize_text,
+            status_name: doc.status.status,
+            auditBy: doc.auditBy?.email ?? null,        
+            headauditBy: doc.headauditBy?.email ?? null, 
+            createdAt: doc.createdAt,
+        };
+        document_json.push(setdoc);
+        // console.log(setdoc);
+    }
+    // console.log(document_json);
+    res.json({ message : "find document waiting to the last audit", document_json})
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+//----------------------------------------------อัพเดตยืนการตรวจเอกสารรอบสุดท้าย----------------------------//
+router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
@@ -668,7 +585,7 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
         });
 
         const find_status2 = await prisma.status.findUnique({
-            where: { status: "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+            where: { status: "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
         });
 
         const user = await prisma.user.findUnique({
@@ -687,6 +604,78 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
         const doc = await prisma.documentPetition.findUnique({
             where: { id: documentId }
         });
+        console.log(doc);
+
+        if (!doc || doc.destinationId !== find_des.id) {
+          return res.status(404).json({ message: "Document not found in this destination department" });
+        }
+
+        if (doc.statusId !== find_status1.id){
+          return res.status(404).json({ message: "Document not found or not in correct status" });
+        }
+
+
+        //อัพเดตสถานะ
+        const updatedDoc = await prisma.documentPetition.update({
+            where: { id: documentId },
+            data: { statusId: find_status2.id }
+        });
+
+
+        // เก็บ document status action log
+        const his_st = await prisma.documentStatusHistory.create({
+            data: {
+              document: { connect: { id: updatedDoc.id } },
+              status:   { connect: { id: updatedDoc.statusId } },
+              changedBy: { connect: { id: user.id } },
+              note_text:   "ตรวจสอบเอกสารเรียบร้อยแล้วในขั้นสุดท้าย โดย ผอ.กอง"
+            }
+        });
+        console.log(his_st);
+        res.json({ message: "Document status updated to the first audit is already", updatedDoc});
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
+
+
+//--------------------------------------------ส่งเอกสาร กลับไปแก้ไขที่ role audit----------------------------//
+router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
+    const {text_edit_suggesttion} = req.body;
+
+    try {
+        const documentId = parseInt(req.params.docId, 10); 
+        if (isNaN(documentId)) {
+            return res.status(400).json({ error: "docId is invalid integer" });
+        }
+ 
+        const find_status1 = await prisma.status.findUnique({
+            where: { status: "อยู่ระหว่างการตรวจสอบขั้นสุดท้าย" }
+        });
+
+        const find_status2 = await prisma.status.findUnique({
+            where: { status: "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+        });
+
+        const user = await prisma.user.findUnique({
+            where : { id : req.user.id },
+            include: { department: true }
+        });
+        const find_des = await prisma.destination.findUnique({
+            where : { des_name : user.department.department_name }
+        });
+        if (!find_des) {
+            return res.status(403).json({ message: "User is not in this destination department" });
+        }
+
+        const doc = await prisma.documentPetition.findUnique({
+            where: { id: documentId }
+        });
 
         
         if (!doc || doc.destinationId !== find_des.id) {
@@ -697,7 +686,6 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
           return res.status(404).json({ message: "Document not found or not in correct status" });
         }
 
-
         //อัพเดต status
         const updatedDoc = await prisma.documentPetition.update({
             where: { id: documentId },
@@ -705,14 +693,33 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
         });
 
         // เก็บ document status action log
-        await prisma.documentStatusHistory.create({
+        const his_st = await prisma.documentStatusHistory.create({
             data: {
               document: { connect: { id: updatedDoc.id } },
               status:   { connect: { id: updatedDoc.statusId } },
               changedBy: { connect: { id: user.id } },
-              note_t: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${test_edit_suggesttion || "-"}`
+              note_text: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggesttion || "-"}`
             }
         });
+
+        const update_finish = await prisma.documentPetition.findUnique({
+            where : { id : documentId }
+        });
+
+        const history_edit = await prisma.documentPetitionHistory.create({
+            data: {
+                document: { connect : { id : update_finish.id } },
+                title : update_finish.title,
+                authorize_to: update_finish.authorize_to,
+                position : update_finish.position,
+                affiliation : update_finish.affiliation,
+                authorize_text : update_finish.authorize_text,
+                editedBy : { connect : { id : user.id } },
+                statusHistory : { connect : { id : his_st.id } },
+                note_text: `รายละเอียดเอกสารที่ต้องแก้ไข : ${text_edit_suggesttion}`
+            }
+        });
+        console.log("History edit document", history_edit)
 
         //ส่ง data ไปยังเมลด้วย
         //------------------------mail----------------//
@@ -730,138 +737,205 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
 
 
 
-//-----------------------------------------ประวัติการรรับเอกสารเข้ากอง------------------------------------//
-router.get('/history_accept', async (req, res) => {
-    try {
-        const find_st = await prisma.status.findUnique({
-            where : { status : "รับเข้ากองเรียบร้อย" }
-        });
-
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-     
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
-
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in this destination department" });
-        }
-
-        const doc = await prisma.documentStatusHistory.findMany({
-            where: {
-                statusId: find_st.id,
-                document: {
-                    destinationId: find_des.id
-                }
-            },
-            include: {
-                document: {
-                  include : { status : true }
-                },
-                changedBy: true,
-                status: true
-            },
-            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
-        });
-
-        
-        const set_json = doc.map(h => ({
-            docId: h.documentId,
-            ChangeBy: h.changedBy.email || null,
-            status: h.status.status || null,
-            changeAt: h.changedAt,
-            note: h.note_t,
-            doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc,
-            doc_StatusNow : h.document.status.status
-        }));
 
 
-        res.json({
-            message: "History in Destination of status : รับเข้ากองเรียบร้อย",
-            data: set_json
-        });
-        
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-------------------------------------ประวัติเอกสาร---------------------------------------//
+//-------------------------------------ส่งตรวจสอบเรียบร้อยแล้ว-------------------------------//
+router.get('/history_accepted', async (req, res) => {
+  try {
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "รับเข้ากองเรียบร้อย" }
+    });
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
     }
+
+    const doc = await prisma.documentStatusHistory.findMany({
+      where : { 
+        changeById : user.id,
+        statusId : find_st1.id,
+        document: {
+          destinationId: find_des.id   
+        } 
+      }, include : {
+        status : true,
+        changedBy : true,
+        document : { include : {
+          auditBy : true,
+          headauditBy : true,
+          status : true,
+          user : true
+        }}
+      }
+    });
+
+    if (!doc || doc.length === 0) {
+      return res.json([]); // ไม่มีประวัติ → ส่ง array ว่าง
+    }
+
+    const set_json = doc.map(h => ({
+      historyId: h.id,
+      docId: h.documentId,
+      idformal: h.document.id_doc,
+
+      // เจ้าของเอกสาร
+      owneremail: h.document.user?.email || null,
+      ownername: `${h.document.user?.firstname || ""} ${h.document.user?.lastname || ""}`.trim(),
+
+      // สถานะ
+      status: h.status?.status || null,
+      changeAt: h.changedAt,
+      note: h.note_text || null,
+
+      // เอกสาร
+      doc_title: h.document.title,
+      doc_statusNow: h.document.status.status,
+
+      // audit
+      auditByemail: h.document.auditBy ? h.document.auditBy.email : null,
+      auditByname: h.document.auditBy
+        ? `${h.document.auditBy.firstname} ${h.document.auditBy.lastname}`
+        : null,
+
+      // head audit
+      headauditByemail: h.document.headauditBy ? h.document.headauditBy.email : null,
+      headauditByname: h.document.headauditBy
+        ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
+        : null
+    }));
+    res.json(set_json);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 
 
 
-//--------------------------------------------ประวัติการส่งไปเอกสารไปกองอื่น----------------------------------//
+
+
+
+//--------------------------------------------ประวัติที่ส่งเอกสารได้ไปกองอื่น-------------------------------//
 router.get('/history_change_des', async (req, res) => {
-    try {
-        const find_st = await prisma.status.findUnique({
-            where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
-        });
 
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-     
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
+  try {
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
+    });
 
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in this destination department" });
-        }
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
+    }
 
-        const doc = await prisma.documentStatusHistory.findMany({
-            where: {
-                statusId: find_st.id,
-                changedBy: {
-                  departmentId: user.departmentId 
-                }
-            },
-            include: {
-                document: {include : { 
-                  destination : true,
-                  status : true 
-                }},
-                changedBy: true,
-                status: true
-            },
-            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
-        });
+    const his_change_des = await prisma.documentStatusHistory.findMany({
+      where : {
+        statusId : find_st1.id,
+        changeById : user.id
+      }
+    });
 
-        const f_doc = await prisma.documentStatusHistory.findMany({
-          where: {
-            statusId: find_st.id
+    if (his_change_des.length === 0) {
+      return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
+    }
+    console.log(his_change_des);
+
+
+    const change_des = await prisma.documentPetitionHistoryTranfers.findMany({
+      where: { 
+        his_statusId : { in: his_change_des.map(h => h.id) }, 
+        transferFromId : find_des.id 
+      },
+      include: {
+        document: {
+          include: {
+            status: true,
+            auditBy: true,
+            headauditBy: true
           }
-        });
-        console.log(f_doc);
+        },
+        transferFrom: true,
+        transferTo: true,
+        transferBy: true,
+        statusHistory: {
+          include: { status: true }
+        }
+      }
+    });
+    console.log(change_des);
 
-        
-        const set_json = doc.map(h => ({
-            docId: h.documentId,
-            ChangeBy: h.changedBy.email || null,
-            status: h.status.status || null,
-            changeAt: h.changedAt,
-            note: h.note_t,
-            doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc,
-            new_des : h.document.destination.des_name,
-            doc_StatusNow : h.document.status.status
-        }));
+    const set_json = change_des.map(h => ({
+      history_petition_id : h.id,
+      history_status_id : h.statusHistory.id,
+      docId: h.documentId,
+      idformal: h.document.id_doc,
 
+      // การโอนย้าย
+      from: h.transferFrom?.des_name || null,
+      to: h.transferTo?.des_name || null,
 
-        res.json({
-            message: "History in Destination of status : ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง",
-            data: set_json
-        });
-        
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
+      // คนโอน
+      transferByemail: h.transferBy?.email || null,
+      transferByname: `${h.transferBy?.firstname || ""} ${h.transferBy?.lastname || ""}`.trim(),
+
+      // สถานะ
+      oldstatus: h.statusHistory?.status?.status || null,   // สถานะก่อนโอน
+      nowstatus: h.document?.status?.status || null,       // สถานะปัจจุบันของเอกสาร
+      statusHistoryId: h.statusHistory?.id || null,
+      changeAt: h.statusHistory?.changedAt || null,
+      note: h.note_text || null,
+
+      // เอกสาร
+      doc_title: h.document?.title || null,
+      doc_statusNow: h.document?.status?.status || null,
+
+      // audit
+      auditByemail: h.document?.auditBy?.email || null,
+      auditByname: h.document?.auditBy
+        ? `${h.document.auditBy.firstname} ${h.document.auditBy.lastname}`.trim()
+        : null,
+
+      // head audit
+      headauditByemail: h.document?.headauditBy?.email || null,
+      headauditByname: h.document?.headauditBy
+        ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`.trim()
+        : null
+    }));
+
+    res.json(set_json);
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+  } 
 });
 
 
@@ -869,230 +943,243 @@ router.get('/history_change_des', async (req, res) => {
 
 
 
+//-----------------------------ประวัติการตรวจสอบเอกสารขั้นสุดท้ายเสร็จเรียบร้อย----------------//
+router.get('/history_final_audited', async (req, res) => {
+  try {
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
+    });
 
-//------------------------------------------ประวัติการตรวจสอบเอกสารขั้นสุดท้ายเรียบร้อยแล้ว-------------------------------//
-router.get('/history_thelastAudit', async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
+    }
+
+    const doc = await prisma.documentStatusHistory.findMany({
+      where : { 
+        changeById : user.id,
+        statusId : find_st1.id,
+        document: {
+          destinationId: find_des.id  
+        }
+      }, include : {
+        status : true,
+        changedBy : true,
+        document : { include : {
+          auditBy : true,
+          headauditBy : true,
+          status : true,
+          user : true
+        }}
+      }
+    });
+
+    if (!doc || doc.length === 0) {
+      return res.json([]); // ไม่มีประวัติ → ส่ง array ว่าง
+    }
+
+    const set_json = doc.map(h => ({
+      historyId: h.id,
+      docId: h.documentId,
+      idformal: h.document.id_doc,
+
+      // เจ้าของเอกสาร
+      owneremail: h.document.user?.email || null,
+      ownername: `${h.document.user?.firstname || ""} ${h.document.user?.lastname || ""}`.trim(),
+
+
+      // สถานะ
+      status: h.status?.status || null,
+      changeAt: h.changedAt,
+      note: h.note_text || null,
+
+      // เอกสาร
+      doc_title: h.document.title,
+      doc_statusNow: h.document.status.status,
+
+      // audit
+      auditByemail: h.document.auditBy ? h.document.auditBy.email : null,
+      auditByname: h.document.auditBy
+        ? `${h.document.auditBy.firstname} ${h.document.auditBy.lastname}`
+        : null,
+
+      // head audit
+      headauditByemail: h.document.headauditBy ? h.document.headauditBy.email : null,
+      headauditByname: h.document.headauditBy
+        ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
+        : null
+    }));
+    res.json(set_json);
+
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+
+
+//-------------------------------------ประวัติที่ส่งกลับไปแก้ไข--------------------------------------//
+router.get('/history_send_back_edit_headauditor', async (req, res) => {
+
+  try {
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+    });
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
+    }
+
+    // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
+    const his_edit = await prisma.documentStatusHistory.findMany({
+      where : {
+        statusId : find_st1.id,
+        changeById : user.id,
+        document: {
+          destinationId: find_des.id   
+        } 
+      }
+    });
+
+    if (his_edit.length === 0) {
+      return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
+    }
+
+    const find_his_edit = await prisma.documentPetitionHistory.findMany({
+      where: { 
+        his_statusId : { in: his_edit.map(h => h.id) }
+      },include : {
+        editedBy : true,
+        statusHistory : {
+          include : {
+            status : true
+          }
+        },
+        document : { include : {
+          auditBy : true,
+          headauditBy : true,
+          status : true,
+          user : true
+        }}
+      }
+    })
+
+
+    const set_json = find_his_edit.map(h => ({
+      doc_petition_his_id: h.id,
+      history_status_id: h.statusHistory.id,
+      docId: h.documentId,
+      idformal: h.document.id_doc,
+
+      // สถานะ
+      oldstatus: h.statusHistory.status?.status || null,
+      nowstatus: h.document.status?.status || null,
+      note_text: h.note_text || h.statusHistory.note_text || null,
+      editedAt: h.editAt,
+
+      // // snapshot ของเอกสารเก่า (ตอนส่งกลับ)
+      // snapshot: {
+      //   title: h.title,
+      //   authorize_to: h.authorize_to,
+      //   position: h.position,
+      //   affiliation: h.affiliation,
+      //   authorize_text: h.authorize_text
+      // },
+
+      // ผู้ที่เกี่ยวข้อง
+
+      
+      editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
+      editedByemail: h.editedBy.email,
+      
+      ownername: `${h.document.user.firstname} ${h.document.user.lastname}`.trim(),
+      owneremail: h.document.user.email,
+      
+      // audit
+      auditByemail: h.document.auditBy ? h.document.auditBy.email : null,
+      auditByname: h.document.auditBy
+        ? `${h.document.auditBy.firstname} ${h.document.auditBy.lastname}`
+        : null,
+
+      // head audit
+      headauditByemail: h.document.headauditBy ? h.document.headauditBy.email : null,
+      headauditByname: h.document.headauditBy
+        ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
+        : null
+      
+
+      // // ข้อมูลเอกสารปัจจุบัน
+      // current_document: {
+      //   doc_statusNow: h.document.status?.status || null,
+      //   doc_current_title: h.document.title
+      // }
+    }));
+
+    res.json(set_json)
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+
+router.get('/snapdoc/:hisstatusId', async (req, res) => {
     try {
-        const find_st = await prisma.status.findUnique({
-            where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
-        });
+      const his_stId = parseInt(req.params.hisstatusId, 10); 
+      if (isNaN(his_stId)) {
+        return res.status(400).json({ error: "docId is invalid integer" });
+      }
 
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-     
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        include: { department: true }
+      });
 
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in this destination department" });
+      const find_des = await prisma.destination.findUnique({
+        where: { des_name: user.department.department_name }
+      });
+
+      if (!find_des) {
+        return res.status(403).json({ message: "User is not in destination department" });
+      }
+
+      const his_edit = await prisma.documentPetitionHistory.findMany({
+        where : { 
+          his_statusId : his_stId,
+          editById : user.id,
+          document : {
+            destinationId : find_des.id
+          } 
         }
+      });
 
-        const doc = await prisma.documentStatusHistory.findMany({
-            where: {
-                statusId: find_st.id,
-                document: {
-                    destinationId: find_des.id
-                }
-            },
-            include: {
-                document: {include : {status : true}},
-                changedBy: true,
-                status: true
-            },
-            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
-        });
-
-        
-        const set_json = doc.map(h => ({
-            docId: h.documentId,
-            ChangeBy: h.changedBy.email || null,
-            status: h.status.status || null,
-            changeAt: h.changedAt,
-            note: h.note_t,
-            doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc,
-            doc_StatusNow : h.document.status.status
-        }));
-
-
-        res.json({
-            message: "History in Destination of status : ตรวจสอบขั้นสุดท้ายเสร็จสิ้น",
-            data: set_json
-        });
-        
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-
-
-
-
-
-
-//---------------------------------------------ประวัติการส่งเอกสารไปแก้ไข ให้user เป็นคนแก้ไข--------------------------------//
-router.get('/history_sendtoeditBySpvauditor', async (req, res) => {
-    try {
-        const find_st = await prisma.status.findUnique({
-            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
-        });
-
-
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-     
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
-
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in this destination department" });
-        }
-
-        console.log(find_des);
-
-        const doc = await prisma.documentStatusHistory.findMany({
-            where: {
-                statusId: find_st.id,
-                document: {
-                    destinationId: find_des.id
-                }
-            },
-            include: {
-                document: {include: {status : true}},
-                changedBy: true,
-                status: true
-            },
-            orderBy: { changedAt: 'desc' } // เพิ่มเพื่อดูประวัติล่าสุดก่อน
-        });
-        
-        const set_json = doc.map(h => ({
-            docId: h.documentId,
-            ChangeBy: h.changedBy.email || null,
-            status: h.status.status || null,
-            changeAt: h.changedAt,
-            note: h.note_t,
-            doc_title : h.document.title,
-            doc_id_doc : h.document.id_doc,
-            doc_StatusNow : h.document.status.status
-        }));
-
-
-        res.json({
-            message: "History in Destination of status : ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย",
-            data: set_json
-        });
-        
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-
-
-
-
-
-
-//-------------------------------------------------ส่งประวัติติดตามสถานะของเอกสาร-----------------------------------------//
-router.get('/docStatus/:docId', async (req, res) => {
-    const documentId = parseInt(req.params.docId, 10); 
-    if (isNaN(documentId)) {
-        return res.status(400).json({ error: "docId ต้องเป็นตัวเลข" });
-    }
-
-    try {
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include : {
-              department : true
-            }
-        });
-
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
-
-        if (!find_des) {
-            return res.status(402).json({ message: "User is not in destination department" });
-        }
-
-        const doc = await prisma.documentPetition.findUnique({
-            where : { id : documentId },
-            include : { destination : true }
-        })
-
-        if ( !doc ){
-          return res.status(404).json({ message : "not found document" });
-        }
-
-        if ( find_des.id !== doc.destinationId ){
-          return res.status(401).json({ message: "Document not found in this destination department" });
-        }
-
-        const find_statusHistory = await prisma.documentStatusHistory.findMany({
-            where: { documentId: documentId },
-            include: {
-                status: true,
-                changedBy: {include : {department : true}},
-                document: {
-                    include: {destination : true}
-                }
-            },
-            orderBy: { changedAt: 'asc' }
-        });
-
-        // เก็บผลลัพธ์ทั้งหมดไว้ใน array
-        const set_json = [];
-        for (const h of find_statusHistory) {
-            if (h.status.status === 'ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง') {
-                set_json.push({
-                    docId: h.documentId,
-                    ChangeBy: h.changedBy?.email || null,
-                    status: h.status.status || null,
-                    changeAt: h.changedAt,
-                    note: h.note_t,
-                    doc_title: h.document.title,
-                    doc_id_doc: h.document.id_doc,
-                    new_destination: h.document.destination.des_name,
-                    old_destination: h.changedBy.department.department_name
-                });
-            } else {
-                set_json.push({
-                    docId: h.documentId,
-                    ChangeBy: h.changedBy?.email || null,
-                    status: h.status.status || null,
-                    changeAt: h.changedAt,
-                    note: h.note_t,
-                    doc_title: h.document.title,
-                    doc_id_doc: h.document.id_doc
-                });
-            }
-        }
-        
-        // ส่งออกเป็น array ทั้งหมด
-        console.log("history", set_json)
-        res.json({ message: "find document history status", set_json });
+      res.json(his_edit)
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
     }
-
 });
-
 
 export default router;
 
