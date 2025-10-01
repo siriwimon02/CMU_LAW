@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Header from "../components/trackingHeader";
+import Navbar from '../components/navbar'
 import { Navigate, useNavigate } from "react-router-dom"; // ✅ import useNavigate
 
 
@@ -302,7 +302,7 @@ function FinalAuditCheck() {
     //รีเทรินนนนนนนนนใหญ่
     return (
         <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-        <Header />
+        <Navbar />
 
         <select
             value={filter}

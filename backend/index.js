@@ -111,6 +111,32 @@ app.get('/api/user', authMiddle, checkRole(["admin"]), async (req, res) => {
   console.log(userAll);
 });
 
+//-------------------------------- add user -------------------------------//
+app.post('/api/user', authMiddle, checkRole(['admin']), async (req, res) => {
+  try {
+    const { firstname, email, role_id } = req.body;
+
+    if (!firstname || !email || !role_id) {
+      return res.status(400).json({ error: 'กรอกข้อมูลให้ครบถ้วน' });
+    }
+
+    const newUser = await prisma.user.create({
+      data: {
+        firstname,
+        email,
+        lastname: null,
+        departmentId: null,
+        rId: parseInt(role_id)
+      }
+    });
+
+    res.json(newUser);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'สร้างผู้ใช้ไม่สำเร็จ' });
+  }
+});
+
 
 //------------------------------ edit role user -----------------------------//
 app.get('/api/updateRole', authMiddle, checkRole(["admin"]), async (req, res) => {

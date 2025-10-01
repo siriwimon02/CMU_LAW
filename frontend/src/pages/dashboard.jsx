@@ -3,13 +3,11 @@ import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
 
-
-
 function Dashboard() {
   const [userInfo, setUserInfo] = useState(null);
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
-   const [showPopup, setShowPopup] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
   //ถ้าไม่ได้ Login เข้าไม่ได้
 

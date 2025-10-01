@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import Button from "../../components/backToDashboardButton"
 import Icon from "../../components/docIcon"
+import Navbar from '../../components/navbar'
 // import { Icon } from '@iconify/react';
 
 function FormPetition() {
@@ -194,6 +194,8 @@ function FormPetition() {
 
 
   return (
+    <div>
+        <div className="font-kanit bg-[#F8F8F8]"><Navbar/></div>
     <div 
       style={{ 
         minHeight: '100vh',            
@@ -220,7 +222,6 @@ function FormPetition() {
         }}
         
       >
-
        {/* header: ไอคอน + หัวข้อ + ปุ่มย้อนกลับ */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* ซ้าย: ไอคอน + หัวข้อ */}
@@ -230,9 +231,6 @@ function FormPetition() {
               ยื่นคำขอมอบอำนาจ
             </h1>
           </div>
-
-          {/* ขวา: ปุ่มย้อนกลับ */}
-          <Button/>
         </div>
 
         <h1 style={{ fontSize: '25px', fontWeight: 'bold', color: '#66009F' }}>
@@ -628,6 +626,7 @@ function FormPetition() {
 
 
       </div>
+    </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
-import Header from '../../components/trackingHeader'
+import Navbar from '../../components/navbar'
 import ApproveModal from '../../components/ApproveModal'
 import RejectModal from '../../components/RejectModal'
 function Tracking() {
@@ -261,7 +261,7 @@ function Tracking() {
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      <Header />
+      <Navbar />
 
       {/* ปุ่มด้านบน ใช้ขนาด/spacing เดียวกับ seendorser น้าา */}
       <div className="w-full px-6 mt-6 flex gap-4">

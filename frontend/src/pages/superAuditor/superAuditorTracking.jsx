@@ -3,7 +3,7 @@
 // =============================
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import Header from "../../components/trackingHeader";
+import Navbar from '../../components/navbar'
 import ForwardToAuditorButton from "../../components/ForwardToAuditorButton";
 import ForwardToDepartmentButton from "../../components/ForwardToDepartmentButton";
 import ViewDetailButton from "../../components/ViewDetailButton";
@@ -303,7 +303,7 @@ function SpvAuditor() {
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      <Header />
+      <Navbar />
 
       {userInfo && (
         <div className="bg-white shadow rounded-lg p-4 m-6">
