@@ -225,81 +225,6 @@ router.get('/', async (req, res) => {
 
 
 
-
-//--------------------------------------ตอนคลิกดูรายละเอียดเอกสารแต่ละอัน กับ ดึง data ตอนแก้ไข---------------------------//
-router.get('/document/:docId', async (req, res) => {
-    // console.log(req.user.id);
-    const user = await prisma.user.findUnique({
-        where : {id : req.user.id}
-    })
-    console.log(user);
-
-    const documentId = parseInt(req.params.docId, 10); 
-    if (isNaN(documentId)) {
-        return res.status(400).json({ error: "docId is invalid integer" });
-    }
-
-    try {
-        const doc = await prisma.documentPetition.findUnique({
-            where : { id : documentId },
-            include : {
-                department : true,
-                destination : true,
-                user : true,
-                status: true,
-                auditBy : true,
-                headauditBy : true,
-                attachments: { include : { attachmentType : true } },
-                documentNeeds: { include: { requiredDocument : true } }
-            }
-        })
-
-        if (!doc){ 
-            return res.status(404).json({ message: "Document not found" });
-        }
-
-        if (doc.userId !== user.id) {
-            return res.status(403).json({ message: "You do not have permission to access this document" });
-        }
-
-        const setdoc = {
-            id: doc.id,
-            doc_id: doc.id_doc,
-            department_name: doc.department.department_name,
-            destination_name: doc.destination.des_name,
-            title: doc.title,
-            authorize_to: doc.authorize_to,
-            position: doc.position,
-            affiliation: doc.affiliation,
-            authorize_text: doc.authorize_text,
-            status_name: doc.status.status,
-            createdAt: doc.createdAt,
-            auditBy: doc.auditBy?.email ?? null,        
-            headauditBy: doc.headauditBy?.email ?? null, 
-            documentNeed: doc.documentNeeds,
-            document_attachments: doc.attachments
-        }
-
-        console.log(setdoc);
-
-        res.json({message: "Document Petition", setdoc});
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-
-
-
-
-
-
-
-
-
 //--------------------------------------หน้าบ้านต้องส่ง docId มาด้วย เช่น PUT /documents/5-------------------------//
 router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
     const documentId = parseInt(req.params.docId, 10);
@@ -347,7 +272,7 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                 }
             });
 
-            await prisma.documentStatusHistory.create({
+            const his_st = await prisma.documentStatusHistory.create({
                 data: {
                     document: { connect: { id: updatedDoc.id } },
                     status:   { connect: { id: updatedDoc.statusId } },
@@ -355,9 +280,41 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                     note_text: "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"
                 }
             });
+            console.log(his_st)
+            
+            //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
+            const latestHistory = await prisma.documentStatusHistory.findFirst({
+                where: { 
+                    documentId: existingDoc.id,
+                    statusId : find_st1.id
+                },
+                orderBy: {
+                    changedAt: "desc"  // ใช้เวลาจาก statusHistory
+                },
+                include: {
+                    status: true
+                }
+            });
+            console.log(latestHistory)
+
+            if (!latestHistory){
+                return res.status(404).json({ message : "Not found history status in send back to edit" })
+            }
+
+            // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
+            if (latestHistory) {
+                // อัปเดตของเก่า → เปลี่ยน his_statusId ให้เป็นของรอบนี้แทน
+                const history_edit = await prisma.documentPetitionHistory.updateMany({
+                    where: { his_statusId : latestHistory.id },
+                    data: {
+                        his_statusId: his_st.id,
+                        editById : req.user.id
+                    }
+                });
+                console.log("Updated old history to new status:", history_edit);
+            }
             isUpdated = true;
         }
-
 
         if (needPresidentCard === true){ // ต้องการ สำเนาบัตรประจำตัวอธิการบดี
             const find_req = await prisma.requiredDocument.findUnique ({
@@ -445,6 +402,7 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
         res.status(500).json({ error: "Failed to update document" });
     }
 });
+
 
 
 

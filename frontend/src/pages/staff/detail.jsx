@@ -189,11 +189,10 @@ function Detail() {
 
 
 function renderStatusDetail(item) {
-  // 1) กรณี "ส่งกลับ"
-  if (item.status.includes("ส่งกลับ")) {
+  if (item.editedByemail) {
     return (
       <div className="mt-2 space-y-1">
-        {item.note && <p className="text-sm text-red-700">หมายเหตุ: {item.note}</p>}
+        <p className="text-sm text-red-700">หมายเหตุ: {item.note}</p>
         <p className="text-sm text-gray-700">
           แก้ไขโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
         </p>
@@ -213,22 +212,8 @@ function renderStatusDetail(item) {
     );
   }
 
-  // 2) กรณี "แก้ไขเอกสารแล้ว / อัปโหลดเพิ่มเติมแล้ว"
-  if (item.status.includes("แก้ไขเอกสารแล้ว") || item.status.includes("อัปโหลดเอกสารเพิ่มเติมแล้ว")) {
-    return (
-      <div className="mt-2 space-y-1">
-        <p className="text-sm text-green-700">
-          แก้ไขล่าสุดโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
-        </p>
-        <p className="text-sm text-gray-500">
-          เวลา: {item.editAt ? formatThaiDate(item.editAt) : "-"}
-        </p>
-      </div>
-    );
-  }
-
-  // 3) กรณี "ส่งต่อไปยังหน่วยงาน"
-  if (item.status.includes("ส่งต่อไปยังหน่วยงาน")) {
+  // 🔵 กรณีส่งต่อไปยังหน่วยงาน
+  if (item.status?.includes("ส่งต่อไปยังหน่วยงาน")) {
     return (
       <div className="mt-2 space-y-1">
         <p className="text-sm text-blue-700">
@@ -245,7 +230,7 @@ function renderStatusDetail(item) {
     );
   }
 
-  // 4) กรณีสถานะทั่วไป (ตรวจสอบ / อนุมัติ / รับเข้ากอง ฯลฯ)
+  // ⚪ กรณีประวัติสถานะทั่วไป (documentStatusHistory)
   return (
     <div className="mt-2 space-y-1">
       <p className="text-sm text-gray-700">
@@ -254,11 +239,6 @@ function renderStatusDetail(item) {
       <p className="text-sm text-gray-500">
         เวลา: {item.changeAt ? formatThaiDate(item.changeAt) : "-"}
       </p>
-      {item.date_of_signing && (
-        <p className="text-sm text-gray-600">
-          วันที่ลงนาม: {formatThaiDate(item.date_of_signing)}
-        </p>
-      )}
       {item.note && <p className="text-sm text-gray-600">หมายเหตุ: {item.note}</p>}
     </div>
   );

@@ -14,6 +14,10 @@ import petition_HeadAudit from './routes/petitionForHeadAuditor.js';
 import checkRole from './middleware/checkRole.js';
 
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+
 // App Variables
 const app = express();
 const PORT = process.env.PORT || 3001; // Use environment variable PORT or default to 4000
@@ -111,32 +115,6 @@ app.get('/api/user', authMiddle, checkRole(["admin"]), async (req, res) => {
   console.log(userAll);
 });
 
-//-------------------------------- add user -------------------------------//
-app.post('/api/user', authMiddle, checkRole(['admin']), async (req, res) => {
-  try {
-    const { firstname, email, role_id } = req.body;
-
-    if (!firstname || !email || !role_id) {
-      return res.status(400).json({ error: 'กรอกข้อมูลให้ครบถ้วน' });
-    }
-
-    const newUser = await prisma.user.create({
-      data: {
-        firstname,
-        email,
-        lastname: null,
-        departmentId: null,
-        rId: parseInt(role_id)
-      }
-    });
-
-    res.json(newUser);
-  } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'สร้างผู้ใช้ไม่สำเร็จ' });
-  }
-});
-
 
 //------------------------------ edit role user -----------------------------//
 app.get('/api/updateRole', authMiddle, checkRole(["admin"]), async (req, res) => {
@@ -217,6 +195,7 @@ app.get('/api/history/status', async(req, res) => {
   res.json(find_his_story);
 });
 
+//--------------------------ประวัติการแก้ไขเอกสาร เก็บประวัติเก่าไว้-----------------------------//
 app.get('/api/history/document', async (req, res) => {
   try {
     const find_his_story = await prisma.documentPetition.findMany({
@@ -249,6 +228,90 @@ app.get('/api/history/document', async (req, res) => {
 
 
 
+//--------------------------------------ตอนคลิกดูรายละเอียดเอกสารแต่ละอัน กับ ดึง data ตอนแก้ไข---------------------------//
+app.get('/document/:docId', authMiddle ,checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]), async (req, res) => {
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { department: true }
+    });
+
+    const documentId = parseInt(req.params.docId, 10);
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    const doc = await prisma.documentPetition.findUnique({
+      where: { id: documentId },
+      include: {
+        department: true,
+        destination: true,
+        user: true,
+        status: true,
+        auditBy: true,
+        headauditBy: true,
+        attachments: { include: { attachmentType: true } },
+        documentNeeds: { include: { requiredDocument: true } }
+      }
+    });
+
+    if (!doc) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+
+    if (req.user.role_name === "user" && doc.userId !== currentUser.id) {
+      return res.status(403).json({ message: "You do not have permission to access this document" });
+    }
+
+    if (["spv_auditor", "head_auditor", "auditor"].includes(req.user.role_name)) {
+      const find_des = await prisma.destination.findUnique({
+        where: { des_name: currentUser.department.department_name }
+      });
+
+      if (!find_des || doc.destinationId !== find_des.id) {
+        return res.status(403).json({ message: "Document not found in this destination department" });
+      }
+
+      if (req.user.role_name === "head_auditor" && doc.headauditIdBy !== currentUser.id) {
+        return res.status(403).json({ message: "You do not have permission to access this document" });
+      }
+
+      if (req.user.role_name === "auditor" && doc.auditIdBy !== currentUser.id) {
+        return res.status(403).json({ message: "You do not have permission to access this document" });
+      }
+    }
+
+    const setdoc = {
+      id: doc.id,
+      doc_id: doc.id_doc,
+      department_name: doc.department.department_name,
+      destination_name: doc.destination.des_name,
+      title: doc.title,
+      authorize_to: doc.authorize_to,
+      position: doc.position,
+      affiliation: doc.affiliation,
+      authorize_text: doc.authorize_text,
+      status_name: doc.status.status,
+      createdAt: doc.createdAt,
+      auditBy: doc.auditBy?.email ?? null,
+      headauditBy: doc.headauditBy?.email ?? null,
+      documentNeed: doc.documentNeeds,
+      document_attachments: doc.attachments
+    };
+
+    res.json({ message: "Document Petition", setdoc });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+
+
 
 //---------------------------------history status-----------------------------------------//
 app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]) , async (req, res) =>{
@@ -264,6 +327,7 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
       const find_history_status = await prisma.documentStatusHistory.findMany({
         where : { documentId : documentId }
       });
+      //console.log(find_history_status);
 
       const find_st1 = await prisma.status.findUnique({
         where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
@@ -289,12 +353,15 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
         where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
       });
 
+      const find_st7 = await prisma.status.findUnique({
+        where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
+      });
+
       const history_all = []
       for ( const his of find_history_status ) {
-        if ( his.statusId === find_st1.id || his.statusId === find_st2.id 
-          || his.statusId === find_st3.id || his.statusId === find_st5.id 
-          || his.statusId === find_st4.id 
-        ){
+        //console.log("history status", his.id)
+        if ( his.statusId === find_st4.id || his.statusId === find_st7.id ){
+
           const find_his_edit = await prisma.documentPetitionHistory.findMany({
             where: { his_statusId: his.id },
             include: {
@@ -307,6 +374,7 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
               document: true
             }
           });
+          //console.log(find_his_edit);
 
           const result = find_his_edit.map(item => ({
             historyId: item.id,
@@ -362,7 +430,6 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
 
           history_all.push(set_json);
         }
-        
         else {
           const find_his = await prisma.documentStatusHistory.findUnique({
             where : { id : his.id },
@@ -397,6 +464,152 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
 
 
 
+
+
+
+
+app.get('/download/attachment/:docId', async (req, res) => {
+
+  const documentId = parseInt(req.params.docId, 10);
+
+  if (isNaN(documentId)) {
+    return res.status(400).json({ error: "docId is invalid integer" });
+  }
+
+  try {
+    const file = await prisma.documentAttachment.findMany({
+      where: { docId : documentId},
+      include : { attachmentType : true }
+    });
+
+    console.log(file);
+
+    if (!file) return res.status(404).json({ message: "File not found" });
+
+    res.json(file);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+
+});
+
+
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+//ส่งไอดีของ attachment name มา
+app.get("/download/:id", authMiddle, checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]), async (req, res) => {
+  const documentId = parseInt(req.params.id, 10);
+
+  if (isNaN(documentId)) {
+    return res.status(400).json({ error: "docId is invalid integer" });
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    include: { department: true }
+  });
+
+  try {
+    const file = await prisma.documentAttachment.findUnique({
+      where: { id: parseInt(req.params.id, 10) },
+      include : {
+        document : { include : {
+          department: true,
+          destination: true,
+          user: true,
+          status: true,
+          auditBy: true,
+          headauditBy: true
+        }}
+      }
+    });
+
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    if (req.user.role_name === "user" && file.document.userId !== currentUser.id) {
+      return res.status(403).json({ message: "You do not have permission to access this document" });
+    }
+
+    if (["spv_auditor", "head_auditor", "auditor"].includes(req.user.role_name)) {
+      const find_des = await prisma.destination.findUnique({
+        where: { des_name: currentUser.department.department_name }
+      });
+
+      if (!find_des || file.document.destinationId !== find_des.id) {
+        return res.status(403).json({ message: "Document not found in this destination department" });
+      }
+
+      if (req.user.role_name === "head_auditor" && file.document.headauditIdBy !== currentUser.id) {
+        return res.status(403).json({ message: "You do not have permission to access this document" });
+      }
+
+      if (req.user.role_name === "auditor" && file.document.auditIdBy !== currentUser.id) {
+        return res.status(403).json({ message: "You do not have permission to access this document" });
+      }
+    }
+    
+    const filePath = path.join(__dirname, file.file_path);
+    res.download(filePath, file.file_name); 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+
+
+
+app.get('/history_upload_document', async (req, res) => {
+  try {
+    const doc_attachment = await prisma.documentAttachment.findMany({
+      include: {
+        attachmentType: true,
+        document: {
+          select: {
+            id : true,
+            id_doc: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    const grouped = doc_attachment.reduce((acc, item) => {
+      const docId = item.document.id_doc; // ✅ ใช้ id_doc จาก document
+      if (!acc[docId]) {
+        acc[docId] = [];
+      }
+      acc[docId].push(item);
+      return acc;
+    }, {});
+
+    // grouped จะเป็น object key = id_doc
+    console.log(grouped);
+
+    // แปลงเป็น array พร้อมแนบ title
+    const groupedArray = Object.entries(grouped).map(([id_doc, attachments]) => ({
+      id : attachments[0]?.document?.id,
+      id_doc,
+      title: attachments[0]?.document?.title || null, // ดึง title มาแนบด้วย
+      attachments,
+    }));
+
+    res.json(groupedArray);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 
 app.listen(PORT, () => {

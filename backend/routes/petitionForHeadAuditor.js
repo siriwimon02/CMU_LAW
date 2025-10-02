@@ -292,8 +292,6 @@ router.put('/update_st_audit_by_Headaudit/:docId', async (req, res) => {
 
 
 
-
-
 //แก้ไขสถานะ กลับไปแก้ไขเอกสาร ส่งไปที่ผู้ใช้แก้ไข
 router.put('/edit_ByheadAuditor/:docId', async (req, res) => {
     const {text_edit_suggesttion} = req.body;
@@ -355,6 +353,7 @@ router.put('/edit_ByheadAuditor/:docId', async (req, res) => {
                 note_text:   `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข โดยหัวหน้า รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggesttion || "-"}`
             }
         });
+
 
         const update_finish = await prisma.documentPetition.findUnique({
             where : { id : documentId }
@@ -554,6 +553,8 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
       // },
 
       // ผู้ที่เกี่ยวข้อง
+      title_now : h.document.title,
+      title_old : h.title,
 
       
       editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),

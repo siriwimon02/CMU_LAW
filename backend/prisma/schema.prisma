@@ -58,7 +58,7 @@ model RoleOfUser {
 
 
 model DocumentPetition {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   id_doc          String?   @unique @db.VarChar(255)
 
   departmentId    Int
@@ -67,11 +67,11 @@ model DocumentPetition {
   destinationId   Int
   destination     Destination @relation(fields: [destinationId], references: [id])
 
-  title           String   @db.VarChar(255)
+  title           String   
   authorize_to    String   @db.VarChar(255)
   position        String   @db.VarChar(255)
   affiliation     String   @db.VarChar(255)
-  authorize_text  String   @db.VarChar(255)
+  authorize_text  String   
 
   userId          Int
   user            User @relation(fields: [userId], references: [id])

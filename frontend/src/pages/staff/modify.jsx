@@ -40,7 +40,7 @@ function Modify() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:3001/petition/document/${id}`, {
+        const res = await fetch(`http://localhost:3001/document/${id}`, {
           headers: { Authorization: `${token}` },
         });
         if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);

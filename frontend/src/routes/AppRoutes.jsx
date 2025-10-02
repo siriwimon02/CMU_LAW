@@ -32,6 +32,9 @@ import ViewHeadAuditor from '../pages/headAuditor/viewPetition';
 
 import ViewPetition from "../pages/viewPetition";
 
+
+import UploadDocumentApproved from '../pages/auditor/auditorApprove';
+
 export default function AppRoutes() {
 
   return (
@@ -59,11 +62,12 @@ export default function AppRoutes() {
         <Route path="/tracking" element={<Tracking/>} />
         <Route path="/detail/:id" element={<Detail />} />
         <Route path="/modify/:id" element={<Modify />}/>
+        <Route path="/pending_approval" element={<UploadDocumentApproved/>}/>
         {/* admin */}
         <Route path="/admin_panel" element={<Admin_Panel/>} />
         {/* อธิการบดี */}
         <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
-
+        
       </Routes>
     </Router>
   );

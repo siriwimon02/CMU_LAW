@@ -2,9 +2,37 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env.dev' });
 
+// import express from 'express';
+// import prisma from '../prismaClient.js';
+// import multer from "multer";
+
+// import fs from 'fs';
+// import path from 'path';
+// import PizZip from 'pizzip';
+// import Docxtemplater from 'docxtemplater';
+// import libre from 'libreoffice-convert';
+// import util from "util";  // ถ้าใช้ ES Module
+
 import express from 'express';
-import prisma from '../prismaClient.js';
-import multer from "multer";
+import fs from 'node:fs';
+import * as fsp from 'node:fs/promises';
+import path from 'node:path';
+import util from 'node:util';
+import { spawn } from 'node:child_process';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import multer from 'multer';
+import prisma from '../prismaClient.js'; // ถ้าใช้ดึง DB
+
+// libreoffice-convert เป็น CJS → ต้อง require ผ่าน createRequire เมื่อใช้ ESM
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const libre = require('libreoffice-convert');
+
+import wordcut from 'wordcut';
+wordcut.init(); // โหลดดิกเริ่มต้น
+
+
 
 
 const router = express.Router();
@@ -138,103 +166,6 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
 
 
 
-
-
-
-//-----------------------------------------------------------ดึง data มาทีละอัน---------------------------------------//
-router.get('/document/:docId', async (req, res) => {
-    try {
-        const documentId = parseInt(req.params.docId, 10); 
-        if (isNaN(documentId)) {
-            return res.status(400).json({ error: "docId is invalid integer" });
-        }
-
-        const user = await prisma.user.findUnique({
-            where : { id : req.user.id },
-            include: { department: true }
-        });
-
-        const find_des = await prisma.destination.findUnique({
-            where : { des_name : user.department.department_name }
-        });
-
-        if (!find_des) {
-            return res.status(403).json({ message: "User is not in destination department" });
-        }
-
-        const doc = await prisma.documentPetition.findUnique({
-            where : { id:documentId },
-            include : {
-                department: true,
-                destination: true,
-                status: true,
-                user: true,
-                auditBy : true,
-                headauditBy : true,
-                attachments: { include : { attachmentType : true } },
-                documentNeeds: { include: { requiredDocument : true } } 
-            }
-        });
-        console.log(doc);
-
-        if (!doc || doc.destinationId !== find_des.id) {
-            return res.status(404).json({ message: "Document not found in this destination department" });
-        }
-
-        if (doc.auditIdBy !== user.id) {
-            return res.status(403).json({ message: "You do not have permission to access this document" });
-        }
-
-        const setdoc = {
-        id: doc.id,
-        doc_id: doc.id_doc,
-        department_name: doc.department.department_name,
-        destination_name: doc.destination.des_name,
-
-        // owner
-        owneremail: doc.user?.email || null,
-        ownername: `${doc.user?.firstname || ""} ${doc.user?.lastname || ""}`.trim(),
-
-        // เนื้อหาเอกสาร
-        title: doc.title,
-        authorize_to: doc.authorize_to,
-        position: doc.position,
-        affiliation: doc.affiliation,
-        authorize_text: doc.authorize_text,
-
-        // สถานะปัจจุบัน
-        status_name: doc.status.status,
-
-        // audit
-        auditByemail: doc.auditBy?.email ?? null,
-        auditByname: doc.auditBy
-            ? `${doc.auditBy.firstname} ${doc.auditBy.lastname}`.trim()
-            : null,
-
-        // head audit
-        headauditByemail: doc.headauditBy?.email ?? null,
-        headauditByname: doc.headauditBy
-            ? `${doc.headauditBy.firstname} ${doc.headauditBy.lastname}`.trim()
-            : null,
-
-        createdAt: doc.createdAt,
-        documentNeed: doc.documentNeeds,
-        document_attachments: doc.attachments
-        };
-
-        res.json({ message: "find document waiting to the first audit", setdoc });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-
-
-
-
 //----------------------------------------------------อัพเดตยืนการตรวจเอกสารขั้นต้น----------------------------------//
 router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
     const {set_headauditId} = req.body;
@@ -243,10 +174,19 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
         return res.status(400).json({ error: "HeadAuditor ID is required and must be a valid number" });
     }
 
-    const headUser = await prisma.user.findUnique({ where: { id: set_headauditId } });
+    const headUser = await prisma.user.findUnique({ 
+      where: { id: set_headauditId },
+      include : { department : true }
+    });
 
     if (!headUser) {
         return res.status(404).json({ message: "Head auditor not found" });
+    }
+    const find_des1 = await prisma.destination.findUnique({
+      where: { des_name: headUser.department.department_name }
+    });
+    if (!find_des1) {
+      return res.status(403).json({ message: "User is not in destination department" });
     }
 
     const documentId = parseInt(req.params.docId, 10); 
@@ -261,14 +201,6 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
         const findstatus3 = await prisma.status.findUnique({
             where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
-        })
-
-        const findstatus4 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
-        })
-
-        const findstatus5 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
         })
 
         const find_status2 = await prisma.status.findUnique({
@@ -290,17 +222,15 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
-
-        if (!doc || doc.destinationId !== find_des.id) {
+        if (doc.destinationId !== find_des.id) {
             return res.status(404).json({ message: "Document not found in this destination department" });
         }
 
-        const allowedStatuses = [
-          find_status1.id,
-          findstatus3.id,
-          findstatus4.id,
-          findstatus5.id,
-        ];
+        if (doc.destinationId !== find_des1.id) {
+          return res.status(404).json({ message: "Document not found auditor in this destination department" });
+        }
+
+        const allowedStatuses = [find_status1.id, findstatus3.id];
 
         if (!allowedStatuses.includes(doc.statusId)) {
           return res.status(403).json({
@@ -311,7 +241,6 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
         if (doc.auditIdBy !== user.id) {
             return res.status(403).json({ message: "You do not have permission to access this document" });
         }
-
 
         //อัพเดตสถานนะแก้ไข + เพิ่มรายชื่อหัวหน้าพนักงานที่ต้องตรวจสอบเอกสารนี้
         const updatedDoc = await prisma.documentPetition.update({
@@ -328,7 +257,7 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
             document: { connect: { id: updatedDoc.id } },
             status:   { connect: { id: updatedDoc.statusId } },
             changedBy: { connect: { id: user.id } },
-            note_text:  "ตรวจสอบเอกสารเรียบร้อยแล้ว โดยพนักงานตรวจสอบ"
+            note_text:  "ตรวจสอบเอกสารเรียบร้อยแล้ว โดยเจ้าหน้าที่ตรวจสอบ"
             }
         });
         res.json({ message: "Document status updated to the first audit is already", updatedDoc});
@@ -344,14 +273,13 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
 
 
-
 //-----------------------------------------แก้ไขสถานะ กลับไปแก้ไขเอกสาร ส่งไปที่ผู้ใช้แก้ไข------------------------------//
 router.put('/edit_ByAuditor/:docId', async (req, res) => {
     const {text_edit_suggesttion} = req.body;
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
-        return res.status(400).json({ error: "docId is invalid integer" });
+          return res.status(400).json({ error: "docId is invalid integer" });
         }
  
         const find_status1 = await prisma.status.findUnique({
@@ -362,6 +290,10 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
             where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
         })
 
+        const find_status2 = await prisma.status.findUnique({
+            where: { status: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+        });
+
         const findstatus4 = await prisma.status.findUnique({
             where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
         })
@@ -369,12 +301,7 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
         const findstatus5 = await prisma.status.findUnique({
             where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
         })
-
         
-        const find_status2 = await prisma.status.findUnique({
-            where: { status: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
-        });
-
         const user = await prisma.user.findUnique({
             where : { id : req.user.id },
             include: { department: true }
@@ -392,51 +319,90 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
             where: { id: documentId }
         });
 
-        if (!doc || doc.destinationId !== find_des.id) {
+        if (doc.destinationId !== find_des.id) {
             return res.status(404).json({ message: "Document not found in this destination department" });
         }
 
-        if (doc.statusId !== find_status1.id || doc.statusId !== findstatus3.id || doc.statusId !== findstatus4.id || doc.statusId !== findstatus5.id) {
-            return res.status(403).json({ message: "Document is not in the correct status for this action" });
+        const allowedStatuses = [
+          find_status1.id,
+          findstatus3.id,
+          findstatus4.id,
+          findstatus5.id,
+        ];
+
+        if (!allowedStatuses.includes(doc.statusId)) {
+          return res.status(403).json({message: "Document is not in the correct status for this action",});
         }
 
         if (doc.auditIdBy !== user.id) {
             return res.status(403).json({ message: "You do not have permission to access this document" });
         }
 
+
+        //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
+        const latestHistory = await prisma.documentStatusHistory.findFirst({
+          where: { 
+            documentId: doc.id,
+            statusId : { in : [findstatus4.id, findstatus5.id] }
+          },
+          orderBy: {
+            changedAt: "desc"  // ใช้เวลาจาก statusHistory
+          },
+          include: {
+            status: true
+          }
+        });
+        console.log(latestHistory)
+
+        //อัพเดต status 
         const updatedDoc = await prisma.documentPetition.update({
             where: { id: documentId },
             data: { statusId: find_status2.id }
-        });
+        });    
 
         // เก็บ document status action log
         const his_st = await prisma.documentStatusHistory.create({
-            data: {
-            document: { connect: { id: updatedDoc.id } },
-            status:   { connect: { id: updatedDoc.statusId } },
+          data: {
+            document: { connect: { id: doc.id } },
+            status:   { connect: { id: find_status2.id} },
             changedBy: { connect: { id: user.id } },
             note_text:   `ส่งแก้ไขเอกสาร โดยพนังงานตรวจสอบ รายละเอียดเพิ่มเติมการแก้ไขเอกสาร : ${text_edit_suggesttion || "-"}`
-            }
-        });
-
+          }
+        });        
+        
         const update_finish = await prisma.documentPetition.findUnique({
             where : { id : documentId }
         });
 
-        const history_edit = await prisma.documentPetitionHistory.create({
+
+        // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
+        if (latestHistory) {
+          // อัปเดตของเก่า → เปลี่ยน his_statusId ให้เป็นของรอบนี้แทน
+          const history_edit = await prisma.documentPetitionHistory.updateMany({
+            where: { his_statusId: latestHistory.id },
             data: {
-                document: { connect : { id : update_finish.id } },
-                title : update_finish.title,
-                authorize_to: update_finish.authorize_to,
-                position : update_finish.position,
-                affiliation : update_finish.affiliation,
-                authorize_text : update_finish.authorize_text,
-                editedBy : { connect : { id : user.id } },
-                statusHistory : { connect : { id : his_st.id } },
-                note_text: `รายละเอียดเอกสารที่ต้องแก้ไข : ${text_edit_suggesttion}`
+              his_statusId: his_st.id,
+              note_text: `รายละเอียดเอกสารที่ต้องแก้ไข : ${text_edit_suggesttion}`
             }
-        });
-        console.log("History edit document", history_edit)
+          });
+          console.log("Updated old history to new status:", history_edit);
+        } else {
+          // ถ้าไม่เคยมี → ค่อยสร้างใหม่
+          const history_edit = await prisma.documentPetitionHistory.create({
+              data: {
+                  document: { connect : { id : update_finish.id } },
+                  title : update_finish.title,
+                  authorize_to: update_finish.authorize_to,
+                  position : update_finish.position,
+                  affiliation : update_finish.affiliation,
+                  authorize_text : update_finish.authorize_text,
+                  editedBy : { connect : { id : user.id } },
+                  statusHistory : { connect : { id : his_st.id } },
+                  note_text: `รายละเอียดเอกสารที่ต้องแก้ไข : ${text_edit_suggesttion}`
+              }
+          });
+          console.log("History edit document", history_edit)
+        }
 
         //ส่ง data ไปยังเมลด้วย
         //------------------------mail----------------//
@@ -456,8 +422,10 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
 
 
 
+
+const data = multer();
 //----------------การเพิ่มเอกสารได้ แก้ไขเอกสารได้ ของuser โดยพนักงาน คือพนง สามารถเข้าไปแก้ไขเอกสารได้ แก้ไขคำผิด-------------//
-router.put('/update_document_ByAuditor/:docId', async (req, res) => {
+router.put('/update_document_ByAuditor/:docId', data.none() ,async (req, res) => {
     const documentId = parseInt(req.params.docId, 10);         
     if (isNaN(documentId)) {
         return res.status(400).json({ error: "docId is invalid integer" });
@@ -480,7 +448,6 @@ router.put('/update_document_ByAuditor/:docId', async (req, res) => {
         const findstatus5 = await prisma.status.findUnique({
             where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
         })
-
 
         const find_status2 = await prisma.status.findUnique({
             where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว" }
@@ -506,12 +473,19 @@ router.put('/update_document_ByAuditor/:docId', async (req, res) => {
             include : { documentNeeds: { include: { requiredDocument: true } } }
         });
 
-        if (!doc || doc.destinationId !== find_des.id) {
+        if (doc.destinationId !== find_des.id) {
             return res.status(404).json({ message: "Document not found in this destination department" });
         }
 
-        if (doc.statusId !== find_status1.id || doc.statusId !== findstatus3.id || doc.statusId !== findstatus4.id || doc.statusId !== findstatus5.id) {
-            return res.status(403).json({ message: "Document is not in the correct status for this action" });
+        const allowedStatuses = [
+          find_status1.id,
+          findstatus3.id,
+          findstatus4.id,
+          findstatus5.id,
+        ];
+
+        if (!allowedStatuses.includes(doc.statusId)) {
+          return res.status(403).json({message: "Document is not in the correct status for this action",});
         }
 
         if (doc.auditIdBy !== user.id) {
@@ -525,7 +499,23 @@ router.put('/update_document_ByAuditor/:docId', async (req, res) => {
             doc.position !== position ||
             doc.affiliation !== affiliation ||
             doc.authorize_text !== authorizeText
-        ) {
+        ) {            
+          
+          //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
+            const latestHistory = await prisma.documentStatusHistory.findFirst({
+                where: { 
+                    documentId: doc.id,
+                    statusId : { in : [findstatus4.id, findstatus5.id] }
+                },
+                orderBy: {
+                    changedAt: "desc"  // ใช้เวลาจาก statusHistory
+                },
+                include: {
+                    status: true
+                }
+            });
+            console.log(latestHistory)
+
             const updatedDoc = await prisma.documentPetition.update({
                 where: { id: documentId },
                 data: {
@@ -547,29 +537,39 @@ router.put('/update_document_ByAuditor/:docId', async (req, res) => {
                 }
             });
 
-            //เก็บเอกสารเก่า
-            const doc_edit = await prisma.documentPetitionHistory.create({
+            // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
+            if (latestHistory) {
+              // อัปเดตของเก่า → เปลี่ยน his_statusId ให้เป็นของรอบนี้แทน
+              const history_edit = await prisma.documentPetitionHistory.updateMany({
+                where: { his_statusId: latestHistory.id },
                 data: {
-                    document: { connect : { id : doc.id } } ,
-                    title : doc.title,
-                    authorize_to: doc.authorize_to,
-                    position : doc.position,
-                    affiliation : doc.affiliation,
-                    authorize_text : doc.authorize_text,
-                    editedBy : { connect : { id : user.id } },
-                    statusHistory : { connect : { id : his_st.id } },
-                    note_text: "เจ้าหน้าที่ได้แก้ไขเอกสาร"
+                  his_statusId: his_st.id,
+                  editById : user.id
                 }
-            });
-
+              });
+              console.log("Updated old history to new status:", history_edit);
+            }else {
+              //เก็บเอกสารเก่า
+              //เอกสารที่พึ่งส่งกลับมายังไม่มีการเก็บประวัติใหม่ แก้ไขจาก user เสร็จ
+              //เอกสารที่ ยุระหว่างตรวจสอบแล้วอยากแก้ไข
+              const doc_edit = await prisma.documentPetitionHistory.create({
+                  data: {
+                      document: { connect : { id : doc.id } } ,
+                      title : doc.title,
+                      authorize_to: doc.authorize_to,
+                      position : doc.position,
+                      affiliation : doc.affiliation,
+                      authorize_text : doc.authorize_text,
+                      editedBy : { connect : { id : user.id } },
+                      statusHistory : { connect : { id : his_st.id } },
+                      note_text: "เจ้าหน้าที่ได้แก้ไขเอกสาร"
+                  }
+              });
+                console.log("set doc history", doc_edit)
+            }
             isUpdated = true;
-            console.log("updated document", updatedDoc)
-            console.log("set doc history", doc_edit)
             console.log("history status", his_st)
-        }
-
-        if (!isUpdated) {
-            return res.status(400).json({message: "Did not updated or upload anything else" });
+            console.log("updated document", updatedDoc)
         }
 
         res.status(201).json({message: "Document saved", success: true });
@@ -652,6 +652,10 @@ router.get('/get_document_audited', async (req, res) => {
             where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
         });
 
+        const find_type = await prisma.attachmentType.findFirst({
+          where : { type_name : "GenerateDocument" }
+        });
+
 
         const user = await prisma.user.findUnique({
             where : { id : req.user.id },
@@ -711,32 +715,55 @@ router.get('/get_document_audited', async (req, res) => {
                 auditBy : true,
                 headauditBy : true,
                 attachments: { include : { attachmentType : true } },
-                documentNeeds: { include: { requiredDocument : true } } 
+                documentNeeds: { include: { requiredDocument : true }}
             }
         })
         console.log(document_audit_2st);
 
         const document_json = [];
-        for(const doc of document_audit_2st){
-            const setdoc = {
-                id: doc.id,
-                doc_id: doc.id_doc,
-                department_name: doc.department.department_name,
-                destination_name: doc.destination.des_name,
-                title: doc.title,
-                authorize_to: doc.authorize_to,
-                position: doc.position,
-                affiliation: doc.affiliation,
-                authorize_text: doc.authorize_text,
-                status_name: doc.status.status,
-                auditBy: doc.auditBy?.email ?? null,        
-                headauditBy: doc.headauditBy?.email ?? null, 
-                createdAt: doc.createdAt,
-                documentNeed: doc.documentNeeds,
-                document_attachments: doc.attachments
-            };
-            document_json.push(setdoc);
+
+        for (const doc of document_audit_2st) {
+          // จัดกลุ่ม attachments ตามชนิด
+          const attachmentsByType = doc.attachments.reduce((acc, att) => {
+            const typeKey = att.attachmentType?.type_name ?? `type:${att.attachmentTypeId ?? 'unknown'}`;
+
+            if (!acc[typeKey]) acc[typeKey] = [];
+            acc[typeKey].push({
+              id: att.id,
+              file_name: att.file_name,
+              file_path: att.file_path,
+              uploaded_at: att.time_upload,
+              // ใส่เพิ่มได้ตามต้องการ
+            });
+
+            return acc;
+          }, {});
+
+          const setdoc = {
+            id: doc.id,
+            doc_id: doc.id_doc,
+            department_name: doc.department.department_name,
+            destination_name: doc.destination.des_name,
+            owneremail: doc.user.email,
+            title: doc.title,
+            authorize_to: doc.authorize_to,
+            position: doc.position,
+            affiliation: doc.affiliation,
+            authorize_text: doc.authorize_text,
+            status_name: doc.status.status,
+            auditBy: doc.auditBy?.email ?? null,
+            headauditBy: doc.headauditBy?.email ?? null,
+            createdAt: doc.createdAt,
+            documentNeed: doc.documentNeeds,
+            // อันเดิมที่รวมทุก type ไว้ก็ยังเก็บได้เผื่อใช้
+            document_attachments: doc.attachments,
+            // อันใหม่: แยกตามประเภท
+            attachmentsByType,  // <- ใช้งานฝั่ง frontend ได้ง่าย
+          };
+
+          document_json.push(setdoc);
         }
+
         // console.log(document_json);
         res.json({ message : "find document waiting to the first audit", document_json})
 
@@ -754,19 +781,35 @@ router.get('/get_document_audited', async (req, res) => {
 
 
 
-// endorser storage
-const storageEndorser = multer.diskStorage({
+
+
+
+
+
+
+const storageDynamic = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/signed_document");
+    if (file.fieldname === "attachments") {
+      cb(null, "uploads/auditor_upload");
+    } else if (file.fieldname === "endorsorfile") {
+      cb(null, "uploads/signed_document");
+    } else {
+      cb(new Error("Invalid field name for upload"));
+    }
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
-  },
+  }
 });
-const uploadEndorser = multer({ storage: storageEndorser });
+
+const uploadBoth = multer({ storage: storageDynamic }).fields([
+  { name: "attachments", maxCount: 5 },
+  { name: "endorsorfile", maxCount: 5 }
+]);
+
 
 //----------------------------------ตอนเพิ่มเอกสารที่ อธิการบดี ได้ทำการอนุมัติเรียบร้อยแล้ว------------------------------//
-router.put("/upload_endorser_document/:docId", uploadEndorser.array("attachments", 5), async (req, res) => {
+router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
     const { decision, date_of_signing } = req.body; // 'approve' หรือ 'reject'
     const documentId = parseInt(req.params.docId, 10);
 
@@ -787,11 +830,17 @@ router.put("/upload_endorser_document/:docId", uploadEndorser.array("attachments
         where: { status: "อธิการบดีปฏิเสธคำร้อง" },
       });
 
+      // step: กำหนดสถานะใหม่หลังจาก upload
+      const find_status4 = await prisma.status.findUnique({
+        where: { status: "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติมแล้ว" }
+      });
+
+
+
       const user = await prisma.user.findUnique({
         where: { id: req.user.id },
         include: { department: true },
       });
-
       const find_des = await prisma.destination.findUnique({
         where: { des_name: user.department.department_name },
       });
@@ -801,11 +850,13 @@ router.put("/upload_endorser_document/:docId", uploadEndorser.array("attachments
           .json({ message: "User is not in this destination department" });
       }
 
+
+
       const doc = await prisma.documentPetition.findUnique({
         where: { id: documentId },
       });
 
-      if (!doc || doc.destinationId !== find_des.id) {
+      if (doc.destinationId !== find_des.id) {
         return res
           .status(404)
           .json({ message: "Document not found in this destination department" });
@@ -818,43 +869,135 @@ router.put("/upload_endorser_document/:docId", uploadEndorser.array("attachments
       }
 
       if (doc.auditIdBy !== user.id) {
-        return res
-          .status(403)
-          .json({ message: "You do not have permission to access this document" });
+        return res.status(403).json({ message: "You do not have permission to access this document" });
       }
+
 
       // ---------------------- APPROVE ----------------------
       if (decision === "approve") {
-        if (req.files && req.files.length > 0) {
-          for (const file of req.files) {
-            const paths = file.path;
-            const file_n = file.originalname;
+        const uploadPresidentCard = req.body.uploadPresidentCard === "true";
+        const uploadUniversityHouse = req.body.uploadUniversityHouse === "true";
 
-            const find_attachment_type =
-              await prisma.attachmentType.findUnique({
-                where: { type_name: "SignedDocument" },
+        console.log("body:", req.body);
+        console.log("files:", req.files);
+
+        if  ((req.files.attachments && req.files.attachments.length > 0) || 
+            (req.files.endorsorfile && req.files.endorsorfile.length > 0)) {
+          
+          //ให้เจ้าหน้าที่ติกว่าอัปโหลดเอกสารอะไรบ้าง 
+          // check requirement: บัตรอธิการ
+          if (uploadPresidentCard) {
+            const find_req = await prisma.requiredDocument.findUnique({
+              where: { name: "บัตรประจำตัวอธิการบดี" }
+            });
+
+            if (find_req) {
+              await prisma.documentNeed.updateMany({
+                where: {
+                  documentId: doc.id,
+                  requiredDocumentId: find_req.id
+                },
+                data: {
+                  isProvided: true,
+                  providedAt: new Date()
+                }
+              });
+            }
+          }
+
+          // check requirement: ทะเบียนบ้านมหาวิทยาลัย
+          if (uploadUniversityHouse) {
+            const find_req = await prisma.requiredDocument.findUnique({
+              where: { name: "ทะเบียนบ้านมหาวิทยาลัย" }
+            });
+
+            if (find_req) {
+              await prisma.documentNeed.updateMany({
+                where: {
+                  documentId: doc.id,
+                  requiredDocumentId: find_req.id
+                },
+                data: {
+                  isProvided: true,
+                  providedAt: new Date()
+                }
+              });
+            }
+          }
+
+          // บันทึกไฟล์แนบทั้งหมด
+          if (req.files.attachments){
+            for (const file of req.files.attachments) {
+              const paths = file.path;            // path เต็ม เช่น "uploads/auditor_upload/xxx.pdf"
+              const file_n = file.originalname;   // ชื่อไฟล์ต้นฉบับ
+              console.log("save attachment:", paths, file_n);
+
+              const find_attachment_type = await prisma.attachmentType.findUnique({
+                where: { type_name: "AuditorUpload" }
               });
 
-            await prisma.documentAttachment.create({
-              data: {
-                file_path: paths,
-                file_name: file_n,
-                document: { connect : { id : doc.id } },
-                user: { connect : { id : user.id } },
-                attachmentType: { connect : { id : find_attachment_type.id } },
-              },
-            });
+              const doc_attachment = await prisma.documentAttachment.create({
+                data: {
+                  file_path: paths,
+                  file_name: file_n,
+                  document: { connect: { id: documentId } },
+                  user: { connect: { id: user.id } },
+                  attachmentType: { connect: { id: find_attachment_type.id } }
+                }
+              });
+              console.log("saved:", doc_attachment);
+            }
+          }
+
+          // อัพเดตสถานะเอกสาร -> อัปโหลดเอกสารเพิ่มเติมแล้ว
+          await prisma.documentPetition.update({
+            where: { id: documentId },
+            data: { statusId: find_status4.id }
+          });
+
+          // บันทึกประวัติการเปลี่ยนสถานะ
+          await prisma.documentStatusHistory.create({
+            data: {
+              document: { connect: { id: documentId } },
+              status: { connect: { id: find_status4.id } },
+              changedBy: { connect: { id: user.id } },
+              note_text: "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติม"
+            }
+          });
+
+
+          
+          //อัปโหลดเอกสารคำร้องที่ อธิการได้ทำเซ็นแล้ว
+          if (req.files.endorsorfile){
+            for (const file of req.files.endorsorfile) {
+              const paths = file.path;
+              const file_n = file.originalname;
+
+              const find_attachment_type =
+                await prisma.attachmentType.findUnique({
+                  where: { type_name: "SignedDocument" },
+                });
+
+              await prisma.documentAttachment.create({
+                data: {
+                  file_path: paths,
+                  file_name: file_n,
+                  document: { connect : { id : doc.id } },
+                  user: { connect : { id : user.id } },
+                  attachmentType: { connect : { id : find_attachment_type.id } },
+                },
+              });
+            }
           }
         }
 
-        
         const signingDate = new Date(date_of_signing);
         const update_doc = await prisma.documentPetition.update({
           where: { id: doc.id },
           data: { 
             statusId : find_status2.id,
             date_of_signing: signingDate
-        },
+          },
         });
 
         const his_st = await prisma.documentStatusHistory.create({
@@ -874,22 +1017,29 @@ router.put("/upload_endorser_document/:docId", uploadEndorser.array("attachments
         });
       }
 
+
+
       // ---------------------- REJECT ----------------------
       else if (decision === "reject") {
+        const text_suggesttion = (req.body.text_suggesttion || "").toString().trim(); 
         const update_doc = await prisma.documentPetition.update({
           where: { id: doc.id },
-          data: { statusId: find_status3.id },
-        });
-
-        const his_st = await prisma.documentStatusHistory.create({
-          data: {
-            document: { connect : { id : update_doc.id } },
-            status : { connect : { id : update_doc.statusId } } ,
-            changedBy: { connect : { id : user.id } },
-            note_text: "เอกสารคำร้องถูกปฏิเสธ",
+          data: { 
+            statusId: find_status3.id,
           },
         });
 
+
+        await prisma.documentStatusHistory.create({
+          data: {
+            document: { connect : { id : doc.id } },
+            status : { connect : { id : find_status3.id } } ,
+            changedBy: { connect : { id : user.id } },
+            note_text: `เอกสารคำร้องถูกปฏิเสธ รายละเอียด : ${text_suggesttion}`,
+          },
+        });
+
+    
         return res.status(201).json({
           message: "Document rejected and saved",
           success: true,
@@ -919,164 +1069,278 @@ router.put("/upload_endorser_document/:docId", uploadEndorser.array("attachments
 
 
 
-// storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/auditor_upload");
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
 
-// PUT: upload requirement docs
-router.put('/upload_document_requirment/:docId', upload.array("attachments", 5), async (req, res) => {
-  const documentId = parseInt(req.params.docId, 10);
+//----------------------------------------generate file pdf----------------------------------//
+
+/* ===== static output dir ===== */
+const OUTPUT_DIR = path.resolve('./generate');
+if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+/* ===== helpers ===== */
+// อย่าลบ ZWSP (\u200B) และ SHY (\u00AD)
+const INVISIBLE = /[\u200C\u200D\u2060\uFEFF]/g;
+const UNICODE_SPACES = /[\u00A0\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]/g;
+
+const cleanText = (s = '') =>
+  (s || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(INVISIBLE, '')
+    .replace(UNICODE_SPACES, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+// โหมดคงย่อหน้า: \n\n = ย่อหน้า, \n เดี่ยว = เว้นวรรค
+const toParagraphsOnly = (s = '') =>
+  cleanText(s).replace(/\n{2,}/g, '<<<P>>>').replace(/\n/g, ' ').replace(/<<<P>>>/g, '\n\n');
+
+// ตัดคำไทยด้วย wordcut แล้วคั่นด้วย ZWSP (ช่วย Justify สวยขึ้นใน LO)
+function wordcutThaiToZWSP(text = '') {
+  if (!text) return '';
+  return wordcut.cut(text).replace(/\|/g, '\u200B');
+}
+
+// อนุญาตให้ตัดบรรทัด “ข้างอัญประกาศ” เพื่อไม่ให้ยกทั้งก้อน
+function allowBreakAroundQuotes(s = '') {
+  return s
+    .replace(/([“"])(?=[\u0E00-\u0E7F])/g, '$1\u200B')     // หลังอัญประกาศเปิด
+    .replace(/([\u0E00-\u0E7F])([”"])/g, '$1\u200B$2');    // ก่อนอัญประกาศปิด
+}
+
+// รวมขั้นตอน: ทำความสะอาด → คงย่อหน้า → ตัดคำ → อนุญาต break รอบ quote
+function processThaiForDocx(s = '') {
+  return allowBreakAroundQuotes(wordcutThaiToZWSP(toParagraphsOnly(s)));
+}
+
+/* ===== fallback convert via soffice (robust) ===== */
+async function sofficeConvertDocxBufferToPdf(buf, outPath) {
+  const tmpDir = path.join(OUTPUT_DIR, `.tmp-${Date.now()}`);
+  await fsp.mkdir(tmpDir, { recursive: true });
+
+  const base = path.parse(outPath).name;
+  const inPath = path.join(tmpDir, `${base}.docx`);
+  await fsp.writeFile(inPath, buf);
+
+  await new Promise((resolve, reject) => {
+    const proc = spawn('soffice', [
+      '--headless', '--convert-to', 'pdf:writer_pdf_Export',
+      '--outdir', tmpDir, inPath
+    ], { stdio: 'inherit' });
+
+    const killTimer = setTimeout(() => proc.kill('SIGKILL'), 120000);
+    proc.on('error', (err) => { clearTimeout(killTimer); reject(err); });
+    proc.on('exit', (code) => { clearTimeout(killTimer); code === 0 ? resolve() : reject(new Error(`soffice exit ${code}`)); });
+  });
+
+  let pdfTmp = path.join(tmpDir, `${base}.pdf`);
+  if (!fs.existsSync(pdfTmp)) {
+    const files = await fsp.readdir(tmpDir);
+    const found = files.find(f => f.toLowerCase().endsWith('.pdf'));
+    if (!found) throw new Error('No PDF produced by soffice');
+    pdfTmp = path.join(tmpDir, found);
+  }
+
+  const pdfBuf = await fsp.readFile(pdfTmp);
+  await fsp.writeFile(outPath, pdfBuf);
+  return pdfBuf;
+}
+
+/* ===== core builder ===== */
+async function buildDocAndPdf(data, templatePath = path.resolve('./test_temp.docx')) {
+  if (!fs.existsSync(templatePath)) throw new Error(`Template not found: ${templatePath}`);
+
+  const zip = new PizZip(fs.readFileSync(templatePath, 'binary'));
+  const docx = new Docxtemplater(zip, {
+    paragraphLoop: true,
+    // ถ้าต้องการให้ \n = ขึ้นบรรทัดใหม่จริง ๆ ให้เปิดบรรทัดนี้ (แล้วไม่ต้องใช้ toParagraphsOnly)
+    // linebreaks: true,
+    nullGetter: () => '',
+  });
+
+  const payload = {
+    paragraphone: processThaiForDocx(data.paragraphone),
+    paragraphtwo: processThaiForDocx(data.paragraphtwo),
+    title:         processThaiForDocx(data.title),
+    authorizeTo:   processThaiForDocx(data.authorizeTo),
+    position:      processThaiForDocx(data.position),
+    affiliation:   processThaiForDocx(data.affiliation),
+    authorizeText: processThaiForDocx(data.authorizeText),
+    numbertwo:    processThaiForDocx(data.numbertwo),
+    numberthree : processThaiForDocx(data.numberthree)
+  };
+
+  try { docx.render(payload); }
+  catch (err) {
+    if (err?.properties?.errors?.length) {
+      const explanations = err.properties.errors.map(e => e.properties?.explanation).filter(Boolean);
+      throw new Error(`Template render error: ${explanations.join(' | ')}`);
+    }
+    throw err;
+  }
+
+  const docxBuf = docx.getZip().generate({ type: 'nodebuffer' });
+  const base = `doc-${Date.now()}`;
+  const docxPath = path.join(OUTPUT_DIR, `${base}.docx`);
+  const pdfPath  = path.join(OUTPUT_DIR, `${base}.pdf`);
+  await fsp.writeFile(docxPath, docxBuf);
+
+  const convertAsync = util.promisify(libre.convert);
+  try {
+    const pdfBuf = await convertAsync(docxBuf, '.pdf:writer_pdf_Export', undefined);
+    await fsp.writeFile(pdfPath, pdfBuf);
+  } catch (e) {
+    await sofficeConvertDocxBufferToPdf(docxBuf, pdfPath);  // fallback
+  }
+
+  return { docxPath, pdfPath };
+}
+
+
+
+
+router.post('/generate_pdf/:docId', async (req, res) => {
+  const documentId = parseInt(req.params.docId, 10);         
   if (isNaN(documentId)) {
     return res.status(400).json({ error: "docId is invalid integer" });
   }
 
-  const uploadPresidentCard = req.body.uploadPresidentCard === "true";
-  const uploadUniversityHouse = req.body.uploadUniversityHouse === "true";
-
-  console.log("body:", req.body);
-  console.log("files:", req.files);
+  // โหลด template word 
+  const content = fs.readFileSync(path.resolve("./test_temp.docx"), 'binary');
+  const zip = new PizZip(content);
 
   try {
-    // step: หาสถานะที่ต้องอยู่ก่อนถึงจะ upload ได้
-    const find_status1 = await prisma.status.findUnique({
-      where: { status: "รอการพิจารณาอนุมัติจากอธิการบดี" },
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
     });
 
-    // step: กำหนดสถานะใหม่หลังจาก upload
-    const find_status3 = await prisma.status.findUnique({
-      where: { status: "อัปโหลดเอกสารเพิ่มเติมแล้ว" }
+    const find_type = await prisma.attachmentType.findFirst({
+      where : { type_name : "GenerateDocument" }
     });
+    if (!find_type) {
+      return res.status(404).json({ message: "AttachmentType 'GenerateDocument' not found" });
+    }
 
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { department: true },
+      where : { id : req.user.id },
+      include: { department: true }
     });
     const find_des = await prisma.destination.findUnique({
-      where: { des_name: user.department.department_name },
+      where : { des_name : user.department.department_name }
     });
     if (!find_des) {
-      return res.status(403).json({ message: "User is not in this destination department" });
+      return res.status(403).json({ message: "User is not in destination department" });
     }
 
     const doc = await prisma.documentPetition.findUnique({
-      where: { id: documentId },
+      where: { id: documentId }
     });
-
-    if (!doc || doc.destinationId !== find_des.id) {
+    if (doc.destinationId !== find_des.id) {
       return res.status(404).json({ message: "Document not found in this destination department" });
     }
-
-    if (doc.statusId !== find_status1.id) {
-      return res.status(403).json({ message: "Document not in correct status for this action" });
+    if (doc.statusId !== find_st1.id) {
+      return res.status(403).json({ message: "Document is not in the correct status for this action" });
     }
-
     if (doc.auditIdBy !== user.id) {
       return res.status(403).json({ message: "You do not have permission to access this document" });
     }
 
-    // เช็คว่ามีไฟล์ upload มามั้ย
-    if (req.files && req.files.length > 0) {
-      // check requirement: บัตรอธิการ
-      if (uploadPresidentCard) {
-        const find_req = await prisma.requiredDocument.findUnique({
-          where: { name: "บัตรประจำตัวอธิการบดี" }
-        });
+    // ก่อนเริ่ม render / convert
+    const existed = await prisma.documentAttachment.findFirst({
+      where: {
+        document: { id: documentId },           // แทน documentId
+        attachmentType: { id: find_type.id },   // ประเภท GenerateDocument
+        file_name: `${doc.id_doc}.pdf`,         // ไฟล์เป้าหมาย
+      },
+      select: { file_path: true, file_name: true },
+    });
 
-        if (find_req) {
-          await prisma.documentNeed.updateMany({
-            where: {
-              documentId: doc.id,
-              requiredDocumentId: find_req.id
-            },
-            data: {
-              isProvided: true,
-              providedAt: new Date()
-            }
-          });
-        }
-      }
-
-      // check requirement: ทะเบียนบ้านมหาวิทยาลัย
-      if (uploadUniversityHouse) {
-        const find_req = await prisma.requiredDocument.findUnique({
-          where: { name: "ทะเบียนบ้านมหาวิทยาลัย" }
-        });
-
-        if (find_req) {
-          await prisma.documentNeed.updateMany({
-            where: {
-              documentId: doc.id,
-              requiredDocumentId: find_req.id
-            },
-            data: {
-              isProvided: true,
-              providedAt: new Date()
-            }
-          });
-        }
-      }
-
-      // บันทึกไฟล์แนบทั้งหมด
-      for (const file of req.files) {
-        const paths = file.path;            // path เต็ม เช่น "uploads/auditor_upload/xxx.pdf"
-        const file_n = file.originalname;   // ชื่อไฟล์ต้นฉบับ
-        console.log("save attachment:", paths, file_n);
-
-        const find_attachment_type = await prisma.attachmentType.findUnique({
-          where: { type_name: "AuditorUpload" }
-        });
-
-        const doc_attachment = await prisma.documentAttachment.create({
-          data: {
-            file_path: paths,
-            file_name: file_n,
-            document: { connect: { id: documentId } },
-            user: { connect: { id: user.id } },
-            attachmentType: { connect: { id: find_attachment_type.id } }
-          }
-        });
-
-        console.log("saved:", doc_attachment);
-      }
-
-      // อัพเดตสถานะเอกสาร -> อัปโหลดเอกสารเพิ่มเติมแล้ว
-      const updatedDoc = await prisma.documentPetition.update({
-        where: { id: documentId },
-        data: { statusId: find_status3.id }
+    if (existed) {
+      // มีแล้ว = ไม่ให้ generate ซ้ำ (one-shot)
+      return res.status(409).json({
+        message: "Already generated",
+        file: existed.file_path,               // เอาไปโชว์ปุ่มดาวน์โหลดได้เลย
       });
-
-      // บันทึกประวัติการเปลี่ยนสถานะ
-      const his_st = await prisma.documentStatusHistory.create({
-        data: {
-          document: { connect: { id: documentId } },
-          status: { connect: { id: find_status3.id } },
-          changedBy: { connect: { id: user.id } },
-          note_text: "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติม"
-        }
-      });
-
-      return res.json({
-        message: "Upload success",
-        document: updatedDoc,
-        history: his_st
-      });
-    } else {
-      return res.status(400).json({ message: "No files uploaded" });
     }
+
+    let data;
+    let templatePath = req.body?.templatePath ? path.resolve(req.body.templatePath) : undefined;
+
+    data = {
+      paragraphone : "เพื่อให้การดำเนินการเกี่ยวกับภารกิจตามวัตถุประสงค์ของมหาวิทยาลัยตามมาตรา ๗ แห่งพระราชบัญญัติมหาวิทยาลัยเชียงใหม่ พ.ศ. ๒๕๕๑ เป็นไปด้วยความเรียบร้อย รวดเร็วและมีประสิทธิภาพ",
+      paragraphtwo : "อำนาจตามความในมาตรา ๓๕ และมาตรา ๓๘ แห่งพระราชบัญญัติมหาวิทยาลัยเชียงใหม่ พ.ศ. ๒๕๕๑ ประกอบกับข้อ ๑๔ ของข้อบังคับมหาวิทยาลัยเชียงใหม่ ว่าด้วยการรักษาการแทน การมอบอำนาจให้ปฏิบัติการแทน  และการมอบอำนาจช่วงให้ปฏิบัติการแทนของผู้ดำรงตำแหน่งต่าง ๆ ในมหาวิทยาลัยเชียงใหม่  พ.ศ. ๒๕๕๔ และที่แก้ไขเพิ่มเติม จึงมอบอำนาจ ดังนี้",
+      title: doc.title,
+      authorizeTo: doc.authorize_to,
+      position: doc.position,
+      affiliation: doc.affiliation,
+      authorizeText: doc.authorize_text,
+      numbertwo : "ให้ผู้รับมอบอำนาจปฏิบัติหน้าที่ตามกรอบที่ได้รับมอบอำนาจโดยชอบด้วยกฎหมาย ข้อบังคับ ระเบียบ ประกาศและคำสั่งของมหาวิทยาลัยโดยเคร่งครัด ทั้งนี้ต้องคำนึงถึงผลของการกระทำ และความรับผิดของการกระทำนั้นทั้งทางแพ่ง ทางอาญา และทางปกครองด้วย",
+      numberthree : "มหาวิทยาลัยเชียงใหม่จะรับผิดต่อการปฏิบัติงานใด ๆ ตามที่ผู้ได้รับมอบอำนาจได้กระทำไปภายในขอบเขตที่ได้รับมอบอำนาจดังกล่าวทุกประการ "
+    }
+
+    const { docxPath, pdfPath } = await buildDocAndPdf(data, templatePath);
+ 
+    // save DB (.pdf)
+    await prisma.documentAttachment.create({
+      data : {
+        file_path : `generate/${doc.id_doc}.pdf`,
+        file_name : `${doc.id_doc}.pdf`,
+        document : { connect : { id : doc.id } },
+        user : { connect : { id : user.id } },
+        attachmentType : { connect : { id : find_type.id } },
+      }
+    });
+
+    // save DB (.docx)
+    await prisma.documentAttachment.create({
+      data : {
+        file_path : `generate/${doc.id_doc}.docx`,
+        file_name : `${doc.id_doc}.docx`,
+        document : { connect : { id : doc.id } },
+        user : { connect : { id : user.id } },
+        attachmentType : { connect : { id : find_type.id } },
+      }
+    });
+
+    res.json({ 
+      message: "PDF and DOCX generated successfully", 
+      files: {
+        docx: docxPath,
+        pdf: pdfPath
+      }
+    });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1194,6 +1458,18 @@ router.get('/history_audited', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 //-------------------------------------ประวัติที่ส่งกลับไปแก้ไข--------------------------------------//
 router.get('/history_send_back_edit_auditor', async (req, res) => {
   try {
@@ -1259,17 +1535,6 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
       note_text: h.note_text || h.statusHistory.note_text || null,
       editedAt: h.editAt,
 
-      // // snapshot ของเอกสารเก่า (ตอนส่งกลับ)
-      // snapshot: {
-      //   title: h.title,
-      //   authorize_to: h.authorize_to,
-      //   position: h.position,
-      //   affiliation: h.affiliation,
-      //   authorize_text: h.authorize_text
-      // },
-
-      // ผู้ที่เกี่ยวข้อง
-
       title : h.document.title,
       
       editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
@@ -1290,12 +1555,6 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
         ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
         : null
       
-
-      // // ข้อมูลเอกสารปัจจุบัน
-      // current_document: {
-      //   doc_statusNow: h.document.status?.status || null,
-      //   doc_current_title: h.document.title
-      // }
     }));
     console.log(set_json)
     res.json(set_json)
@@ -1307,43 +1566,138 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
 
 
 
-router.get('/snapdoc/:hisstatusId', async (req, res) => {
-    try {
-      const his_stId = parseInt(req.params.hisstatusId, 10); 
-      if (isNaN(his_stId)) {
-        return res.status(400).json({ error: "docId is invalid integer" });
-      }
 
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        include: { department: true }
-      });
 
-      const find_des = await prisma.destination.findUnique({
-        where: { des_name: user.department.department_name }
-      });
 
-      if (!find_des) {
-        return res.status(403).json({ message: "User is not in destination department" });
-      }
 
-      const his_edit = await prisma.documentPetitionHistory.findMany({
-        where : { 
-          his_statusId : his_stId,
-          editById : user.id,
-          document : {
-            destinationId : find_des.id
-          } 
-        }
-      });
 
-      res.json(his_edit)
 
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Server error" });
+router.get('/historyApprove', async (req, res) => {
+  try {
+
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "อธิการบดีอนุมัติแล้ว" }
+    });
+
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
     }
+
+
+    // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
+    const doc = await prisma.documentStatusHistory.findMany({
+      where : { 
+        changeById : user.id,
+        statusId : find_st1.id,
+        document: {
+          destinationId: find_des.id  
+        }
+        }, include : {
+            status : true,
+            changedBy : true,
+            document : { include : {
+            auditBy : true,
+            headauditBy : true,
+            status : true,
+            user : true,
+            department : true
+            }}
+        },orderBy: {
+            changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
+        }
+    });
+
+    if (!doc || doc.length === 0) {
+      return res.json([]); // ไม่มีประวัติ → ส่ง array ว่าง
+    }
+
+    console.log(doc)
+    res.json(doc);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+router.get('/historyRejectDoc', async(req, res) => {
+    try {
+
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "อธิการบดีปฏิเสธคำร้อง" }
+    });
+
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+        where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+        return res.status(403).json({ message: "User is not in this destination department" });
+    }
+
+
+    // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
+    const doc = await prisma.documentStatusHistory.findMany({
+      where : { 
+        changeById : user.id,
+        statusId : find_st1.id,
+        document: {
+          destinationId: find_des.id  
+        }
+        }, include : {
+            status : true,
+            changedBy : true,
+            document : { include : {
+            auditBy : true,
+            headauditBy : true,
+            status : true,
+            user : true,
+            department : true
+            }}
+        },orderBy: {
+            changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
+        }
+    });
+
+    if (!doc || doc.length === 0) {
+      return res.json([]); // ไม่มีประวัติ → ส่ง array ว่าง
+    }
+
+    res.json(doc);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 
 export default router;

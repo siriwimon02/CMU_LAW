@@ -35,7 +35,7 @@ async function main() {
       });
     }
 
-    const attactment_type = [ 'UserUpload','AuditorUpload', 'SignedDocument' ]
+    const attactment_type = [ 'UserUpload','AuditorUpload', 'SignedDocument', 'GenerateDocument' ]
     for( const type_d of attactment_type ){
       await prisma.attachmentType.upsert({
         where : { type_name : type_d },

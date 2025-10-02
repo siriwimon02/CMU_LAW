@@ -70,6 +70,10 @@ function Dashboard() {
     navigate('/finalaudit')
   }
 
+  const ClickToApprove = () => {
+    navigate('/pending_approval')
+  }
+
 
   const handleClick = (allowedRoles, action) => {
     if (allowedRoles.includes(userInfo.role_n)) {
@@ -80,12 +84,9 @@ function Dashboard() {
   };
 
 
-
   if (!userInfo) {
     return <div>Loading...</div>;  // หรือ แสดง loading ขณะรอข้อมูล
   }
-
-    
 
   return (
     <div className="min-h-screen font-kanit bg-[#F8F8F8] pb-10">
@@ -198,29 +199,59 @@ function Dashboard() {
       </div>
       )}
 
-      {/* ผู้ตรวจสอบ */}
-      {/*เตือนการเข้าถึง*/}
-      {showPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/20 z-50">
-          <div className="bg-white p-10 rounded-xl shadow-2xl w-[320px] text-center">
-            <p className="text-xl font-bold text-red-600 mb-4">
-              ไม่มีสิทธิ์ในการเข้าถึง
-            </p>
-            <button
-              onClick={() => setShowPopup(false)}
-              className="bg-[#66009F] text-white px-4 py-2 rounded-lg hover:bg-purple-800 transition"
-            >
-              ปิด
-            </button>
+       {/* อันใหม่ */}
+       {/* พนักงาน */}
+       {(userInfo.role_n === "auditor" ) && (
+        <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
+        {/* block1 */}
+        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
+           onClick={() => handleClick(["auditor"], ClickToAuditor)}
+        >
+          <div className="mb-5">
+             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+                <svg
+                xmlns="http://www.w3.org/2000/svg" 
+                width={40} 
+                height={40} 
+                viewBox="0 0 24 24"
+                className="text-black"  >
+                <path 
+                fill="currentColor" 
+                d="M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8-9h-6v2h6zm0 4h-6v2h6zm0 4h-6v2h6zm2-12h-8v2h8v14H2V6h8V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m-9 2h-2V2h2z">
+                </path></svg>
+             </div>
           </div>
+          <p className="text-[#66009F] font-bold text-2xl">เจ้าหน้าที่ตรวจสอบเอกสารคำร้อง</p>
+          <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบเอกสารคำร้องที่ผ่านการรับเข้ากองเรียบร้อยแล้ว</p>
         </div>
 
+        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
+           onClick={() => handleClick(["auditor"], ClickToApprove)}
+        >
+          <div className="mb-5">
+             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+                <svg
+                xmlns="http://www.w3.org/2000/svg" 
+                width={40} 
+                height={40} 
+                viewBox="0 0 24 24"
+                className="text-black"  >
+                <path 
+                fill="currentColor" 
+                d="M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8-9h-6v2h6zm0 4h-6v2h6zm0 4h-6v2h6zm2-12h-8v2h8v14H2V6h8V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m-9 2h-2V2h2z">
+                </path></svg>
+             </div>
+          </div>
+          <p className="text-[#66009F] font-bold text-2xl">เจ้าหน้าที่ดำเนินการเสนอเรื่องต่ออธิการบดี</p>
+          <p className="text-[#B9B9B9] mt-2 text-base">ส่งเอกสารคำร้องที่ตรวจสอบแล้วให้อธิการบดีพิจารณา และอัปโหลดผลอนุมัติ</p>
+        </div>
+      </div>
       )}
-       {/* onClick ยังไม่ถูกที่ ทุกอัน */}
-       {(userInfo.role_n === "auditor" || userInfo.role_n === "spv_auditor" || userInfo.role_n === "head_auditor"  )&& (
+
+      {/* หัวหน้างาน */}
+      {(userInfo.role_n === "head_auditor" ) && (
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
-          {/* block1 */}
-          {/* หัวหน้างาน */}
+        {/* block1 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
           onClick={() => handleClick(["head_auditor"], ClicktoHeadAuditor)}
         >
@@ -241,31 +272,14 @@ function Dashboard() {
           <p className="text-[#66009F] font-bold text-2xl">หัวหน้างาน</p>
           <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบ อนุมัติ คำขออนุมัติเอกสารตามขั้นตอนที่กำหนด</p>
         </div>
-        {/* block2 */}
-        {/* พนักงาน */}
-        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-           onClick={() => handleClick(["auditor"], ClickToAuditor)}
-        >
-          <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
-                <svg
-                xmlns="http://www.w3.org/2000/svg" 
-                width={40} 
-                height={40} 
-                viewBox="0 0 24 24"
-                className="text-black"  >
-                <path 
-                fill="currentColor" 
-                d="M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8-9h-6v2h6zm0 4h-6v2h6zm0 4h-6v2h6zm2-12h-8v2h8v14H2V6h8V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m-9 2h-2V2h2z">
-                </path></svg>
-             </div>
-          </div>
-          <p className="text-[#66009F] font-bold text-2xl">เจ้าหน้าที่</p>
-          <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบ อนุมัติ คำขอเอกสารของพนักงาน</p>
-        </div>
+        
+      </div>
+      )}
 
-        {/* block3 */}
-        {/* ผู้อำนวยการกอง */}
+      {/* ผู้อำนวยการกอง */}
+      {(userInfo.role_n === "spv_auditor" ) && (
+        <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
+        {/* block1 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
            onClick={() => handleClick(["spv_auditor"], ClickToFinalAudit)}
         >
@@ -286,9 +300,7 @@ function Dashboard() {
           <p className="text-[#66009F] font-bold text-2xl">ผู้อำนวยการกองตรวจสอบเอกสาร</p>
           <p className="text-[#B9B9B9] mt-2 text-base">คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง</p>
         </div>
-
-        {/* block4 */}
-        {/* ผู้อำนวยการกอง */}
+        {/* บล็อก2 */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
             onClick={() => handleClick(["spv_auditor"], ClicktoSpvauditor)}
         >
@@ -309,8 +321,17 @@ function Dashboard() {
           <p className="text-[#66009F] font-bold text-2xl">ผู้อำนวยการกองคัดกรองเอกสาร</p>
           <p className="text-[#B9B9B9] mt-2 text-base">คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง</p>
         </div>
+        
       </div>
       )}
+
+
+
+
+
+
+
+
 
       {/* admin*/}
       {userInfo.role_n === "admin" && (
@@ -362,7 +383,13 @@ function Dashboard() {
 
       
 
-      {/* ผู้อำนวยการ*/}
+
+
+
+
+
+
+
       {/* onClick ยังไม่ถูกที่ ทุกอัน */}
       {(userInfo.role_n === "endorser" || userInfo.role_n === "se_endorser") && (
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
