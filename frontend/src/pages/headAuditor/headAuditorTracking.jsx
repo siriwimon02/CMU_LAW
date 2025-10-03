@@ -11,7 +11,7 @@ function Auditor_Check() {
       alert("Please Login or SignIn First!!!");
       return <Navigate to="/login" replace />;
     }
-  
+    console.log(token)
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -232,11 +232,11 @@ function Auditor_Check() {
 
 
   const ClickForMoreDetail = (doc) => {
-    navigate(`/detailForHeadAuditor/${doc.id}`);
+    navigate(`/detail/${doc.id}`);
   }
   // view petition
   const ClickForViewPet = (doc) => {
-    navigate(`/viewHeadAuditor/${doc.id}`);
+    navigate(`/view/${doc.id}`);
   }
 
   return (

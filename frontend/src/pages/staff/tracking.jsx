@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/navbar'
+import Header from '../../components/trackingHeader'
 
 
 
@@ -40,7 +41,7 @@ function Tracking() {
     }
     getDocandUser();
   }, [token]);
-  
+  console.log(token)
   // color of status
   const redList = [
   'ส่งกลับให้ผู้ใช้แก้ไขเอกสาร',
@@ -103,7 +104,8 @@ function Tracking() {
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      <Navbar/>
+      {/* <Navbar/> */}
+      <Header/>
 
       {/* Main */}
       <div className="w-full px-6 mt-6 flex gap-4">
@@ -153,7 +155,7 @@ function Tracking() {
             return (
               <article
                 key={doc.id}
-                className="rounded-lg bg-white shadow p-4 mx-6  mt-4"
+                className="rounded-lg bg-white shadow p-4 mx-6 my-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1 text-gray-800">

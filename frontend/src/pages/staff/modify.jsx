@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import Icon from "../../components/docIcon"
-import BackB from "../../components/backToDashboardButton"
+import Icon from "../../components/docIcon";
+import BackB from "../../components/backToDashboardButton";
 
-const ALLOW_STATUS = "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร";  // สถานะที่อนุญาตให้แก้ไข
+const ALLOW_STATUS = "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"; // only this status can edit
 
 function Modify() {
   const navigate = useNavigate();
@@ -14,27 +14,42 @@ function Modify() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [okMsg, setOkMsg] = useState("");
-  const [canEdit, setCanEdit] = useState(false);      // เพิ่มตัวคุมสิทธิ์เข้าแก้ไข
+  const [statusName, setStatusName] = useState("");
 
-  // form fields...
+  // form fields
   const [title, setTitle] = useState("");
   const [authorizeTo, setAuthorizeTo] = useState("");
   const [position, setPosition] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [authorizeText, setAuthorizeText] = useState("");
+
+  // required docs flags (must be "true"/"false" strings when submitted)
   const [needPresidentCard, setNeedPresidentCard] = useState(false);
   const [needUniversityHouse, setNeedUniversityHouse] = useState(false);
 
-  // (ออปชัน) เก็บชื่อสถานะไว้โชว์ถ้าต้องการ
-  const [statusName, setStatusName] = useState("");
+  // optional: show destination dropdown but do NOT send it in this PUT
+  const [destinations, setDestinations] = useState([]);
+  const [destinationId, setDestination] = useState("");
 
+  // uploads
   const [files, setFiles] = useState([]);
+  const fileChange = (e) => setFiles(Array.from(e.target.files || []));
+
+  // keep a snapshot of initial text values to detect "only flags changed" case
+  const initialRef = useRef({
+    title: "",
+    authorizeTo: "",
+    position: "",
+    affiliation: "",
+    authorizeText: "",
+  });
 
   if (!token) {
     alert("Please Login or SignIn First!!!");
     return <Navigate to="/login" replace />;
   }
 
+  // load document
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -44,64 +59,81 @@ function Modify() {
           headers: { Authorization: `${token}` },
         });
         if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
+
         const data = await res.json();
-        const doc = data.setdoc;   // ดึง setdoc ออกมาใช้จริง
+        const doc = data.setdoc;
         if (!alive) return;
 
-        // เช็กสิทธิ์ตั้งแต่ตรงนี้
-        const allowed = doc?.status_name === ALLOW_STATUS;
-        setCanEdit(allowed);
-        setStatusName(doc?.status_name || "");
-
-        // ถ้าไม่อนุญาต ไม่ต้อง prefill อะไรต่อแล้ว
-        if (!allowed) {
-          // เลือกได้ 1 แบบ: รีไดเรกต์ทันที หรือใช้ <Navigate/> ตอน render
-          // แบบรีไดเรกต์ทันที:
+        // gate by status
+        if (doc?.status_name !== ALLOW_STATUS) {
+          setStatusName(doc?.status_name || "");
           navigate("/tracking", {
             replace: true,
             state: { msg: "เอกสารไม่อยู่ในสถานะที่อนุญาตให้แก้ไข" },
           });
           return;
         }
+        setStatusName(doc?.status_name || "");
 
-        // prefill เฉพาะกรณีที่แก้ไขได้
-        setTitle(doc.title ?? "");
-        setAuthorizeTo(doc.authorize_to ?? "");
-        setPosition(doc.position ?? "");
-        setAffiliation(doc.affiliation ?? "");
-        setAuthorizeText(doc.authorize_text ?? "");
+        // prefill text
+        const t = doc.title ?? "";
+        const aTo = doc.authorize_to ?? "";
+        const pos = doc.position ?? "";
+        const aff = doc.affiliation ?? "";
+        const aTxt = doc.authorize_text ?? "";
 
+        setTitle(t);
+        setAuthorizeTo(aTo);
+        setPosition(pos);
+        setAffiliation(aff);
+        setAuthorizeText(aTxt);
+
+        // remember initial values
+        initialRef.current = {
+          title: t,
+          authorizeTo: aTo,
+          position: pos,
+          affiliation: aff,
+          authorizeText: aTxt,
+        };
+
+        // prefill flags from documentNeed[] using EXACT names your backend checks
         if (Array.isArray(doc.documentNeed)) {
-          const hasPresidentCard = doc.documentNeed.some(
-            (d) => d.requiredDocument?.name.includes("บัตรประจำตัวอธิการบดี") 
+          const hasPres = doc.documentNeed.some(
+            (d) => d.requiredDocument?.name === "บัตรประจำตัวอธิการบดี"
           );
-          const hasUniversityHouse = doc.documentNeed.some(
-            (d) => d.requiredDocument?.name.includes("ทะเบียนบ้านมหาวิทยาลัยเชียงใหม่")
+          const hasHouse = doc.documentNeed.some(
+            (d) => d.requiredDocument?.name === "ทะเบียนบ้านมหาวิทยาลัย"
           );
-          setNeedPresidentCard(hasPresidentCard);
-          setNeedUniversityHouse(hasUniversityHouse);
+          setNeedPresidentCard(hasPres);
+          setNeedUniversityHouse(hasHouse);
         }
 
         setError("");
-
       } catch (e) {
         setError(e.message || String(e));
       } finally {
         setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [id, token, navigate]);
 
-
-
-  // ------- ทางเลือกที่ 2 (ถ้าไม่อยาก navigate ใน effect) -------
-  // ถ้าอยาก “ดักตอน render” แทน ให้คอมเมนต์ navigate() ใน effect ทิ้ง
-  // แล้วใช้บรรทัดนี้:
-  // if (!loading && !canEdit) {
-  //   return <Navigate to="/tracking" replace state={{ msg: "เอกสารไม่อยู่ในสถานะแก้ไขได้" }} />;
-  // }
-  // -------------------------------------------------------------
+  // (optional) destinations list for UI only (route doesn't use it)
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("http://localhost:3001/api/destination", {
+          headers: { Authorization: `${token}` },
+        });
+        if (!r.ok) return; // non-blocking
+        const data = await r.json();
+        setDestinations(Array.isArray(data) ? data : data?.data || []);
+      } catch {}
+    })();
+  }, [token]);
 
   if (loading) {
     return (
@@ -111,34 +143,55 @@ function Modify() {
     );
   }
 
-  // ถ้าเลือกใช้ “ดักตอน render” แทน navigate ใน effect ให้ใช้บล็อกด้านบน
-  // ที่นี่เรา navigate ไปแล้ว จึงไม่ต้องเช็กซ้ำ
-
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
     setOkMsg("");
     setSending(true);
-    try {
-      const form = new FormData();
-      if (title)         form.append("title", title.trim());
-      if (authorizeTo)   form.append("authorizeTo", authorizeTo.trim());
-      if (position)      form.append("position", position.trim());
-      if (affiliation)   form.append("affiliation", affiliation.trim());
-      if (authorizeText) form.append("authorizeText", authorizeText.trim());
-          
-      form.append("needPresidentCard", needPresidentCard);
-      form.append("needUniversityHouse", needUniversityHouse);
 
-      for (const f of files) form.append("attachments", f);
+    try {
+      // detect "only flags changed" (no text changed, no files)
+      const init = initialRef.current;
+      const textChanged =
+        init.title !== title ||
+        init.authorizeTo !== authorizeTo ||
+        init.position !== position ||
+        init.affiliation !== affiliation ||
+        init.authorizeText !== authorizeText;
+
+      if (!textChanged && files.length === 0) {
+        // Backend returns 400 if only flags changed (it doesn't count as update/upload)
+        // Warn user to edit at least one text field or attach a file.
+        setSending(false);
+        setError("โปรดแก้ไขข้อมูลอย่างน้อย 1 ช่อง หรือแนบไฟล์เพิ่มเติม (ระบบจะไม่บันทึกหากปรับเฉพาะตัวเลือกเอกสารประกอบ)");
+        return;
+      }
+
+      const form = new FormData();
+      if (title) form.append("title", title.trim());
+      if (authorizeTo) form.append("authorizeTo", authorizeTo.trim());
+      if (position) form.append("position", position.trim());
+      if (affiliation) form.append("affiliation", affiliation.trim());
+      if (authorizeText) form.append("authorizeText", authorizeText.trim());
+
+      // IMPORTANT: booleans as strings
+      form.append("needPresidentCard", String(needPresidentCard));
+      form.append("needUniversityHouse", String(needUniversityHouse));
+
+      // DO NOT append destinationId here (backend route doesn't accept it)
+
+      files.forEach((f) => form.append("attachments", f));
 
       const res = await fetch(`http://localhost:3001/petition/edit/${id}`, {
         method: "PUT",
-        headers: { Authorization: `${token}` },
+        headers: { Authorization: `${token}` }, // don't set Content-Type
         body: form,
       });
+
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || data?.message || `Update failed: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || `Update failed: ${res.status}`);
+      }
 
       setOkMsg(data?.message || "อัปเดตเอกสารสำเร็จ");
       setTimeout(() => navigate("/tracking"), 800);
@@ -152,40 +205,52 @@ function Modify() {
   return (
     <div className="min-h-screen bg-[#F6F7FB] px-4 py-10 font-[Kanit] ">
       <div className="mx-auto max-w-[980px]">
+        {/* <div className="mx-auto max-w-full"> */}
         <div className="rounded-2xl bg-white shadow-[0_6px_24px_rgba(0,0,0,0.06)] ring-1 ring-black/5 ">
-          <div className="mb-4 flex items-center justify-between pt-8 px-8">
+          <div className="mb-2 flex items-center justify-between pt-8 px-8">
             <div className="flex items-center gap-3">
-              <Icon/>
-              <h1 className="text-[22px] md:text-[26px] font-semibold text-gray-900">ยื่นคำขอมอบอำนาจ</h1>
+              <Icon />
+              <h1 className="text-[22px] md:text-[26px] font-semibold text-gray-900">
+                ยื่นคำขอมอบอำนาจ
+              </h1>
             </div>
-            <BackB/>
+            <BackB />
           </div>
 
           <div className="p-2">
-            <div className="mb-4">
+            <div className="mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-xl font-bold text-[#66009F]">รายละเอียดหนังสือมอบอำนาจ</span>
+                <span className="text-xl font-bold text-[#66009F]">
+                  รายละเอียดหนังสือมอบอำนาจ
+                </span>
               </div>
               <hr className="mt-3 border-gray-200" />
             </div>
 
-            {/* (ออปชัน) แสดงสถานะปัจจุบัน */}
-            {statusName && (
+            {/* {statusName && (
               <div className="mb-4 text-[14px] text-gray-700">
                 สถานะปัจจุบัน: <strong>{statusName}</strong>
               </div>
+            )} */}
+
+            {error && (
+              <div className="mb-3 rounded-lg bg-red-50 px-4 py-2 text-red-700 ring-1 ring-red-200">
+                {error}
+              </div>
+            )}
+            {okMsg && (
+              <div className="mb-3 rounded-lg bg-green-50 px-4 py-2 text-green-700 ring-1 ring-green-200">
+                {okMsg}
+              </div>
             )}
 
-            {/* แจ้งเตือน */}
-            {error && <div className="mb-3 rounded-lg bg-red-50 px-4 py-2 text-red-700 ring-1 ring-red-200">{error}</div>}
-            {okMsg && <div className="mb-3 rounded-lg bg-green-50 px-4 py-2 text-green-700 ring-1 ring-green-200">{okMsg}</div>}
-
             <form onSubmit={onSubmit} className="space-y-5">
-              {/* fields… (เหมือนเดิมของคุณ) */}
               {/* 1 */}
               <div>
                 <label className="mb-1 block text-[15px] text-gray-700">
-                  <span className="font-medium">1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ</span>
+                  <span className="font-medium">
+                    1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ
+                  </span>
                   <span className="text-red-600"> *</span>
                 </label>
                 <input
@@ -193,7 +258,7 @@ function Modify() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="ชื่อโครงการ"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
 
@@ -208,7 +273,7 @@ function Modify() {
                   value={authorizeTo}
                   onChange={(e) => setAuthorizeTo(e.target.value)}
                   placeholder="ชื่อ-สกุล ผู้รับมอบอำนาจ"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
 
@@ -223,7 +288,7 @@ function Modify() {
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="ตำแหน่งของผู้รับมอบอำนาจ"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
 
@@ -238,85 +303,117 @@ function Modify() {
                   value={affiliation}
                   onChange={(e) => setAffiliation(e.target.value)}
                   placeholder="หน่วยงาน/สังกัดของผู้รับมอบอำนาจ"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
 
               {/* 5 */}
               <div>
                 <label className="mb-1 block text-[15px] text-gray-700">
-                  <span className="font-medium">5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด</span>
+                  <span className="font-medium">
+                    5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด
+                  </span>
                   <span className="text-red-600"> *</span>
                 </label>
                 <textarea
                   rows={6}
                   value={authorizeText}
                   onChange={(e) => setAuthorizeText(e.target.value)}
-                  placeholder="ระบุรายละเอียดอำนาจหน้าที่ที่มอบให้ เช่น การเซ็นเอกสาร การติดต่อหน่วยงาน การดำเนินการแทน ฯลฯ"
-                  className="w-full resize-y rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  placeholder="รายละเอียดอำนาจหน้าที่ที่มอบให้"
+                  className="w-full resize-y rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
 
-              {/* เอกสารที่ต้องการใช้ประกอบ คำร้อง */}
+              {/* 6 — optional UI only */}
               <div>
                 <label className="mb-1 block text-[15px] text-gray-700">
-                  <span className="font-medium">6. เอกสารประกอบคำร้อง</span>
-                  <span className="text-red-600"> *</span>
+                  <span className="font-medium">6. หน่วยงานปลายทาง (ตัวเลือกแสดงผล)</span>
                 </label>
-                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select
+                  value={destinationId}
+                  onChange={(e) => setDestination(e.target.value)}
+                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                >
+                  <option value="">เลือกหน่วยงาน</option>
+                  {destinations.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.des_name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  * ช่องนี้ไม่ถูกส่งในคำขอแก้ไข (PUT) ตามสัญญา API ปัจจุบัน
+                </p>
+              </div>
+
+              {/* 7: doc requirements */}
+              <div>
+                <label className="mb-1 block text-[15px] text-gray-700">
+                  <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
+                </label>
+
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={needPresidentCard}
                     onChange={(e) => setNeedPresidentCard(e.target.checked)}
                   />
-                  <span>สำเนาบัตรประจำตัวอธิการบดี (บัตรประจำตัวพนักงาน)</span>
+                  <span>สำเนาบัตรประจำตัวอธิการบดี</span>
                 </label>
 
-                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <label className="flex items-center gap-2 mt-2">
                   <input
                     type="checkbox"
                     checked={needUniversityHouse}
                     onChange={(e) => setNeedUniversityHouse(e.target.checked)}
                   />
-                  <span>สำเนาทะเบียนบ้านมหาวิทยาลัยเชียงใหม่</span>
+                  <span>ทะเบียนบ้านมหาวิทยาลัย</span>
                 </label>
-                <p>หมายเหตุ : การพิจารณาให้เอกสารหรือไม่นั้น ขึ้นอยู่กับดุลพินิจของหน่วยงาน</p>
+
+                <p className="text-sm text-gray-600 mt-2">
+                  หมายเหตุ : หากปรับเฉพาะตัวเลือกด้านบนโดยไม่แก้ไขข้อความหรือแนบไฟล์ ระบบฝั่งเซิร์ฟเวอร์จะไม่บันทึก (จะต้องแก้ไขฟิลด์อย่างน้อย 1 ช่องหรือแนบไฟล์)
+                </p>
               </div>
 
-
-              {/* Upload */}
+              {/* 8: uploads */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700 font-medium">แนบเอกสารเพิ่มเติม</label>
-                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+                <label className="mb-1 block text-[15px] text-gray-700 font-medium">
+                  8. แนบเอกสารเพิ่มเติม
+                </label>
+                <div className="rounded-xl border border-dashed border-[#E5E5E5] bg-[#F7F7F7] p-4">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-gray-200 hover:bg-gray-50">
                     <input
                       type="file"
                       multiple
                       className="hidden"
-                      onChange={(e) => setFiles(e.target.files)}
+                      onChange={fileChange}
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                     />
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 text-gray-600"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
                       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
                     </svg>
                     Select file
                   </label>
                   {files?.length > 0 && (
-                    <div className="mt-3 text-sm text-gray-600">
-                      เลือกแล้ว {files.length} ไฟล์
-                    </div>
+                    <div className="mt-3 text-sm text-gray-600">เลือกแล้ว {files.length} ไฟล์</div>
                   )}
                 </div>
               </div>
 
-              {/* Submit */}
+              {/* submit */}
               <div className="pt-2">
                 <button
                   type="submit"
                   disabled={sending}
                   className={[
                     "mx-auto block w-full sm:w-auto rounded-xl bg-[#66009F] px-8 py-3 text-white shadow-lg transition",
-                    sending ? "cursor-not-allowed opacity-70" : "hover:-translate-y-[1px] hover:shadow-xl"
+                    sending ? "cursor-not-allowed opacity-70" : "hover:-translate-y-[1px] hover:shadow-xl",
                   ].join(" ")}
                 >
                   {sending ? "กำลังส่ง…" : "บันทึกและส่งหนังสือมอบอำนาจ"}

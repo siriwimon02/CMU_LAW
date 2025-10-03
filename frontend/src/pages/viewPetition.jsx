@@ -18,7 +18,8 @@ function ViewPetition() {
   const [affiliation, setAffiliation] = useState("");
   const [authorizeText, setAuthorizeText] = useState("");
   const [statusName, setStatusName] = useState("");
-
+  const [docId,setDocumentId] = useState("");
+  const [destination,setDestination] = useState("");
   if (!token) {
     alert("Please Login or SignIn First!!!");
     return <Navigate to="/login" replace />;
@@ -30,19 +31,23 @@ function ViewPetition() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:3001/petition/${id}`, {
+        const res = await fetch(`http://localhost:3001/document/${id}`, {
           headers: { Authorization: `${token}` },
         });
         if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
-        const doc = await res.json();
+        const payload = await res.json();
+        const doc = payload?.setdoc;
+        console.log(doc)
         if (!alive) return;
-
+        if (!doc) throw new Error("Invalid response shape: missing setdoc");
         setTitle(doc.title ?? "");
         setAuthorizeTo(doc.authorize_to ?? "");
         setPosition(doc.position ?? "");
         setAffiliation(doc.affiliation ?? "");
         setAuthorizeText(doc.authorize_text ?? "");
         setStatusName(doc.status_name ?? "");
+        setDocumentId(doc.doc_id ?? "")
+        setDestination(doc.destination_name ?? "")
         setError("");
       } catch (e) {
         setError(e.message || String(e));
@@ -53,6 +58,7 @@ function ViewPetition() {
     return () => { alive = false; };
   }, [id, token]);
 
+  
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-[#F6F7FB] font-[Kanit]">
@@ -61,15 +67,17 @@ function ViewPetition() {
     );
   }
 
+
   return (
-    <div className="min-h-screen bg-[#F6F7FB] px-4 py-10 font-[Kanit]">
-      <div className="mx-auto max-w-[980px]">
-        <div className="rounded-2xl bg-white shadow-[0_6px_24px_rgba(0,0,0,0.06)] ring-1 ring-black/5">
+    
+    <div className="min-h-screen bg-[#F9FAFE] flex justify-center items-center px-4 py-10 overflow-hidden overscroll-none font-[Kanit]">
+      <div className="max-w-[850px] w-full p-6 border  border-gray-300 rounded-xl shadow-md bg-white ">
+        <div className="rounded-xl">
           {/* Header */}
-          <div className="mb-4 flex items-center justify-between pt-8 px-8 relative">
+          <div className="mb-2 flex items-center justify-between  relative">
             {/* Centered title */}
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
-              <h1 className="text-[22px] md:text-[26px] font-semibold text-[#66009F]">
+              <h1 className="text-[26px] md:text-[26px] font-semibold text-[#66009F]">
                 หนังสือมอบอำนาจ
               </h1>
             </div>
@@ -81,9 +89,9 @@ function ViewPetition() {
           </div>
 
           {/* <div className="w-full"> */}
-            <div className="my-2 rounded-lg p-2 bg-gray-200 flex items-center justify-center w-fit mx-auto">
-              <p className="text-md text-gray-500">
-                เลขที่คำขอ : POA-2025-0819-1122
+            <div className=" rounded-lg p-2 bg-[#E0E5F936] flex items-center justify-center w-fit mx-auto">
+              <p className="text-md text-[#808080]">
+                เลขที่คำขอ : {docId}
               </p>
             {/* </div> */}
           </div>
@@ -98,11 +106,11 @@ function ViewPetition() {
             </div>
 
             {/* สถานะ */}
-            {statusName && (
+            {/* {statusName && (
               <div className="mb-4 text-[14px] text-gray-700">
                 สถานะปัจจุบัน: <strong>{statusName}</strong>
               </div>
-            )}
+            )} */}
 
             {/* แจ้งเตือน */}
             {error && (
@@ -115,7 +123,7 @@ function ViewPetition() {
             <div className="space-y-5">
               {/* 1 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px] ">
                   <span className="font-medium">
                     1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ
                   </span>
@@ -125,13 +133,13 @@ function ViewPetition() {
                   value={title}
                   readOnly
                   aria-readonly="true"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-700"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 "
                 />
               </div>
 
               {/* 2 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">2. ผู้รับมอบอำนาจ</span>
                 </label>
                 <input
@@ -139,13 +147,13 @@ function ViewPetition() {
                   value={authorizeTo}
                   readOnly
                   aria-readonly="true"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-700"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
               {/* 3 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px] ">
                   <span className="font-medium">3. ตำแหน่ง</span>
                 </label>
                 <input
@@ -153,13 +161,13 @@ function ViewPetition() {
                   value={position}
                   readOnly
                   aria-readonly="true"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-700"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
               {/* 4 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">4. สังกัด</span>
                 </label>
                 <input
@@ -167,13 +175,13 @@ function ViewPetition() {
                   value={affiliation}
                   readOnly
                   aria-readonly="true"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-700"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 "
                 />
               </div>
 
               {/* 5 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">
                     5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด
                   </span>
@@ -183,26 +191,47 @@ function ViewPetition() {
                   value={authorizeText}
                   readOnly
                   aria-readonly="true"
-                  className="w-full resize-y rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-700"
+                  className="w-full resize-y rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 "
+                />
+              </div>
+
+              {/* 6 */}
+              <div>
+                <label className="mb-1 bloxk text-[15px]">
+                  <span className="font-medium">
+                    6. หน่วยงานปลายทาง
+                  </span>
+                </label>
+                <input
+                  readOnly
+                  value={destination}
+                  type="text"
+                  aria-readonly="true"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
+                />
+              </div>
+              {/* 7 */}
+              <div>
+                <label className="mb-1 bloxk text-[15px]">
+                  <span className="font-medium">
+                    7. เลขลำดับเอกสาร
+                  </span>
+                </label>
+                <input
+                  readOnly
+                  value={docId}
+                  type="text"
+                  aria-readonly="true"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 "
                 />
               </div>
             </div>
 
-            {/* ปุ่มกลับ
-            <div className="pt-6">
-              <button
-                type="button"
-                // i don't know where i need to go
-                onClick={() => navigate(-1)}
-                className="mx-auto block w-full sm:w-auto rounded-xl bg-gray-100 px-6 py-2.5 text-gray-800 ring-1 ring-gray-200 hover:bg-gray-200"
-              >
-                กลับ
-              </button>
-            </div> */}
+            
           </div>
         </div>
-
         <div className="h-6" />
+
       </div>
     </div>
   );

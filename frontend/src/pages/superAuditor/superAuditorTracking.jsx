@@ -16,6 +16,7 @@ function SpvAuditor() {
   if (!authHeader) {
     return <Navigate to="/login" replace />;
   }
+  // console.log(authHeader)
 
   // ================== States ==================
   const [activeTab, setActiveTab] = useState("documentAll"); // documentAll | history_change_des | history_accept
@@ -85,7 +86,6 @@ function SpvAuditor() {
         return "http://localhost:3001/petitionSuperAudit/wait_to_accept";
     }
   }, [activeTab]);
-
   // ================== Load destinations ==================
   useEffect(() => {
     let mounted = true;

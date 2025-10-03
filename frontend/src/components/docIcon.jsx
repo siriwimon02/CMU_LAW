@@ -2,7 +2,7 @@ import React from "react"
 
 function Icon() {
     return(
-        <div class="bg bg-[#E0E5F9] w-11 h-11 p-2 rounded-lg flex items-center justify-center ">
+        <div className="bg bg-[#E0E5F9] w-11 h-11 p-2 rounded-lg flex items-center justify-center ">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width={40} 

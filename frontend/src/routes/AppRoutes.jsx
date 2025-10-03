@@ -4,10 +4,11 @@ import Register from '../pages/register';
 import Login from '../pages/login';
 import Petition from '../pages/petition';
 import Dashboard from '../pages/dashboard';
+import ViewPetition from "../pages/viewPetition";
+import Detail from "../pages/detail";
 // staff
 import FormPetition from '../pages/staff/form_petition';
 import Tracking from '../pages/staff/tracking';
-import Detail from "../pages/staff/detail";
 import Modify from "../pages/staff/modify";
 // อธิการ
 import TrackingForChancellor from "../pages/Chancellor/tracking"
@@ -23,16 +24,8 @@ import SpvFinalAudited from '../pages/spv_finalaudited';
 
 // auditor
 
-import DetailForAuditor from '../pages/auditor/moreDetail';
-import ViewAuditor from '../pages/auditor/viewPetition';
 // head auditor (BEL)
 import HeadAuditorTracking from '../pages/headAuditor/headAuditorTracking';
-import ViewHeadAuditor from '../pages/headAuditor/viewPetition';
-
-
-import ViewPetition from "../pages/viewPetition";
-
-
 import UploadDocumentApproved from '../pages/auditor/auditorApprove';
 
 export default function AppRoutes() {
@@ -47,12 +40,8 @@ export default function AppRoutes() {
         <Route path="/petition" element={<Petition/>} />
         {/* head auditor */}
         <Route path="/headAuditTracking" element={<HeadAuditorTracking/>} />
-        <Route path="/viewHeadAuditor/:id" element={<ViewHeadAuditor/>}/>
-        <Route path="/detailForHeadAuditor/:id" element={<DetailForAuditor/>}/>
         {/* auditor */}
         <Route path="/auditTracking" element={<AuditorTracking/>} />
-        <Route path="/petitionDetailForAuditor/:id" element={<DetailForAuditor/>}/>
-        <Route path="/viewAuditor/:id" element={<ViewAuditor/>}/>
         {/* ผู้อำนวยการคัดกรองเอกสาร Super Auditor */}
         <Route path="/spvAuditTracking" element={<SuperAuditorTracking />} />
         <Route path="/view/:id" element={<ViewPetition/>}/>

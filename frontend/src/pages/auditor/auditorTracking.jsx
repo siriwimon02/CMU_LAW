@@ -8,7 +8,7 @@ function Employee_Paper() {
   const authHeader = (localStorage.getItem("token") || "").replace(/^"+|"+$/g, "").trim();
   const navigate = useNavigate();
   if (!authHeader) return <Navigate to="/login" replace />;
-
+  console.log(authHeader)
   // ===== UI State =====
   const [activeTab, setActiveTab] = useState("all"); // all | documentAll | history_change_des | history_accept
   const [loading, setLoading] = useState(false);
@@ -344,8 +344,7 @@ function Employee_Paper() {
       alert("เกิดข้อผิดพลาดในการโหลดรายละเอียด");
     }
   };
-
-  // ดูไฟล์แนบ (alert)
+  // ดูเอกสารแนบ/ข้อมูลเอกสารแบบย่อ
   const viewDocs = async (doc) => {
     try {
       const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
@@ -365,10 +364,11 @@ function Employee_Paper() {
   };
 
   const ClickForMoreDetail = (doc) => {
-    navigate(`/petitionDetailForAuditor/${doc.id}`);
-  };
+    navigate(`/detail/${doc.id}`);
+  }
+  // view petition
   const ClickForViewPet = (doc) => {
-    navigate(`/viewAuditor/${doc.id}`);
+    navigate(`/view/${doc.id}`);
   };
 
   const approveDoc = async (doc) => {
@@ -574,7 +574,7 @@ function Employee_Paper() {
                     <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
                       <button
                         type="button"
-                        onClick={() => openDetail(doc)}
+                        onClick={() => ClickForMoreDetail(doc)}
                         className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
