@@ -366,7 +366,7 @@ function SpvAuditor() {
           {actions}
         </div>
 
-        {/* เนื้อหาฝั่งซ้าย (กันชนด้านขวาเผื่อปุ่ม) */}
+
         <div className="space-y-1 text-gray-800 pr-36">
           <h3 className="font-bold text-xl text-gray-800 mb-2">
             {item.title ?? item.doc_title ?? "-"}
