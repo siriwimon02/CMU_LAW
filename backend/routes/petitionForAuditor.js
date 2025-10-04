@@ -24,18 +24,24 @@ import Docxtemplater from 'docxtemplater';
 import multer from 'multer';
 import prisma from '../prismaClient.js'; // ถ้าใช้ดึง DB
 
+
 // libreoffice-convert เป็น CJS → ต้อง require ผ่าน createRequire เมื่อใช้ ESM
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const libre = require('libreoffice-convert');
 
 import wordcut from 'wordcut';
+import e from 'express';
 wordcut.init(); // โหลดดิกเริ่มต้น
 
 
-
-
 const router = express.Router();
+
+
+
+
+
+
 
 //------------------------------------doc ที่รอตรวจสอบขั้นตอน + อัพเดตสถานะให้ตรวจสอบขั้นต้น--------------------------//
 router.get('/wait_to_audit_byAudit', async (req, res) => {
@@ -64,10 +70,6 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
             where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว"}
         })
 
-        const findstatus7 = await prisma.status.findUnique({
-            where : { status : "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติมแล้ว"}
-        })
-
 
         const user = await prisma.user.findUnique({
             where : { id : req.user.id },
@@ -85,12 +87,12 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
             where : {
                 destinationId : find_des.id,
                 statusId : {
-                    in : [findstatus1.id, findstatus6.id, findstatus7.id]
+                    in : [findstatus1.id, findstatus6.id]
                 },
                 auditIdBy : user.id
             }, include: { status: true }
         });
-        console.log("doc audit_1st", document_audit_1st);
+        //console.log("doc audit_1st", document_audit_1st);
 
 
 
@@ -99,7 +101,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 where : {
                     destinationId : find_des.id,
                     statusId : {
-                        in : [findstatus1.id, findstatus6.id, findstatus7.id]
+                        in : [findstatus1.id, findstatus6.id]
                     }
                 }, data : {
                     statusId : findstatus2.id
@@ -120,7 +122,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                     })
                 )
             );
-            console.log("อัพเดตสถานะของผู้ตรวจสอบ", update_st)
+            //console.log("อัพเดตสถานะของผู้ตรวจสอบ", update_st)
         }
 
         const document_audit_2st = await prisma.documentPetition.findMany({
@@ -135,10 +137,39 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 status: true,
             }
         })
-        console.log(document_audit_2st);
+        //console.log(document_audit_2st);
 
         const document_json = [];
         for(const doc of document_audit_2st){
+
+          //หารายละเอียดเพิ่มเติมตอนแก้ไข
+          if (doc.statusId === findstatus4.id || doc.statusId === findstatus5.id) {
+            //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
+            const latestHistory = await prisma.documentStatusHistory.findFirst({
+              where: { 
+                documentId: doc.id,
+                statusId : { in : [findstatus4.id, findstatus5.id] }
+              },include: {
+                status: true
+              }
+            });
+            const setdoc = {
+                id:doc.id,
+                doc_id : doc.id_doc,
+                department_name: doc.department.department_name,
+                destination_name: doc.destination.des_name,
+                owneremail : doc.user.email,
+                title:doc.title,
+                authorize_to: doc.authorize_to,
+                position: doc.position,
+                affiliation: doc.affiliation,
+                authorize_text: doc.authorize_text,
+                status_name: doc.status.status,
+                createdAt: doc.createdAt,
+                note : latestHistory.note_text
+            }
+            document_json.push(setdoc);
+          }else {
             const setdoc = {
                 id:doc.id,
                 doc_id : doc.id_doc,
@@ -154,14 +185,26 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 createdAt: doc.createdAt,
             }
             document_json.push(setdoc);
+          }
         }
-        // console.log(document_json);
+        console.log(document_json);
         res.json({ message : "find document waiting to the first audit", document_json})
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -267,6 +310,15 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
+
+
+
+
 
 
 
@@ -413,6 +465,16 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1070,6 +1132,7 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
 
 
 
+
 //----------------------------------------generate file pdf----------------------------------//
 
 /* ===== static output dir ===== */
@@ -1146,7 +1209,7 @@ async function sofficeConvertDocxBufferToPdf(buf, outPath) {
 }
 
 /* ===== core builder ===== */
-async function buildDocAndPdf(data, templatePath = path.resolve('./test_temp.docx')) {
+async function buildDocAndPdf(data, templatePath = path.resolve('./test_temp.docx'), id_doc) {
   if (!fs.existsSync(templatePath)) throw new Error(`Template not found: ${templatePath}`);
 
   const zip = new PizZip(fs.readFileSync(templatePath, 'binary'));
@@ -1180,8 +1243,8 @@ async function buildDocAndPdf(data, templatePath = path.resolve('./test_temp.doc
 
   const docxBuf = docx.getZip().generate({ type: 'nodebuffer' });
   const base = `doc-${Date.now()}`;
-  const docxPath = path.join(OUTPUT_DIR, `${base}.docx`);
-  const pdfPath  = path.join(OUTPUT_DIR, `${base}.pdf`);
+  const docxPath = path.join(OUTPUT_DIR, `${id_doc}.docx`);
+  const pdfPath  = path.join(OUTPUT_DIR, `${id_doc}.pdf`);
   await fsp.writeFile(docxPath, docxBuf);
 
   const convertAsync = util.promisify(libre.convert);
@@ -1277,7 +1340,7 @@ router.post('/generate_pdf/:docId', async (req, res) => {
       numberthree : "มหาวิทยาลัยเชียงใหม่จะรับผิดต่อการปฏิบัติงานใด ๆ ตามที่ผู้ได้รับมอบอำนาจได้กระทำไปภายในขอบเขตที่ได้รับมอบอำนาจดังกล่าวทุกประการ "
     }
 
-    const { docxPath, pdfPath } = await buildDocAndPdf(data, templatePath);
+    const { docxPath, pdfPath } = await buildDocAndPdf(data, templatePath, doc.id_doc);
  
     // save DB (.pdf)
     await prisma.documentAttachment.create({
@@ -1317,6 +1380,202 @@ router.post('/generate_pdf/:docId', async (req, res) => {
 
 
 
+
+
+const ALLOW_BASE_DIR = path.resolve('./generate');
+
+//---------------------------download file pdf and word from generate already---------------------//
+router.get('/download_docx_generate/:docId', async (req, res) => {
+  const documentId = parseInt(req.params.docId, 10);         
+  if (isNaN(documentId)) {
+    return res.status(400).json({ error: "docId is invalid integer" });
+  }
+
+  try {
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
+    });
+
+    const find_type = await prisma.attachmentType.findFirst({
+      where : { type_name : "GenerateDocument" }
+    });
+    if (!find_type) {
+      return res.status(404).json({ message: "AttachmentType 'GenerateDocument' not found" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+      where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+      return res.status(403).json({ message: "User is not in destination department" });
+    }
+
+    const doc = await prisma.documentPetition.findUnique({
+      where: { id: documentId }
+    });
+    if (doc.destinationId !== find_des.id) {
+      return res.status(404).json({ message: "Document not found in this destination department" });
+    }
+    if (doc.statusId !== find_st1.id) {
+      return res.status(403).json({ message: "Document is not in the correct status for this action" });
+    }
+    if (doc.auditIdBy !== user.id) {
+      return res.status(403).json({ message: "You do not have permission to access this document" });
+    }
+
+    //หาไฟล์ .docx ของ doc นี้ (แก้ filter ให้ตรงสคีมา: ใช้ field id โดยตรง)
+    const fileNameWanted = `${doc.id_doc}.docx`;
+    const existed = await prisma.documentAttachment.findFirst({
+      where: {
+        document: { id: documentId },           // แทน documentId
+        attachmentType: { id: find_type.id },   // ประเภท GenerateDocument
+        file_name: fileNameWanted,         // ไฟล์เป้าหมาย
+      },
+      select: { file_path: true, file_name: true },
+    });
+
+    if (!existed) {
+      return res.status(404).json({ message: `Generated .docx not found for this document` });
+    }
+
+    // 4) สร้าง path แบบปลอดภัยใต้ ALLOW_BASE_DIR
+    const candidate = existed.file_path || existed.file_name;      // ใน DB อาจเก็บ path หรือแค่ชื่อไฟล์
+    let fullPath = path.isAbsolute(candidate)
+      ? candidate
+      : path.resolve(ALLOW_BASE_DIR, candidate);
+
+    fullPath = path.resolve(fullPath); // normalize
+
+    // กัน path traversal: ต้องอยู่ใต้ ALLOW_BASE_DIR
+    if (!fullPath.startsWith(ALLOW_BASE_DIR + path.sep) && fullPath !== ALLOW_BASE_DIR) {
+      return res.status(403).json({ message: 'File path is not allowed' });
+    }
+
+    // 5) ถ้าไฟล์ตาม file_path ไม่เจอ ลองประกอบจาก ALLOW_BASE_DIR + file_name
+    if (!fs.existsSync(fullPath)) {
+      const alt = path.resolve(ALLOW_BASE_DIR, existed.file_name);
+      if (!fs.existsSync(alt)) {
+        return res.status(404).json({ message: 'File not found on disk' });
+      }
+      fullPath = alt;
+    }
+
+    // 6) ส่งไฟล์
+    const downloadName = existed.file_name || fileNameWanted;
+    res.download(fullPath, downloadName, (err) => {
+      if (err) {
+        console.error('[download docx error]', err);
+        if (!res.headersSent) res.status(500).json({ message: 'Error sending file' });
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+//---------------------------download file pdf and word from generate already---------------------//
+router.get('/download_pdf_generate/:docId', async (req, res) => {
+  const documentId = parseInt(req.params.docId, 10);         
+  if (isNaN(documentId)) {
+    return res.status(400).json({ error: "docId is invalid integer" });
+  }
+
+  try {
+    const find_st1 = await prisma.status.findUnique({
+      where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
+    });
+
+    const find_type = await prisma.attachmentType.findFirst({
+      where : { type_name : "GenerateDocument" }
+    });
+    if (!find_type) {
+      return res.status(404).json({ message: "AttachmentType 'GenerateDocument' not found" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where : { id : req.user.id },
+      include: { department: true }
+    });
+    const find_des = await prisma.destination.findUnique({
+      where : { des_name : user.department.department_name }
+    });
+    if (!find_des) {
+      return res.status(403).json({ message: "User is not in destination department" });
+    }
+
+    const doc = await prisma.documentPetition.findUnique({
+      where: { id: documentId }
+    });
+    if (doc.destinationId !== find_des.id) {
+      return res.status(404).json({ message: "Document not found in this destination department" });
+    }
+    if (doc.statusId !== find_st1.id) {
+      return res.status(403).json({ message: "Document is not in the correct status for this action" });
+    }
+    if (doc.auditIdBy !== user.id) {
+      return res.status(403).json({ message: "You do not have permission to access this document" });
+    }
+
+    const fileNameWanted = `${doc.id_doc}.pdf`;
+    const existed = await prisma.documentAttachment.findFirst({
+      where: {
+        document: { id: documentId },           // แทน documentId
+        attachmentType: { id: find_type.id },   // ประเภท GenerateDocument
+        file_name: fileNameWanted,         // ไฟล์เป้าหมาย
+      },
+      select: { file_path: true, file_name: true },
+    });
+
+    if (!existed) {
+      return res.status(404).json({ message: `Generated .pdf not found for this document` });
+    }
+
+
+        // 4) สร้าง path แบบปลอดภัยใต้ ALLOW_BASE_DIR
+    const candidate = existed.file_path || existed.file_name;      // ใน DB อาจเก็บ path หรือแค่ชื่อไฟล์
+    let fullPath = path.isAbsolute(candidate)
+      ? candidate
+      : path.resolve(ALLOW_BASE_DIR, candidate);
+
+    fullPath = path.resolve(fullPath); // normalize
+
+    // กัน path traversal: ต้องอยู่ใต้ ALLOW_BASE_DIR
+    if (!fullPath.startsWith(ALLOW_BASE_DIR + path.sep) && fullPath !== ALLOW_BASE_DIR) {
+      return res.status(403).json({ message: 'File path is not allowed' });
+    }
+
+    // 5) ถ้าไฟล์ตาม file_path ไม่เจอ ลองประกอบจาก ALLOW_BASE_DIR + file_name
+    if (!fs.existsSync(fullPath)) {
+      const alt = path.resolve(ALLOW_BASE_DIR, existed.file_name);
+      if (!fs.existsSync(alt)) {
+        return res.status(404).json({ message: 'File not found on disk' });
+      }
+      fullPath = alt;
+    }
+
+    // 6) ส่งไฟล์
+    const downloadName = existed.file_name || fileNameWanted;
+    res.download(fullPath, downloadName, (err) => {
+      if (err) {
+        console.error('[download docx error]', err);
+        if (!res.headersSent) res.status(500).json({ message: 'Error sending file' });
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 
 
@@ -1420,6 +1679,7 @@ router.get('/history_audited', async (req, res) => {
       historyId: h.id,
       docId: h.documentId,
       idformal: h.document.id_doc,
+      createAt : h.document.changeAt,
 
       // เจ้าของเอกสาร
       owneremail: h.document.user?.email || null,
@@ -1489,7 +1749,7 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
     }
 
     // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
-    const his_edit = await prisma.documentStatusHistory.findMany({
+    const find_his_edit = await prisma.documentStatusHistory.findMany({
       where : {
         statusId : find_st1.id,
         changeById : user.id,
@@ -1499,46 +1759,25 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
       }
     });
 
-    if (his_edit.length === 0) {
+    if (find_his_edit.length === 0) {
       return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
     }
 
-    const find_his_edit = await prisma.documentPetitionHistory.findMany({
-      where: { 
-        his_statusId : { in: his_edit.map(h => h.id) }
-      },include : {
-        editedBy : true,
-        statusHistory : {
-          include : {
-            status : true
-          }
-        },
-        document : { include : {
-          auditBy : true,
-          headauditBy : true,
-          status : true,
-          user : true
-        }}
-      }
-    })
-
-
     const set_json = find_his_edit.map(h => ({
-      doc_petition_his_id: h.id,
-      history_status_id: h.statusHistory.id,
-      docId: h.documentId,
+      history_status_id: h.id,
+      docId: h.document.id,
       idformal: h.document.id_doc,
 
       // สถานะ
-      oldstatus: h.statusHistory.status?.status || null,
+      oldstatus: h.status?.status || null,
       nowstatus: h.document.status?.status || null,
-      note_text: h.note_text || h.statusHistory.note_text || null,
-      editedAt: h.editAt,
+      note_text: h.note_text || null,
+      editedAt: h.changedAt,
 
       title : h.document.title,
       
-      editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
-      editedByemail: h.editedBy.email,
+      editedByname: `${h.changedBy.firstname} ${h.changedBy.lastname}`.trim(),
+      editedByemail: h.changedBy.email,
       
       ownername: `${h.document.user.firstname} ${h.document.user.lastname}`.trim(),
       owneremail: h.document.user.email,
@@ -1555,7 +1794,7 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
         ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
         : null
       
-    }));
+      }));
     console.log(set_json)
     res.json(set_json)
   } catch (err) {

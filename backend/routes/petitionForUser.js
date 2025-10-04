@@ -180,6 +180,10 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
 router.get('/', async (req, res) => {
     console.log(req.user.id);
 
+    const find_status2 = await prisma.status.findUnique({
+        where: { status: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+    });
+
     const petition_doc = await prisma.documentPetition.findMany({
         where: {
             userId: req.user.id
@@ -198,25 +202,53 @@ router.get('/', async (req, res) => {
     });
 
     const docs = [];
-    for(const doc of petition_doc){       
-        const setdoc = {
-            id:doc.id,
-            doc_id:doc.id_doc,
-            department_name: doc.department.department_name,
-            destination_name: doc.destination.des_name,
-            title:doc.title,
-            authorize_to: doc.authorize_to,
-            position: doc.position,
-            affiliation: doc.affiliation,
-            authorize_text: doc.authorize_text,
-            status_name: doc.status.status,
-            auditBy: doc.auditBy?.email ?? null,        // ถ้าไม่มี auditBy → ได้ null
-            headauditBy: doc.headauditBy?.email ?? null, // ถ้าไม่มี headauditBy → ได้ null
-            createdAt: doc.createdAt,
+    for(const doc of petition_doc){  
+        if (doc.statusId === find_status2.id){
+            //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
+            const latestHistory = await prisma.documentStatusHistory.findFirst({
+                where: { 
+                documentId: doc.id,
+                statusId : { in : [find_status2.id] }
+                },include: {
+                status: true
+                }
+            });
+            const setdoc = {
+                id:doc.id,
+                doc_id : doc.id_doc,
+                department_name: doc.department.department_name,
+                destination_name: doc.destination.des_name,
+                owneremail : doc.user.email,
+                title:doc.title,
+                authorize_to: doc.authorize_to,
+                position: doc.position,
+                affiliation: doc.affiliation,
+                authorize_text: doc.authorize_text,
+                status_name: doc.status.status,
+                createdAt: doc.createdAt,
+                note : latestHistory.note_text
+            }
+            docs.push(setdoc);
+        }else {
+            const setdoc = {
+                id:doc.id,
+                doc_id:doc.id_doc,
+                department_name: doc.department.department_name,
+                destination_name: doc.destination.des_name,
+                title:doc.title,
+                authorize_to: doc.authorize_to,
+                position: doc.position,
+                affiliation: doc.affiliation,
+                authorize_text: doc.authorize_text,
+                status_name: doc.status.status,
+                auditBy: doc.auditBy?.email ?? null,        // ถ้าไม่มี auditBy → ได้ null
+                headauditBy: doc.headauditBy?.email ?? null, // ถ้าไม่มี headauditBy → ได้ null
+                createdAt: doc.createdAt,
+            }
+            docs.push(setdoc);
         }
-        docs.push(setdoc);
-        console.log(setdoc);
     }
+    console.log(docs);
     res.json({ message: "Document Petition", data: docs });
 });
 

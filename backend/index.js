@@ -13,6 +13,9 @@ import petition_SuperAudit from './routes/petitionForSuperAudit.js';
 import petition_HeadAudit from './routes/petitionForHeadAuditor.js';
 import checkRole from './middleware/checkRole.js';
 
+//for download
+import fs from "fs";
+import mime from "mime-types";
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -96,23 +99,6 @@ app.get('/auth/user', authMiddle, async(req, res) => {
   }
   console.log(json_send_info);
   res.json(json_send_info);
-});
-
-
-
-//-----------------------------------user all -------------------------------//
-app.get('/api/user', authMiddle, checkRole(["admin"]), async (req, res) => {
-  const userAll = await prisma.user.findMany({
-      include: {
-        role: {
-          select: {
-            role_name: true
-          }
-        }
-      }
-    });
-  res.json(userAll);
-  console.log(userAll);
 });
 
 
@@ -214,10 +200,6 @@ app.get('/api/history/document', async (req, res) => {
   }
 });
 
-
-
-
-
 //----------------------------------ดึง path file ดาวโหลด Only-----------------------------//
 
 
@@ -258,7 +240,6 @@ app.get('/document/:docId', authMiddle ,checkRole(["admin", "user", "spv_auditor
     if (!doc) {
       return res.status(404).json({ message: "Document not found" });
     }
-
 
     if (req.user.role_name === "user" && doc.userId !== currentUser.id) {
       return res.status(403).json({ message: "You do not have permission to access this document" });
@@ -468,17 +449,10 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
 
 
 
-app.get('/download/attachment/:docId', async (req, res) => {
-
-  const documentId = parseInt(req.params.docId, 10);
-
-  if (isNaN(documentId)) {
-    return res.status(400).json({ error: "docId is invalid integer" });
-  }
+app.get('/download/attachment', async (req, res) => {
 
   try {
     const file = await prisma.documentAttachment.findMany({
-      where: { docId : documentId},
       include : { attachmentType : true }
     });
 
@@ -610,6 +584,205 @@ app.get('/history_upload_document', async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+
+// โฟลเดอร์ฐานที่ยอมให้เสิร์ฟไฟล์
+const ALLOW_BASE_DIRS = [
+  path.resolve("./"),                     // รากโปรเจกต์ (ที่มีโฟลเดอร์ uploads/)
+  path.resolve("/app"),                   // ถ้ารันใน Docker ที่โค้ดอยู่ /app
+];
+
+function isUnderAllowedBase(absPath) {
+  const norm = path.resolve(absPath);
+  return ALLOW_BASE_DIRS.some(base => norm === base || norm.startsWith(base + path.sep));
+}
+
+//------------------------download file -----------------------------------//
+app.get('/attachments/:attachId/download', authMiddle, checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]), async (req, res) => {
+
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { department: true }
+    });
+
+    const attachmentId = parseInt(req.params.attachId, 10);
+    if (isNaN(attachmentId)) {
+      return res.status(400).json({ error: "attachment Id is invalid integer" });
+    }
+
+    const attachment_file = await prisma.documentAttachment.findUnique({
+      where : {
+        id : attachmentId
+      },include : {
+        attachmentType : true,
+        document : true
+      }
+    });
+    console.log(attachment_file)
+
+    if (!attachment_file) {
+      return res.status(404).json({ message: "Attachment not found" });
+    }
+
+    if (req.user.role_name === "user" && attachment_file.document.userId !== currentUser.id){
+      return res.status(403).json({ message: "You do not have permission to download document" });
+    }
+
+    if (["spv_auditor", "head_auditor", "auditor"].includes(req.user.role_name)) {
+      const find_des = await prisma.destination.findUnique({
+        where: { des_name: currentUser.department.department_name }
+      });
+      console.log(find_des)
+
+      if (!find_des || attachment_file.document.destinationId !== find_des.id) {
+        return res.status(403).json({ message: "Document not found in this destination department" });
+      }
+
+      if (req.user.role_name === "head_auditor" && attachment_file.document.headauditIdBy !== currentUser.id) {
+        return res.status(403).json({ message: "You do not have permission to access this document" });
+      }
+
+      if (req.user.role_name === "auditor" && attachment_file.document.auditIdBy !== currentUser.id) {
+        return res.status(403).json({ message: "You do not have permission to access this document" });
+      }
+    }
+
+
+    const candidate = attachment_file.file_path || attachment_file.file_name;
+    let abs = path.isAbsolute(candidate) ? candidate : path.resolve("./", candidate);
+    abs = path.resolve(abs);
+
+
+    if (!isUnderAllowedBase(abs)) {
+      return res.status(403).json({ message: "forbidden path" });
+    }
+    if (!fs.existsSync(abs)) {
+      return res.status(404).json({ message: "file not found on disk" });
+    }
+
+    
+    // ตั้ง content-type + ชื่อไฟล์ก่อนส่ง
+    const downloadName = attachment_file.file_name || path.basename(abs);
+    const ct = mime.lookup(abs) || "application/octet-stream";
+    res.setHeader("Content-Type", ct);
+
+    return res.download(abs, downloadName, (err) => {
+      if (err && !res.headersSent) res.status(500).json({ message: "send error" });
+    });
+
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-----------------------------------------for admin management---------------------------------------//
+//-----------------------------------user all -------------------------------//
+app.get('/api/user', authMiddle, checkRole(["admin"]), async (req, res) => {
+  const userAll = await prisma.user.findMany({
+      include: {
+        role: {
+          select: {
+            role_name: true
+          }
+        }
+      }
+    });
+  res.json(userAll);
+  console.log(userAll);
+});
+
+
+
+
+//-----------------------------------------document all------------------------------------------------//
+app.get('/api/documentAll', async (req, res) => {
+  const documentAll = await prisma.documentPetition.findMany({
+    include : {
+      department : true,
+      destination : true,
+      user : true,
+      auditBy : true,
+      headauditBy : true,
+      status : true,
+    }
+  });
+
+  const document_json = [];
+    for(const doc of documentAll){
+        const setdoc = {
+            id: doc.id,
+            doc_id: doc.id_doc,
+            department_name: doc.department.department_name,
+            destination_name: doc.destination.des_name,
+            owneremail: `${doc?.user?.firstname ?? ""} ${doc?.user?.lastname ?? ""}`.trim() +
+              (doc?.user?.email ? ` (${doc.user.email})` : ""),
+            title: doc.title,
+            authorize_to: doc.authorize_to,
+            position: doc.position,
+            affiliation: doc.affiliation,
+            authorize_text: doc.authorize_text,
+            status_name: doc.status.status,
+            auditBy: `${doc?.auditBy?.firstname ?? ""} ${doc?.auditBy?.lastname ?? ""}`.trim() +
+                    (doc?.auditBy?.email ? ` (${doc.auditBy.email})` : ""),
+            headauditBy: `${doc?.headauditBy?.firstname ?? ""} ${doc?.headauditBy?.lastname ?? ""}`.trim() +
+                        (doc?.headauditBy?.email ? ` (${doc.headauditBy.email})` : ""),
+            createdAt: doc.createdAt,
+        };
+        document_json.push(setdoc);
+  }
+
+  res.json(document_json)
+  
+});
+
+
+
+//-----------------------------------api action log ----------------------------------------------//
+app.get('/api/action_log/:docId', async (req, res) => {
+
+  // const date_time = "";
+  // const actionBy = "";
+  // const role_name = "";
+  // const action = "";
+  // const text = "";
+
+  const documentId = parseInt(req.params.docId, 10); 
+  if (isNaN(documentId)) {
+    return res.status(400).json({ error: "docId is invalid integer" });
+  }
+  
+  const find_st = await prisma.documentStatusHistory.findMany({
+    where : { documentId : documentId },
+    include : { 
+      petitionEdits : true,
+      petitionTranfers :true
+    }
+  });
+  res.json(find_st)
+
+
+
+});
+
 
 
 app.listen(PORT, () => {

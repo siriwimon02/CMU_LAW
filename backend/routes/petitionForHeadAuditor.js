@@ -4,6 +4,7 @@ dotenv.config({ path: '../.env.dev' });
 
 import express from 'express';
 import prisma from '../prismaClient.js';
+import { create } from 'domain';
 
 
 const router = express.Router();
@@ -81,6 +82,7 @@ router.get('/wait_to_accept_byHeadaudit', async (req, res) => {
         department : true,
         destination : true,
         user : true,
+        auditBy : true,
         status: true,
       }
     })
@@ -93,13 +95,14 @@ router.get('/wait_to_accept_byHeadaudit', async (req, res) => {
             doc_id : doc.id_doc,
             department_name: doc.department.department_name,
             destination_name: doc.destination.des_name,
-            owneremail : doc.user.email,
+            owneremail: `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
             title:doc.title,
             authorize_to: doc.authorize_to,
             position: doc.position,
             affiliation: doc.affiliation,
             authorize_text: doc.authorize_text,
             status_name: doc.status.status,
+            auditBy: `${doc.auditBy.firstname} ${doc.auditBy.lastname} ( ${doc.auditBy.email} )`,   
             createdAt: doc.createdAt,
         }
         document_json.push(setdoc);
@@ -440,6 +443,7 @@ router.get('/history_seconde_audited', async (req, res) => {
       historyId: h.id,
       docId: h.documentId,
       idformal: h.document.id_doc,
+      createAt : h.document.changeAt,
 
       // เจ้าของเอกสาร
       owneremail: h.document.user?.email || null,
@@ -497,7 +501,7 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
     }
 
     // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
-    const his_edit = await prisma.documentStatusHistory.findMany({
+    const find_his_edit = await prisma.documentStatusHistory.findMany({
       where : {
         statusId : find_st1.id,
         changeById : user.id,
@@ -507,58 +511,26 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
       }
     });
 
-    if (his_edit.length === 0) {
+    if (find_his_edit.length === 0) {
       return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
     }
 
-    const find_his_edit = await prisma.documentPetitionHistory.findMany({
-      where: { 
-        his_statusId : { in: his_edit.map(h => h.id) }
-      },include : {
-        editedBy : true,
-        statusHistory : {
-          include : {
-            status : true
-          }
-        },
-        document : { include : {
-          auditBy : true,
-          headauditBy : true,
-          status : true,
-          user : true
-        }}
-      }
-    })
-
 
     const set_json = find_his_edit.map(h => ({
-      doc_petition_his_id: h.id,
-      history_status_id: h.statusHistory.id,
-      docId: h.documentId,
+      history_status_id: h.id,
+      docId: h.document.id,
       idformal: h.document.id_doc,
 
       // สถานะ
-      oldstatus: h.statusHistory.status?.status || null,
+      oldstatus: h.status?.status || null,
       nowstatus: h.document.status?.status || null,
-      note_text: h.note_text || h.statusHistory.note_text || null,
-      editedAt: h.editAt,
+      note_text: h.note_text || null,
+      editedAt: h.changedAt,
 
-      // // snapshot ของเอกสารเก่า (ตอนส่งกลับ)
-      // snapshot: {
-      //   title: h.title,
-      //   authorize_to: h.authorize_to,
-      //   position: h.position,
-      //   affiliation: h.affiliation,
-      //   authorize_text: h.authorize_text
-      // },
-
-      // ผู้ที่เกี่ยวข้อง
-      title_now : h.document.title,
-      title_old : h.title,
-
+      title : h.document.title,
       
-      editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
-      editedByemail: h.editedBy.email,
+      editedByname: `${h.changedBy.firstname} ${h.changedBy.lastname}`.trim(),
+      editedByemail: h.changedBy.email,
       
       ownername: `${h.document.user.firstname} ${h.document.user.lastname}`.trim(),
       owneremail: h.document.user.email,
@@ -575,12 +547,6 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
         ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
         : null
       
-
-      // // ข้อมูลเอกสารปัจจุบัน
-      // current_document: {
-      //   doc_statusNow: h.document.status?.status || null,
-      //   doc_current_title: h.document.title
-      // }
     }));
 
     res.json(set_json)
@@ -588,48 +554,6 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
-});
-
-
-
-
-
-router.get('/snapdoc/:hisstatusId', async (req, res) => {
-    try {
-      const his_stId = parseInt(req.params.hisstatusId, 10); 
-      if (isNaN(his_stId)) {
-        return res.status(400).json({ error: "docId is invalid integer" });
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        include: { department: true }
-      });
-
-      const find_des = await prisma.destination.findUnique({
-        where: { des_name: user.department.department_name }
-      });
-
-      if (!find_des) {
-        return res.status(403).json({ message: "User is not in destination department" });
-      }
-
-      const his_edit = await prisma.documentPetitionHistory.findMany({
-        where : { 
-          his_statusId : his_stId,
-          editById : user.id,
-          document : {
-            destinationId : find_des.id
-          } 
-        }
-      });
-
-      res.json(his_edit)
-
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Server error" });
-    }
 });
 
 

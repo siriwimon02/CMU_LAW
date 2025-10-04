@@ -94,7 +94,7 @@ router.get('/wait_to_accept', async (req, res) => {
             doc_id : doc.id_doc,
             department_name: doc.department.department_name,
             destination_name: doc.destination.des_name,
-            owneremail : doc.user.email,
+            owneremail : `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
             title:doc.title,
             authorize_to: doc.authorize_to,
             position: doc.position,
@@ -470,15 +470,15 @@ router.get('/wait_to_audit_bySpvAudit', async (req, res) => {
             doc_id: doc.id_doc,
             department_name: doc.department.department_name,
             destination_name: doc.destination.des_name,
-            owneremail: doc.user.email,
+            owneremail: `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
             title: doc.title,
             authorize_to: doc.authorize_to,
             position: doc.position,
             affiliation: doc.affiliation,
             authorize_text: doc.authorize_text,
             status_name: doc.status.status,
-            auditBy: doc.auditBy?.email ?? null,        
-            headauditBy: doc.headauditBy?.email ?? null, 
+            auditBy: `${doc.auditBy.firstname} ${doc.auditBy.lastname} ( ${doc.auditBy.email} )`,        
+            headauditBy: `${doc.headauditBy.firstname} ${doc.headauditBy.lastname} ( ${doc.headauditBy.email} )`, 
             createdAt: doc.createdAt,
         };
         document_json.push(setdoc);
@@ -569,8 +569,8 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
 
 //--------------------------------------------ส่งเอกสาร กลับไปแก้ไขที่ role audit----------------------------//
 router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
-    const {text_edit_suggesttion} = req.body;
-
+    const {text_edit_suggestion} = req.body;
+    console.log(text_edit_suggestion);
     try {
         const documentId = parseInt(req.params.docId, 10); 
         if (isNaN(documentId)) {
@@ -621,7 +621,7 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
               document: { connect: { id: updatedDoc.id } },
               status:   { connect: { id: updatedDoc.statusId } },
               changedBy: { connect: { id: user.id } },
-              note_text: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggesttion || "-"}`
+              note_text: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggestion || "-"}`
             }
         });
 
@@ -639,7 +639,7 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
                 authorize_text : update_finish.authorize_text,
                 editedBy : { connect : { id : user.id } },
                 statusHistory : { connect : { id : his_st.id } },
-                note_text: `รายละเอียดเอกสารที่ต้องแก้ไข : ${text_edit_suggesttion}`
+                note_text: `รายละเอียดเอกสารที่ต้องแก้ไข : ${text_edit_suggestion}`
             }
         });
         console.log("History edit document", history_edit)
@@ -971,30 +971,16 @@ router.get('/history_send_back_edit_spvauditor', async (req, res) => {
     }
 
     // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
-    const his_edit = await prisma.documentStatusHistory.findMany({
+    const find_his_edit = await prisma.documentStatusHistory.findMany({
       where : {
         statusId : find_st1.id,
         changeById : user.id,
         document: {
           destinationId: find_des.id   
         } 
-      }
-    });
-
-    if (his_edit.length === 0) {
-      return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
-    }
-
-    const find_his_edit = await prisma.documentPetitionHistory.findMany({
-      where: { 
-        his_statusId : { in: his_edit.map(h => h.id) }
       },include : {
-        editedBy : true,
-        statusHistory : {
-          include : {
-            status : true
-          }
-        },
+        status : true,
+        changedBy : true,
         document : { include : {
           auditBy : true,
           headauditBy : true,
@@ -1002,36 +988,29 @@ router.get('/history_send_back_edit_spvauditor', async (req, res) => {
           user : true
         }}
       }
-    })
+    });
 
+    if (find_his_edit.length === 0) {
+      return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
+    }
+
+    console.log(find_his_edit);
 
     const set_json = find_his_edit.map(h => ({
-      doc_petition_his_id: h.id,
-      history_status_id: h.statusHistory.id,
-      docId: h.documentId,
+      history_status_id: h.id,
+      docId: h.document.id,
       idformal: h.document.id_doc,
 
       // สถานะ
-      oldstatus: h.statusHistory.status?.status || null,
+      oldstatus: h.status?.status || null,
       nowstatus: h.document.status?.status || null,
-      note_text: h.note_text || h.statusHistory.note_text || null,
-      editedAt: h.editAt,
-
-      // // snapshot ของเอกสารเก่า (ตอนส่งกลับ)
-      // snapshot: {
-      //   title: h.title,
-      //   authorize_to: h.authorize_to,
-      //   position: h.position,
-      //   affiliation: h.affiliation,
-      //   authorize_text: h.authorize_text
-      // },
-
-      // ผู้ที่เกี่ยวข้อง
+      note_text: h.note_text || null,
+      editedAt: h.changedAt,
 
       title : h.document.title,
       
-      editedByname: `${h.editedBy.firstname} ${h.editedBy.lastname}`.trim(),
-      editedByemail: h.editedBy.email,
+      editedByname: `${h.changedBy.firstname} ${h.changedBy.lastname}`.trim(),
+      editedByemail: h.changedBy.email,
       
       ownername: `${h.document.user.firstname} ${h.document.user.lastname}`.trim(),
       owneremail: h.document.user.email,
@@ -1048,12 +1027,6 @@ router.get('/history_send_back_edit_spvauditor', async (req, res) => {
         ? `${h.document.headauditBy.firstname} ${h.document.headauditBy.lastname}`
         : null
       
-
-      // // ข้อมูลเอกสารปัจจุบัน
-      // current_document: {
-      //   doc_statusNow: h.document.status?.status || null,
-      //   doc_current_title: h.document.title
-      // }
     }));
     console.log(set_json);
     res.json(set_json)
