@@ -20,6 +20,8 @@ function ViewPetition() {
   const [statusName, setStatusName] = useState("");
   const [docId,setDocumentId] = useState("");
   const [destination,setDestination] = useState("");
+  const [attachments, setAttachments] = useState([]);
+
   if (!token) {
     alert("Please Login or SignIn First!!!");
     return <Navigate to="/login" replace />;
@@ -48,6 +50,7 @@ function ViewPetition() {
         setStatusName(doc.status_name ?? "");
         setDocumentId(doc.doc_id ?? "")
         setDestination(doc.destination_name ?? "")
+        setAttachments(Array.isArray(doc.document_attachments) ? doc.document_attachments : []);
         setError("");
       } catch (e) {
         setError(e.message || String(e));
@@ -224,6 +227,55 @@ function ViewPetition() {
                   aria-readonly="true"
                   className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 "
                 />
+              </div>
+
+              {/* 8 file attachment */}
+              <div>
+                <label className="mb-1 bloxk text-[15px]">
+                  <span className="font-medium">
+                    8. เอกสารเพิ่มเติม
+                  </span>
+                </label>
+                 {attachments.length === 0 ? (
+                  <div className="rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 ">
+                    ไม่มีไฟล์แนบเอกสารเพิ่มเติม
+                  </div>
+                ) : ( 
+                  <ul className="space-y-2">
+                    {attachments.map((att) => {
+                      // const url = `http://localhost:3001/${att.file_path}`; // ปรับให้ตรงกับทางฝั่ง server เสิร์ฟไฟล์
+                      const name = att.file_name || att.file_path?.split("/").pop();
+                      
+                      // check type of files
+                      const isImage = /\.(png|jpe?g|gif|webp)$/i.test(name || "");
+                      const isPdf   = /\.pdf$/i.test(name || "");
+                      const isDoc   = /\.(docx?|xlsx?)$/i.test(name || "");
+
+                      return (
+                        <li key={att.id} className="flex items-center justify-between rounded-lg bg-[#F7F7F7] border border-gray-200 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {/* ไอคอนคร่าว ๆ ตามชนิดไฟล์ */}
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-gray-200 text-gray-700 text-xs">
+                              {isImage ? "IMG" : isPdf ? "PDF" : isDoc ? "DOC" : "FILE"}
+                            </span>
+                            <span className="text-sm text-gray-800">{name}</span>
+                          </div>
+
+                          {/* download */}
+                          {/* <div className="flex items-center gap-2"> */}
+                            <a
+                              href={url}
+                              download={name}
+                              className="rounded-md bg-[#66009F] px-3 py-1.5 text-sm text-white hover:opacity-90 text-sm"
+                            >
+                              ดาวน์โหลด
+                            </a>
+                          {/* </div> */}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
 

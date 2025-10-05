@@ -82,12 +82,17 @@ function Tracking() {
   ];
   // navigate
   const navigate = useNavigate();
+
   const ClicktoDashboard = () => {
     navigate('/dashboard');
   }
-
+  
   const ClickForMoreDetail = (doc) => {
     navigate(`/detail/${doc.id}`);
+  }
+  
+  const ClickForViewPet = (doc) => {
+    navigate(`/view/${doc.id}`)
   }
 
   const ClickForModify = (doc) => {
@@ -157,7 +162,7 @@ function Tracking() {
                 key={doc.id}
                 className="rounded-lg bg-white shadow p-4 mx-6 my-4"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1 text-gray-800">
                     <p className="font-bold">
                       เลขที่คำขอ:{" "}
@@ -172,7 +177,7 @@ function Tracking() {
                       <span className="font-medium">{doc.destination_name ?? "-"}</span>
                     </p>
 
-                    <p>
+                    <p className="truncate max-w-[650px]">
                       เรื่องที่ยื่น:{" "}
                       <span className="font-medium">{doc.title ?? "-"}</span>
                     </p>
@@ -189,10 +194,10 @@ function Tracking() {
                     </p>
                   </div>
                   
-                    
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
                     <button 
                       onClick={() => isModifiable ? ClickForModify(doc) : ClickForMoreDetail(doc)}
-                      className="mt-2 inline-flex items-center gap-2 self-start rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
+                      className=" inline-flex items-center gap-2 self-start rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50">
                       {isModifiable ? (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -228,6 +233,22 @@ function Tracking() {
                         {isModifiable ? "แก้ไขเอกสาร" : "ดูรายละเอียด"}
                       
                     </button>
+
+                    
+                    <button
+                        onClick={() => ClickForViewPet(doc)}
+                        className="bg-[#66009F] text-white px-4 py-2 rounded-md hover:bg-purple-900 text-sm flex items-center"
+                      >
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                      width="24" 
+                      height="24" 
+                      viewBox="0 0 24 24"
+                      className="text-white">
+                      <path fill="currentColor"
+                      d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"/></svg>
+                        ดูเอกสาร
+                    </button>
+                  </div>
                 </div>
               </article>
             );

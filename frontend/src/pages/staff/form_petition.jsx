@@ -265,6 +265,7 @@ function FormPetition() {
             onChange={(e) => setAuthorize_to(e.target.value)}
             placeholder="ชื่อ-สกุล ผู้รับมอบอำนาจ"
             required
+            maxLength={255}
             style={{
               width: '100%',
               padding: 10,
@@ -282,6 +283,7 @@ function FormPetition() {
             onChange={(e) => setPosition(e.target.value)}
             placeholder="ตำแหน่งของผู้รับมอบอำนาจ"
             required
+            maxLength={255}
             style={{
               width: '100%',
               padding: 10,
@@ -299,6 +301,7 @@ function FormPetition() {
             onChange={(e) => setAffiliation(e.target.value)}
             placeholder="หน่วยงาน/สังกัดของผู้รับมอบอำนาจ"
             required
+            maxLength={255}
             style={{
               width: '100%',
               padding: 10,
