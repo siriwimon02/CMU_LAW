@@ -632,7 +632,6 @@ router.put('/update_document_ByAuditor/:docId', data.none() ,async (req, res) =>
             // console.log(keep_action_log);
 
             
-
             // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
             if (latestHistory.statusId === findstatus4.id || latestHistory === findstatus5.id) {
               // อัปเดตของเก่า → เปลี่ยน his_statusId ให้เป็นของรอบนี้แทน
