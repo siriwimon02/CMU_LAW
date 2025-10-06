@@ -769,18 +769,77 @@ app.get('/api/action_log/:docId', async (req, res) => {
   if (isNaN(documentId)) {
     return res.status(400).json({ error: "docId is invalid integer" });
   }
+
+  const findstatus1 = await prisma.status.findUnique({
+    where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
+  });
+
+  const findstatus2 = await prisma.status.findUnique({
+    where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว" }
+  });
+
   
   const find_st = await prisma.documentStatusHistory.findMany({
     where : { documentId : documentId },
     include : { 
       petitionEdits : true,
-      petitionTranfers :true
+      petitionTranfers :true,
+      changedBy : { include : {role : true} },
+      status : true
+    } 
+  });
+
+  const find_att = await prisma.documentAttachment.findMany({
+    where : { docId : documentId },
+    include : {
+      attachmentType : true,
+      user : { include : {role : true} }
     }
   });
-  res.json(find_st)
 
+  const action = []
+  for (const st of find_st) {
+    console.log(st.statusId === findstatus1.id || st.statusId === findstatus2.id)
+    //console.log(st.petitionEdits.note_text)
+    if (st.statusId === findstatus1.id || st.statusId === findstatus2.id) {
+      const set_json = {
+        date_time : st.changedAt,
+        actionBy :`${st.changedBy.firstname} ${st.changedBy.lastname} ( ${st.changedBy.email} )`,
+        role_name : st.changedBy.role.role_name,
+        action : st.note_text,
+        text : st.petitionEdits[0].note_text,
+        id_editPetiton : st.petitionEdits[0].id
+      }
+      action.push(set_json)  
+    } else {
+      const set_json = {
+        date_time : st.changedAt,
+        actionBy :`${st.changedBy.firstname} ${st.changedBy.lastname} ( ${st.changedBy.email} )`,
+        role_name : st.changedBy.role.role_name,
+        action : st.note_text,
+        text : "",
+      }
+      action.push(set_json)  
+    }
+  }
 
+  for (const att of find_att) {
+    const set_json = {
+      date_time : att.time_upload,
+      actionBy :  `${att.user.firstname} ${att.user.lastname} ( ${att.user.email} )`,
+      role_name : att.user.role.role_name,
+      action : `อัปโหลดเอกสาร ${att.attachmentType.type_name}`,
+      text : `file_path : ${att.file_path}`
+    }
+    action.push(set_json)  
+  }
 
+  // ถ้าอยาก ใหม่ → เก่า
+  const thTimelineDesc = [...action].sort(
+    (a, b) => new Date(a.date_time) - new Date(b.date_time)
+  );
+
+  res.json({thTimelineDesc})
 });
 
 

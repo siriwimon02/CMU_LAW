@@ -206,6 +206,17 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
         }
     });
 
+    // const keep_action_log = await prisma.documentActionsLog.create({
+    //     data : {
+    //         user : { connect : { id : user.id } },
+    //         document : { connect : { id : doc } },
+    //         action : "รับเอกสารเข้ากอง",
+    //         node_text : ""
+    //     }
+    // });
+    // console.log(keep_action_log);
+
+
     res.json({
       message: "Document status updated to 'accepted in department'",
       updatedDoc
@@ -223,6 +234,17 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 //------------------------------------------------ส่งเอกสารไปกองอื่น ที่ไม่ใช้กองตัวเอง-------------------------------------//
 router.put('/change_destination/:docId', async( req, res) => {
   //ส่งไอดีของกองใหม่่มา
@@ -231,14 +253,18 @@ router.put('/change_destination/:docId', async( req, res) => {
     if (isNaN(new_destinationId)) {
       return res.status(400).json({ error: "new_destinationId must be integer" });
     }
+    
+    const find_new_des = await prisma.destination.findUnique({
+      where : { id : new_destinationId }
+    })
+    if (!find_new_des) {
+      return res.status(404).json({ error: "new destination not found" });
+    }
+
 
     const documentId = parseInt(req.params.docId, 10); 
     if (isNaN(documentId)) {
       return res.status(400).json({ error: "docId is invalid integer" });
-    }
-
-    if (isNaN(new_destinationId)) {
-      return res.status(400).json({ error: "new_destinationId must be integer" });
     }
 
     const find_status1 = await prisma.status.findUnique({
@@ -296,6 +322,17 @@ router.put('/change_destination/:docId', async( req, res) => {
           note_text: `ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
         }
     });
+
+    // const keep_action_log = await prisma.documentActionsLog.create({
+    //     data : {
+    //         user : { connect : { id : user.id } },
+    //         document : { connect : { id : doc.id } },
+    //         action : "ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร",
+    //         node_text : `${find_new_des.des_name}`
+    //     }
+    // });
+    // console.log(keep_action_log);
+
 
     //เก็บประวัติการเปลี่ยน destination ของเอกสารนี้
     const his_destination_doc = await prisma.documentPetitionHistoryTranfers.create({
@@ -555,6 +592,19 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
             }
         });
         console.log(his_st);
+
+
+        // const keep_action_log = await prisma.documentActionsLog.create({
+        //     data : {
+        //         user : { connect : { id : user.id } },
+        //         document : { connect : { id : doc.id } },
+        //         action : "ตรวจสอบเอกสารคำร้อง ขั้นตอนสุดท้าย",
+        //         node_text : ""
+        //     }
+        // });
+        // console.log(keep_action_log);
+
+
         res.json({ message: "Document status updated to the first audit is already", updatedDoc});
 
     } catch (err) {
@@ -624,6 +674,16 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
               note_text: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggestion || "-"}`
             }
         });
+
+        // const keep_action_log = await prisma.documentActionsLog.create({
+        //     data : {
+        //         user : { connect : { id : user.id } },
+        //         document : { connect : { id : doc.id } },
+        //         action : "ส่งเอกสารกลับไปแก้ไข ที่เจ้าหน้าที่",
+        //         node_text : `รายละเอียดการแก้ไข : ${text_edit_suggestion}`
+        //     }
+        // });
+        // console.log(keep_action_log);
 
         const update_finish = await prisma.documentPetition.findUnique({
             where : { id : documentId }

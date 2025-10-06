@@ -37,6 +37,17 @@ pnpm-debug.log*
 lerna-debug.log*
 
 
-backend/generate/*
-backend/uploads/*
+# ignore ทุกไฟล์ในโฟลเดอร์เหล่านี้ (อิงจาก root)
+#/backend/... = อิงจากรูทโปรเจกต์
+/backend/generate/*
+/backend/uploads/auditor_upload/*
+/backend/uploads/signed_document/*
+/backend/uploads/user_upload/*
+
+# allow .gitkeep ภายในแต่ละโฟลเดอร์
+!/backend/generate/.gitkeep
+!/backend/uploads/auditor_upload/.gitkeep
+!/backend/uploads/signed_document/.gitkeep
+!/backend/uploads/user_upload/.gitkeep
+
 

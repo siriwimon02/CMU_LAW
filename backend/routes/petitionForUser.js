@@ -6,6 +6,8 @@ import express from 'express';
 import prisma from '../prismaClient.js';
 import multer from "multer";
 import e from 'express';
+import { connect } from 'http2';
+import path from 'path';
 
 const router = express.Router();
 
@@ -93,6 +95,16 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
     });
     console.log(keep_status);
 
+    // const keep_action_log = await prisma.documentActionsLog.create({
+    //     data : {
+    //         user : { connect : { id : user.id } },
+    //         document : { connect : { id : doc } },
+    //         action : "สร้างเอกสารคำร้อง",
+    //         node_text : ""
+    //     }
+    // });
+    // console.log(keep_action_log);
+
 
     if (needPresidentCard === true){ // ต้องการ สำเนาบัตรประจำตัวอธิการบดี
         const find_req = await prisma.requiredDocument.findUnique ({
@@ -105,6 +117,17 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
                 requiredDocument : { connect : { id : find_req.id } }, 
             }
         });
+
+        // const keep_action_log = await prisma.documentActionsLog.create({
+        //     data : {
+        //         user : { connect : { id : user.id } },
+        //         document : { connect : { id : doc } },
+        //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
+        //         node_text : `${find_req.name}`
+        //     }
+        // });
+        // console.log(keep_action_log);
+
         console.log("document นี้ต้องการ สำเนาบัตรประจำตัวอธิการบดี",update_doc_need)
     }
 
@@ -119,6 +142,17 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
                 requiredDocument : { connect : { id : find_req.id } }, 
             }
         });
+
+        // const keep_action_log = await prisma.documentActionsLog.create({
+        //     data : {
+        //         user : { connect : { id : user.id } },
+        //         document : { connect : { id : doc.id } },
+        //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
+        //         node_text : `${find_req.name}`
+        //     }
+        // });
+        // console.log(keep_action_log);
+
         console.log("document นี้ต้องการ ทะเบียนบ้านมหาวิทยาลัย",update_doc_need)
     }
 
@@ -146,6 +180,16 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
                 }
             });
             console.log("saved:", doc_attachment);
+
+            // const keep_action_log = await prisma.documentActionsLog.create({
+            //     data : {
+            //         user : { connect : { id : user.id } },
+            //         document : { connect : { id : doc } },
+            //         action : "อัปโหลดแนบเอกสารเพิ่มเติม สำหรับขอเอกสารคำร้อง",
+            //         node_text : `path file : ${paths} & file name : ${path.name}`
+            //     }
+            // });
+            // console.log(keep_action_log);
         }
     }
 
@@ -206,29 +250,28 @@ router.get('/', async (req, res) => {
         if (doc.statusId === find_status2.id){
             //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
             const latestHistory = await prisma.documentStatusHistory.findFirst({
-                where: { 
-                documentId: doc.id,
-                statusId : { in : [find_status2.id] }
-                },include: {
-                status: true
-                }
+                where: { documentId: doc.id },
+                orderBy: { changedAt: 'desc' },     // ล่าสุดสุด
+                include: { status: true },          // ดึงชื่อสถานะมาด้วย
             });
-            const setdoc = {
-                id:doc.id,
-                doc_id : doc.id_doc,
-                department_name: doc.department.department_name,
-                destination_name: doc.destination.des_name,
-                owneremail : doc.user.email,
-                title:doc.title,
-                authorize_to: doc.authorize_to,
-                position: doc.position,
-                affiliation: doc.affiliation,
-                authorize_text: doc.authorize_text,
-                status_name: doc.status.status,
-                createdAt: doc.createdAt,
-                note : latestHistory.note_text
+            if (latestHistory.statusId === find_status2.id){
+                const setdoc = {
+                    id:doc.id,
+                    doc_id : doc.id_doc,
+                    department_name: doc.department.department_name,
+                    destination_name: doc.destination.des_name,
+                    owneremail : doc.user.email,
+                    title:doc.title,
+                    authorize_to: doc.authorize_to,
+                    position: doc.position,
+                    affiliation: doc.affiliation,
+                    authorize_text: doc.authorize_text,
+                    status_name: doc.status.status,
+                    createdAt: doc.createdAt,
+                    note : latestHistory.note_text
+                }
+                docs.push(setdoc);                
             }
-            docs.push(setdoc);
         }else {
             const setdoc = {
                 id:doc.id,
@@ -248,7 +291,7 @@ router.get('/', async (req, res) => {
             docs.push(setdoc);
         }
     }
-    console.log(docs);
+    //console.log(docs);
     res.json({ message: "Document Petition", data: docs });
 });
 
@@ -292,7 +335,18 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
             existingDoc.affiliation !== affiliation ||
             existingDoc.authorize_text !== authorizeText
         ) {
-            const updatedDoc = await prisma.documentPetition.update({
+
+            //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
+            const latestHistory = await prisma.documentStatusHistory.findFirst({
+                where: { documentId: existingDoc.id}
+                ,orderBy: {changedAt: "desc"}  // ใช้เวลาจาก statusHistory
+                ,include: {status: true}
+            });
+            console.log("ประวัติเอกสารล่าสุด",latestHistory)
+
+
+            //อัปเดตเอกสาร
+            await prisma.documentPetition.update({
                 where: { id: documentId },
                 data: {
                     title,
@@ -304,37 +358,30 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                 }
             });
 
+            //เพิ่มประวัติเอกสารร
             const his_st = await prisma.documentStatusHistory.create({
                 data: {
-                    document: { connect: { id: updatedDoc.id } },
-                    status:   { connect: { id: updatedDoc.statusId } },
+                    document: { connect: { id: documentId } },
+                    status:   { connect: { id: find_st2.id } },
                     changedBy: { connect: { id: req.user.id } },
                     note_text: "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"
                 }
             });
             console.log(his_st)
+
+            // const keep_action_log = await prisma.documentActionsLog.create({
+            //     data : {
+            //         user : { connect : { id : user.id } },
+            //         document : { connect : { id : documentId } },
+            //         action : "แก้ไขเอกสาร",
+            //         node_text : ""
+            //     }
+            // });
+            // console.log(keep_action_log);
             
-            //หาประวัติเอกสารอันล่าสุด แล้วเช็คสถานะว้าใช้ ส่งกลับมาใหม่
-            const latestHistory = await prisma.documentStatusHistory.findFirst({
-                where: { 
-                    documentId: existingDoc.id,
-                    statusId : find_st1.id
-                },
-                orderBy: {
-                    changedAt: "desc"  // ใช้เวลาจาก statusHistory
-                },
-                include: {
-                    status: true
-                }
-            });
-            console.log(latestHistory)
-
-            if (!latestHistory){
-                return res.status(404).json({ message : "Not found history status in send back to edit" })
-            }
-
             // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
-            if (latestHistory) {
+            console.log(latestHistory.statusId === find_st1.id)
+            if (latestHistory.statusId === find_st1.id) {
                 // อัปเดตของเก่า → เปลี่ยน his_statusId ให้เป็นของรอบนี้แทน
                 const history_edit = await prisma.documentPetitionHistory.updateMany({
                     where: { his_statusId : latestHistory.id },
@@ -367,6 +414,17 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                         requiredDocument : { connect : { id : find_req.id } }, 
                     }
                 });
+
+                // const keep_action_log = await prisma.documentActionsLog.create({
+                //     data : {
+                //         user : { connect : { id : user.id } },
+                //         document : { connect : { id : doc } },
+                //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
+                //         node_text : `${find_req.name}`
+                //     }
+                // });
+                // console.log(keep_action_log);
+
                 console.log("document นี้ต้องการ สำเนาบัตรประจำตัวอธิการบดี",update_doc_need)
             }else {
                 console.log("เอกสารนี้เคยต้องการบัตรประจำตัวอธิการบดีแล้ว");
@@ -392,6 +450,18 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                         requiredDocument : { connect : { id : find_req.id } }, 
                     }
                 });
+
+                // const keep_action_log = await prisma.documentActionsLog.create({
+                //     data : {
+                //         user : { connect : { id : user.id } },
+                //         document : { connect : { id : doc } },
+                //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
+                //         node_text : `${find_req.name}`
+                //     }
+                // });
+                // console.log(keep_action_log);
+
+
                 console.log("document นี้ต้องการ ทะเบียนบ้านมหาวิทยาลัย",update_doc_need)
             }else {
                 console.log("เอกสารนี้เคยต้องการทะเบียนบ้านมหาวิทยาลัยแล้ว");
@@ -412,6 +482,17 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                     }
                 });
             }
+
+            // const keep_action_log = await prisma.documentActionsLog.create({
+            //     data : {
+            //         user : { connect : { id : user.id } },
+            //         document : { connect : { id : doc } },
+            //         action : "อัปโหลดเอกสารเพิ่มเติม สำหรับยืนขอเอกสารคำร้อง",
+            //         node_text : `path file : ${file.path} & file name : ${file.originalname}`
+            //     }
+            // });
+            // console.log(keep_action_log);
+            
             isUploaded = true;
         }
 

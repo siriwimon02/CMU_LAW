@@ -28,34 +28,45 @@ import SpvFinalAudited from '../pages/spv_finalaudited';
 import HeadAuditorTracking from '../pages/headAuditor/headAuditorTracking';
 import UploadDocumentApproved from '../pages/auditor/auditorApprove';
 
+
+import RequireAuth from '../components/RequireAuth';
+import Forbidden from '../pages/Forbidden';
+
 export default function AppRoutes() {
 
   return (
     <Router>
       <Routes>
+        <Route path="/403" element={<Forbidden />} />
         <Route path="/" element={<Home/>} />
         <Route path="/register" element={<Register/>} />
         <Route path='/login' element={<Login/>} />
-        <Route path='/dashboard' element={<Dashboard/>} />
-        <Route path="/petition" element={<Petition/>} />
+        <Route path='/dashboard' element={<RequireAuth> <Dashboard/> </RequireAuth> } />
+        <Route path="/petition" element={<RequireAuth roles={['user']}> <Petition/> </RequireAuth>}/>
         {/* head auditor */}
-        <Route path="/headAuditTracking" element={<HeadAuditorTracking/>} />
+        <Route path="/headAuditTracking" element={<RequireAuth roles={['head_auditor']}> <HeadAuditorTracking/> </RequireAuth>} />
+
         {/* auditor */}
-        <Route path="/auditTracking" element={<AuditorTracking/>} />
+        <Route path="/auditTracking" element={<RequireAuth roles={['auditor']}> <AuditorTracking/> </RequireAuth>} />
+        <Route path="/pending_approval" element={<RequireAuth roles={['auditor']}> <UploadDocumentApproved/> </RequireAuth>}/>
+
         {/* ผู้อำนวยการคัดกรองเอกสาร Super Auditor */}
-        <Route path="/spvAuditTracking" element={<SuperAuditorTracking />} />
-        <Route path="/view/:id" element={<ViewPetition/>}/>
-        <Route path="/finalaudit" element={<SpvFinalAudited />} />
+        <Route path="/spvAuditTracking" element={<RequireAuth roles={['spv_auditor']}> <SuperAuditorTracking/> </RequireAuth>} />
+        <Route path="/view/:id" element={<RequireAuth> <ViewPetition/> </RequireAuth>}/>
+        <Route path="/finalaudit" element={<RequireAuth roles={['spv_auditor']}> <SpvFinalAudited/> </RequireAuth>}/>
+
         {/* staff */}
-        <Route path="/formPetition" element={<FormPetition/>} />
-        <Route path="/tracking" element={<Tracking/>} />
-        <Route path="/detail/:id" element={<Detail />} />
-        <Route path="/modify/:id" element={<Modify />}/>
-        <Route path="/pending_approval" element={<UploadDocumentApproved/>}/>
+        <Route path="/formPetition" element={<RequireAuth roles={['user']}> <FormPetition/> </RequireAuth>} />
+        <Route path="/tracking" element={<RequireAuth roles={['user']}> <Tracking/> </RequireAuth>}/>
+        <Route path="/detail/:id" element={<RequireAuth> <Detail/> </RequireAuth>} />
+        <Route path="/modify/:id" element={<RequireAuth roles={['user']}> <Modify/> </RequireAuth>}/>
+
+
+        
         {/* admin */}
-        <Route path="/admin_panel" element={<Admin_Panel/>} />
+        <Route path="/admin_panel" element={<RequireAuth roles={['admin']}> <Admin_Panel/> </RequireAuth>} />
         {/* อธิการบดี */}
-        <Route path="/chancellorTracking" element={<TrackingForChancellor/>}/>
+        <Route path="/chancellorTracking" element={<RequireAuth> <TrackingForChancellor/> </RequireAuth>}/>
         
       </Routes>
     </Router>
