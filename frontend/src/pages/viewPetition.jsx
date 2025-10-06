@@ -22,6 +22,7 @@ function ViewPetition() {
   const [destination,setDestination] = useState("");
   const [attachments, setAttachments] = useState([]);
 
+  const API_BASE = "http://localhost:3001";
   if (!token) {
     alert("Please Login or SignIn First!!!");
     return <Navigate to="/login" replace />;
@@ -60,6 +61,50 @@ function ViewPetition() {
     })();
     return () => { alive = false; };
   }, [id, token]);
+
+
+  // download
+
+  // ด้านบน component
+
+
+  async function downloadAttachment(att, token) {
+    try {
+      const url = `${API_BASE}/attachments/${att.id}/download`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `${token}` },
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`ดาวน์โหลดไม่สำเร็จ (${res.status}) ${txt || ""}`);
+      }
+
+      // ดึงชื่อไฟล์จาก header ถ้ามี
+      const cd = res.headers.get("content-disposition") || "";
+      const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i);
+      const headerFileName = decodeURIComponent(match?.[1] || match?.[2] || "");
+      const fallbackName = att.file_name || att.file_path?.split("/").pop() || "download";
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = headerFileName || fallbackName;
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 0);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์");
+    }
+  }
 
   
   if (loading) {
@@ -230,53 +275,51 @@ function ViewPetition() {
               </div>
 
               {/* 8 file attachment */}
+              {/* 8 file attachment */}
               <div>
-                <label className="mb-1 bloxk text-[15px]">
-                  <span className="font-medium">
-                    8. เอกสารเพิ่มเติม
-                  </span>
+                <label className="mb-1 block text-[15px]">
+                  <span className="font-medium">8. เอกสารเพิ่มเติม</span>
                 </label>
-                 {attachments.length === 0 ? (
-                  <div className="rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 ">
+
+                {attachments.length === 0 ? (
+                  <div className="rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5">
                     ไม่มีไฟล์แนบเอกสารเพิ่มเติม
                   </div>
-                ) : ( 
+                ) : (
                   <ul className="space-y-2">
-                    {attachments.map((att) => {
-                      // const url = `http://localhost:3001/${att.file_path}`; // ปรับให้ตรงกับทางฝั่ง server เสิร์ฟไฟล์
-                      const name = att.file_name || att.file_path?.split("/").pop();
-                      
-                      // check type of files
-                      const isImage = /\.(png|jpe?g|gif|webp)$/i.test(name || "");
-                      const isPdf   = /\.pdf$/i.test(name || "");
-                      const isDoc   = /\.(docx?|xlsx?)$/i.test(name || "");
+                {attachments.map((att) => {
+                  const name = att.file_name || att.file_path?.split("/").pop() || "download";
+                  const isImage = /\.(png|jpe?g|gif|webp)$/i.test(name);
+                  const isPdf   = /\.pdf$/i.test(name);
+                  const isDoc   = /\.(docx?|xlsx?)$/i.test(name);
 
-                      return (
-                        <li key={att.id} className="flex items-center justify-between rounded-lg bg-[#F7F7F7] border border-gray-200 px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            {/* ไอคอนคร่าว ๆ ตามชนิดไฟล์ */}
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-gray-200 text-gray-700 text-xs">
-                              {isImage ? "IMG" : isPdf ? "PDF" : isDoc ? "DOC" : "FILE"}
-                            </span>
-                            <span className="text-sm text-gray-800">{name}</span>
-                          </div>
+                  return (
+                    <li
+                      key={att.id}
+                      className="flex items-center justify-between rounded-lg bg-[#F7F7F7] border border-gray-200 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-gray-200 text-gray-700 text-xs">
+                          {isImage ? "IMG" : isPdf ? "PDF" : isDoc ? "DOC" : "FILE"}
+                        </span>
+                        <span className="text-sm text-gray-800">{name}</span>
+                      </div>
 
-                          {/* download */}
-                          {/* <div className="flex items-center gap-2"> */}
-                            <a
-                              href={url}
-                              download={name}
-                              className="rounded-md bg-[#66009F] px-3 py-1.5 text-sm text-white hover:opacity-90 text-sm"
-                            >
-                              ดาวน์โหลด
-                            </a>
-                          {/* </div> */}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                      <button
+                        type="button"
+                        onClick={() => downloadAttachment(att, token)}
+                        className="rounded-md bg-[#66009F] px-3 py-1.5 text-white text-sm hover:opacity-90"
+                      >
+                        ดาวน์โหลด
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
                 )}
               </div>
+
             </div>
 
             
