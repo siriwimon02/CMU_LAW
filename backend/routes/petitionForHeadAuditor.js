@@ -382,10 +382,10 @@ router.get('/history_seconde_audited', async (req, res) => {
             status : true,
             changedBy : true,
             document : { include : {
-            auditBy : true,
-            headauditBy : true,
-            status : true,
-            user : true
+              auditBy : true,
+              headauditBy : true,
+              status : true,
+              user : true
             }}
         },orderBy: {
             changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
@@ -459,13 +459,24 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
 
     // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
     const find_his_edit = await prisma.documentStatusHistory.findMany({
-      where : {
-        statusId : find_st1.id,
+      where : { 
         changeById : user.id,
+        statusId : find_st1.id,
         document: {
-          destinationId: find_des.id   
-        } 
-      }
+          destinationId: find_des.id  
+        }
+        }, include : {
+            status : true,
+            changedBy : true,
+            document : { include : {
+              auditBy : true,
+              headauditBy : true,
+              status : true,
+              user : true
+            }}
+        },orderBy: {
+            changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
+        }
     });
 
     if (find_his_edit.length === 0) {
@@ -477,6 +488,7 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
       history_status_id: h.id,
       docId: h.document.id,
       idformal: h.document.id_doc,
+      createAt : h.document.changeAt,
 
       // สถานะ
       oldstatus: h.status?.status || null,

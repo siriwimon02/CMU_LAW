@@ -338,6 +338,8 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
 
 
+
+
 //-----------------------------------------แก้ไขสถานะ กลับไปแก้ไขเอกสาร ส่งไปที่ผู้ใช้แก้ไข------------------------------//
 router.put('/edit_ByAuditor/:docId', async (req, res) => {
     const {text_edit_suggesttion} = req.body;
@@ -1793,10 +1795,10 @@ router.get('/history_audited', async (req, res) => {
             status : true,
             changedBy : true,
             document : { include : {
-            auditBy : true,
-            headauditBy : true,
-            status : true,
-            user : true
+              auditBy : true,
+              headauditBy : true,
+              status : true,
+              user : true
             }}
         },orderBy: {
             changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
@@ -1882,14 +1884,26 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
 
     // หาประวัติที่ user เป็นคนเปลี่ยนสถานะ
     const find_his_edit = await prisma.documentStatusHistory.findMany({
-      where : {
-        statusId : find_st1.id,
+      where : { 
         changeById : user.id,
+        statusId : find_st1.id,
         document: {
-          destinationId: find_des.id   
-        } 
-      }
+          destinationId: find_des.id  
+        }
+        }, include : {
+            status : true,
+            changedBy : true,
+            document : { include : {
+              auditBy : true,
+              headauditBy : true,
+              status : true,
+              user : true
+            }}
+        },orderBy: {
+            changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
+        }
     });
+    console.log(find_his_edit)
 
     if (find_his_edit.length === 0) {
       return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
@@ -1899,6 +1913,7 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
       history_status_id: h.id,
       docId: h.document.id,
       idformal: h.document.id_doc,
+      createAt : h.document.changeAt,
 
       // สถานะ
       oldstatus: h.status?.status || null,

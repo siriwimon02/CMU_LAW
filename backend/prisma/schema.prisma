@@ -73,20 +73,20 @@ model DocumentPetition {
   affiliation     String   @db.VarChar(255)
   authorize_text  String   
 
-  userId          Int
-  user            User @relation(fields: [userId], references: [id])
+  userId                            Int
+  user                              User @relation(fields: [userId], references: [id])
 
-  auditIdBy     Int?   
-  auditBy       User? @relation("AuditBy", fields: [auditIdBy], references: [id])
+  auditIdBy                         Int?   
+  auditBy                           User? @relation("AuditBy", fields: [auditIdBy], references: [id])
 
-  headauditIdBy Int?   
-  headauditBy   User? @relation("HeadAuditBy", fields: [headauditIdBy], references: [id])
+  headauditIdBy                     Int?   
+  headauditBy                       User? @relation("HeadAuditBy", fields: [headauditIdBy], references: [id])
 
-  statusId        Int
-  status          Status @relation(fields: [statusId], references: [id])
+  statusId                          Int
+  status                            Status @relation(fields: [statusId], references: [id])
 
-  createdAt       DateTime @default(now())
-  date_of_signing DateTime?
+  createdAt                         DateTime @default(now())
+  date_of_signing                   DateTime?
 
   attachments                       DocumentAttachment[]
   actionLogs                        DocumentActionsLog[]

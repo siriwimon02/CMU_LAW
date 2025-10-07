@@ -28,8 +28,7 @@ function Modify() {
   const [needUniversityHouse, setNeedUniversityHouse] = useState(false);
 
   // optional: show destination dropdown but do NOT send it in this PUT
-  const [destinations, setDestinations] = useState([]);
-  const [destinationId, setDestination] = useState("");
+  const [destination,setDestination] = useState("");
 
   // uploads
   const [files, setFiles] = useState([]);
@@ -81,12 +80,14 @@ function Modify() {
         const pos = doc.position ?? "";
         const aff = doc.affiliation ?? "";
         const aTxt = doc.authorize_text ?? "";
+        const des = doc.destination_name ?? "";
 
         setTitle(t);
         setAuthorizeTo(aTo);
         setPosition(pos);
         setAffiliation(aff);
         setAuthorizeText(aTxt);
+        setDestination(des);
 
         // remember initial values
         initialRef.current = {
@@ -121,19 +122,7 @@ function Modify() {
     };
   }, [id, token, navigate]);
 
-  // (optional) destinations list for UI only (route doesn't use it)
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch("http://localhost:3001/api/destination", {
-          headers: { Authorization: `${token}` },
-        });
-        if (!r.ok) return; // non-blocking
-        const data = await r.json();
-        setDestinations(Array.isArray(data) ? data : data?.data || []);
-      } catch {}
-    })();
-  }, [token]);
+  
 
   if (loading) {
     return (
@@ -203,14 +192,14 @@ function Modify() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7FB] px-4 py-10 font-[Kanit] ">
+    <div className="min-h-screen bg-[#F6F7FB] px-4 py-10 font-[Kanit] text-black">
       <div className="mx-auto max-w-[980px]">
         {/* <div className="mx-auto max-w-full"> */}
         <div className="rounded-2xl bg-white shadow-[0_6px_24px_rgba(0,0,0,0.06)] ring-1 ring-black/5 ">
           <div className="mb-2 flex items-center justify-between pt-8 px-8">
             <div className="flex items-center gap-3">
               <Icon />
-              <h1 className="text-[22px] md:text-[26px] font-semibold text-gray-900">
+              <h1 className="text-[22px] md:text-[26px] font-semibold ">
                 ยื่นคำขอมอบอำนาจ
               </h1>
             </div>
@@ -247,7 +236,7 @@ function Modify() {
             <form onSubmit={onSubmit} className="space-y-5">
               {/* 1 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px] ">
                   <span className="font-medium">
                     1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ
                   </span>
@@ -258,13 +247,13 @@ function Modify() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="ชื่อโครงการ"
-                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
               {/* 2 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">2. ผู้รับมอบอำนาจ</span>
                   <span className="text-red-600"> *</span>
                 </label>
@@ -273,13 +262,13 @@ function Modify() {
                   value={authorizeTo}
                   onChange={(e) => setAuthorizeTo(e.target.value)}
                   placeholder="ชื่อ-สกุล ผู้รับมอบอำนาจ"
-                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
               {/* 3 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px] ">
                   <span className="font-medium">3. ตำแหน่ง</span>
                   <span className="text-red-600"> *</span>
                 </label>
@@ -288,13 +277,13 @@ function Modify() {
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="ตำแหน่งของผู้รับมอบอำนาจ"
-                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
               {/* 4 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">4. สังกัด</span>
                   <span className="text-red-600"> *</span>
                 </label>
@@ -303,13 +292,13 @@ function Modify() {
                   value={affiliation}
                   onChange={(e) => setAffiliation(e.target.value)}
                   placeholder="หน่วยงาน/สังกัดของผู้รับมอบอำนาจ"
-                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
               {/* 5 */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px] ">
                   <span className="font-medium">
                     5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด
                   </span>
@@ -320,35 +309,56 @@ function Modify() {
                   value={authorizeText}
                   onChange={(e) => setAuthorizeText(e.target.value)}
                   placeholder="รายละเอียดอำนาจหน้าที่ที่มอบให้"
-                  className="w-full resize-y rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
                 />
               </div>
 
-              {/* 6 — optional UI only */}
+              {/* 6 — show destination (read only) */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
-                  <span className="font-medium">6. หน่วยงานปลายทาง (ตัวเลือกแสดงผล)</span>
+                <label className="mb-1 bloxk text-[15px]">
+                  <span className="font-medium">
+                    6. หน่วยงานปลายทาง
+                  </span>
                 </label>
-                <select
-                  value={destinationId}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2.5 outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-200"
-                >
-                  <option value="">เลือกหน่วยงาน</option>
-                  {destinations.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.des_name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  * ช่องนี้ไม่ถูกส่งในคำขอแก้ไข (PUT) ตามสัญญา API ปัจจุบัน
-                </p>
+                <input
+                  readOnly
+                  value={destination}
+                  type="text"
+                  aria-readonly="true"
+                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
+                />
               </div>
 
               {/* 7: doc requirements */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700">
+                <label className="mb-1 block text-[15px] ">
+                  <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={needPresidentCard}
+                    readOnly 
+                    onClick={(e) => e.preventDefault()}
+                    // onChange={(e) => setNeedPresidentCard(e.target.checked)}
+                  />
+                  <span>สำเนาบัตรประจำตัวอธิการบดี</span>
+                </label>
+
+                <label className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    checked={needUniversityHouse}
+                    readOnly 
+                    onClick={(e) => e.preventDefault()}
+                    // onChange={(e) => setNeedUniversityHouse(e.target.checked)}
+                  />
+                  <span>ทะเบียนบ้านมหาวิทยาลัย</span>
+                </label>
+              </div>
+              {/* <div>
+                <label className="mb-1 block text-[15px] ">
                   <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
                 </label>
 
@@ -373,11 +383,11 @@ function Modify() {
                 <p className="text-sm text-gray-600 mt-2">
                   หมายเหตุ : หากปรับเฉพาะตัวเลือกด้านบนโดยไม่แก้ไขข้อความหรือแนบไฟล์ ระบบฝั่งเซิร์ฟเวอร์จะไม่บันทึก (จะต้องแก้ไขฟิลด์อย่างน้อย 1 ช่องหรือแนบไฟล์)
                 </p>
-              </div>
+              </div> */}
 
               {/* 8: uploads */}
               <div>
-                <label className="mb-1 block text-[15px] text-gray-700 font-medium">
+                <label className="mb-1 block text-[15px] font-medium">
                   8. แนบเอกสารเพิ่มเติม
                 </label>
                 <div className="rounded-xl border border-dashed border-[#E5E5E5] bg-[#F7F7F7] p-4">
