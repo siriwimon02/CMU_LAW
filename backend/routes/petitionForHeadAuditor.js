@@ -400,7 +400,8 @@ router.get('/history_seconde_audited', async (req, res) => {
       historyId: h.id,
       docId: h.documentId,
       idformal: h.document.id_doc,
-      createAt : h.document.changeAt,
+      createAt : h.document.createdAt,
+      
 
       // เจ้าของเอกสาร
       owneremail: h.document.user?.email || null,
@@ -408,7 +409,8 @@ router.get('/history_seconde_audited', async (req, res) => {
 
 
       // สถานะ
-      status: h.status?.status || null,
+      oldstatus: h.status?.status || null,
+      nowstatus: h.document.status?.status || null,
       changeAt: h.changedAt,
       note: h.note_text || null,
 
@@ -479,6 +481,8 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
         }
     });
 
+    console.log(find_his_edit);
+
     if (find_his_edit.length === 0) {
       return res.json([]); // ไม่มีประวัติ ก็ส่ง array ว่างกลับไป
     }
@@ -488,7 +492,7 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
       history_status_id: h.id,
       docId: h.document.id,
       idformal: h.document.id_doc,
-      createAt : h.document.changeAt,
+      createAt : h.document.createdAt,
 
       // สถานะ
       oldstatus: h.status?.status || null,
@@ -517,7 +521,6 @@ router.get('/history_send_back_edit_headauditor', async (req, res) => {
         : null
       
     }));
-
     res.json(set_json)
   } catch (err) {
     console.error(err);
