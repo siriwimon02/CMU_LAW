@@ -8,7 +8,6 @@ export default function ForwardToDepartmentButton({
   onClose,
   hideTrigger = false,
   view: controlledView, // "form" | "success"
-  // ✅ ของใหม่: รับจากภายนอกได้
   auditors: auditorsProp,
   loadingAuditors: loadingAuditorsProp,
 }) {
@@ -19,7 +18,6 @@ export default function ForwardToDepartmentButton({
   const [phase, setPhase] = useState("form"); // "form" | "success"
   const view = controlledView ?? phase;
 
-  // ===== โหลดรายชื่อผู้ตรวจสอบ =====
   const [auditors, setAuditors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [auditId, setAuditId] = useState("");
@@ -28,7 +26,7 @@ export default function ForwardToDepartmentButton({
     .replace(/^"+|"+$/g, "")
     .trim();
 
-  const shouldFetch = !Array.isArray(auditorsProp); // ถ้าส่งมาจากภายนอก ไม่ต้อง fetch
+  const shouldFetch = !Array.isArray(auditorsProp);
 
   useEffect(() => {
     if (!open) return;
@@ -41,7 +39,6 @@ export default function ForwardToDepartmentButton({
 
     (async () => {
       if (!shouldFetch) {
-        // ใช้ลิสต์จากภายนอก
         setAuditors(auditorsProp || []);
         setLoading(Boolean(loadingAuditorsProp));
         return;
@@ -69,7 +66,6 @@ export default function ForwardToDepartmentButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, authHeader, shouldFetch, JSON.stringify(auditorsProp), loadingAuditorsProp]);
 
-  // สร้าง options
   const options = useMemo(() => {
     return (auditors || [])
       .map((a) => {
@@ -174,7 +170,9 @@ export default function ForwardToDepartmentButton({
             ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
           </p>
 
-          <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกผู้ตรวจสอบ (ดูรายชื่อพนักงานที่ส่งไป)</label>
+          <label className="mt-6 text-base sm:text-lg text-gray-900">
+            เลือกผู้ตรวจสอบ (ดูรายชื่อพนักงานที่ส่งไป)
+          </label>
           <div className="mt-2">
             <div className="relative">
               <select
@@ -185,7 +183,9 @@ export default function ForwardToDepartmentButton({
                 disabled={loading || (Array.isArray(auditorsProp) ? (loadingAuditorsProp || false) : options.length === 0)}
               >
                 <option value="" disabled>
-                  {loading || loadingAuditorsProp ? "กำลังโหลดรายชื่อผู้ตรวจสอบ..." : "เลือกผู้ตรวจสอบ"}
+                  {loading || loadingAuditorsProp
+                    ? "กำลังโหลดรายชื่อผู้ตรวจสอบ..."
+                    : "เลือกผู้ตรวจสอบ"}
                 </option>
                 {options.map((opt) => (
                   <option key={opt.id} value={opt.id}>
@@ -208,14 +208,19 @@ export default function ForwardToDepartmentButton({
               disabled={!auditId || loading || loadingAuditorsProp}
               onClick={submit}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 shadow focus:outline-none 
-                          ${auditId && !(loading || loadingAuditorsProp) ? "bg-[#05A967] text-white" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+                          ${auditId && !(loading || loadingAuditorsProp)
+                            ? "bg-[#05A967] text-white"
+                            : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                fill="currentColor" className="w-5 h-5">
-              <path fillRule="evenodd"
-                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0 1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
-                clipRule="evenodd"
-              />
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   strokeWidth="1.5"
+                   stroke="currentColor"
+                   className="w-5 h-5">
+                <path strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
               ส่งต่อไปที่ผู้ตรวจสอบ
             </button>

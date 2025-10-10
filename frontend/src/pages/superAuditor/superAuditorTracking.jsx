@@ -368,70 +368,80 @@ function SpvAuditor() {
 
 
         <div className="space-y-1 text-gray-800 pr-36">
-          <h3 className="font-bold text-xl text-gray-800 mb-2">
-            {item.title ?? item.doc_title ?? "-"}
-          </h3>
+        <p
+          className="font-bold text-lg break-words overflow-hidden text-ellipsis line-clamp-2 pr-[260px] max-w-[calc(100%-12rem)]"
+        >
+          {item.title ?? item.doc_title ?? "-"}
+        </p>
+        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+          เลขที่คำขอ :{" "}
+          <span className="font-medium">
+            {item.doc_id ?? item.request_no ?? item.id ?? "-"}
+          </span>
+        </p>
+        
+        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+          ผู้ยื่นคำร้อง :{" "}
+          <span className="font-medium">
+            {item.owneremail ?? item.authorize_to ?? "-"}
+          </span>
+        </p>
 
-          <p className="font-bold">
-            เลขที่คำขอ :{" "}
+        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+          เจ้าหน้าที่ตรวจสอบ :{" "}
+          <span className="font-medium">
+            {item.auditBy ?? item.auditByname ?? item.auditedBy_name ?? "-"}
+          </span>
+        </p>
+
+        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+          หัวหน้าตรวจสอบ :{" "}
+          <span className="font-medium">
+            {item.headauditBy ?? item.headauditByname ?? "-"}
+          </span>
+        </p>
+
+        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+          วันที่ยื่นคำร้อง :{" "}
+          {item.createdAt
+            ? new Date(item.createdAt).toLocaleString("th-TH", {
+                timeZone: "Asia/Bangkok",
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-"}
+        </p>
+
+        {showDestination && (
+          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+            ส่งไปยังหน่วยงาน :{" "}
             <span className="font-medium">
-              {item.doc_id ?? item.request_no ?? item.id ?? "-"}
+              {String(toDept ?? "").trim() || "-"}
             </span>
           </p>
+        )}
 
-          <p>
-            ผู้ยื่นคำร้อง :{" "}
-            <span className="font-medium">
-              {item.owneremail ?? item.authorize_to ?? "-"}
-            </span>
-          </p>
+        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+          <span
+            className="font-bold"
+            style={{
+              color: isOrange
+                ? "#E48500"
+                : isBlue
+                ? "#0078E2"
+                : isGreen
+                ? "#05A967"
+                : "#666",
+            }}
+          >
+            {statusText}
+          </span>
+        </p>
+      </div>
 
-          <p>
-            เจ้าหน้าที่ตรวจสอบ :{" "}
-            <span className="font-medium">
-              {item.auditBy ?? item.auditByname ?? item.auditedBy_name ?? "-"}
-            </span>
-          </p>
-
-          <p>
-            หัวหน้าตรวจสอบ :{" "}
-            <span className="font-medium">
-              {item.headauditBy ?? item.headauditByname ?? "-"}
-            </span>
-          </p>
-
-          <p>
-            วันที่ยื่นคำร้อง :{" "}
-            {item.createdAt
-              ? new Date(item.createdAt).toLocaleString("th-TH", {
-                  timeZone: "Asia/Bangkok",
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "-"}
-          </p>
-
-          {showDestination && (
-            <p>
-              ส่งไปยังหน่วยงาน :{" "}
-              <span className="font-medium">{String(toDept ?? "").trim() || "-"}</span>
-            </p>
-          )}
-
-          <p>
-            <span
-              className="font-bold"
-              style={{
-                color: isOrange ? "#E48500" : isBlue ? "#0078E2" : isGreen ? "#05A967" : "#666",
-              }}
-            >
-              {statusText}
-            </span>
-          </p>
-        </div>
       </div>
     );
   }
@@ -448,7 +458,7 @@ function SpvAuditor() {
                 <button
                   key="detail"
                   onClick={() => ClickForMoreDetail(doc)}
-                  className="border border-gray-200 px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100"
+                  className="border border-gray-200 bg-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100 shadow-sm transition"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="7" />
