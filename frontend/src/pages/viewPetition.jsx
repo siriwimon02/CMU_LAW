@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/docIcon";
-import BackB from "../components/backToDashboardButton";
+import BackB from "../components/backButton";
 
 function ViewPetition() {
   const navigate = useNavigate();
@@ -21,6 +21,7 @@ function ViewPetition() {
   const [docId,setDocumentId] = useState("");
   const [destination,setDestination] = useState("");
   const [attachments, setAttachments] = useState([]);
+  const [order_n, setOrder_n] = useState("");
 
   const API_BASE = "http://localhost:3001";
   if (!token) {
@@ -52,6 +53,7 @@ function ViewPetition() {
         setDocumentId(doc.doc_id ?? "")
         setDestination(doc.destination_name ?? "")
         setAttachments(Array.isArray(doc.document_attachments) ? doc.document_attachments : []);
+        setOrder_n(doc.order_n ?? "");
         setError("");
       } catch (e) {
         setError(e.message || String(e));
@@ -245,7 +247,7 @@ function ViewPetition() {
 
               {/* 6 */}
               <div>
-                <label className="mb-1 bloxk text-[15px]">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">
                     6. หน่วยงานปลายทาง
                   </span>
@@ -260,7 +262,7 @@ function ViewPetition() {
               </div>
               {/* 7 */}
               <div>
-                <label className="mb-1 bloxk text-[15px]">
+                <label className="mb-1 block text-[15px]">
                   <span className="font-medium">
                     7. เลขลำดับเอกสาร
                   </span>
@@ -319,6 +321,20 @@ function ViewPetition() {
 
                 )}
               </div>
+                {/* 9 order_number */}
+                {order_n && (
+                  <div className="mt-2">
+                    <label className="mb-1 block text-[15px]">
+                      <span className="font-medium">9. เลขที่คำสั่ง (Order Number)</span>
+                    </label>
+                    <input
+                      readOnly
+                      value={order_n}
+                      type="text"
+                      className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 "
+                    />
+                  </div>
+                )}
 
             </div>
 

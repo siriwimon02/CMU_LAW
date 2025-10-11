@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import Button from "../components/backToDashboardButton"
+import Button from "../components/backButton"
 // if it is user need to check ความเป็นเจ้าของ
 function Detail() {
   const navigate = useNavigate();

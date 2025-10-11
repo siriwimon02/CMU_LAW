@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 
 function Back() {
     const navigate = useNavigate();
-    const ClicktoDashboard = () => {
-        navigate('/dashboard');
+    const ClickBack = () => {
+        navigate(-1);
     }
     return(
         <button
-            onClick={ClicktoDashboard}
+            onClick={ClickBack}
             className="bg-[#66009F] w-10 h-10 flex items-center justify-center rounded-xl shadow hover:bg-[#4A0073] transition"
             title="ย้อนกลับ"
             >
