@@ -86,6 +86,7 @@ model DocumentPetition {
   status                            Status @relation(fields: [statusId], references: [id])
 
   createdAt                         DateTime @default(now())
+  order_number                      String?
   date_of_signing                   DateTime?
 
   attachments                       DocumentAttachment[]

@@ -95,16 +95,6 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
     });
     console.log(keep_status);
 
-    // const keep_action_log = await prisma.documentActionsLog.create({
-    //     data : {
-    //         user : { connect : { id : user.id } },
-    //         document : { connect : { id : doc } },
-    //         action : "สร้างเอกสารคำร้อง",
-    //         node_text : ""
-    //     }
-    // });
-    // console.log(keep_action_log);
-
 
     if (needPresidentCard === true){ // ต้องการ สำเนาบัตรประจำตัวอธิการบดี
         const find_req = await prisma.requiredDocument.findUnique ({
@@ -117,16 +107,6 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
                 requiredDocument : { connect : { id : find_req.id } }, 
             }
         });
-
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc } },
-        //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
-        //         node_text : `${find_req.name}`
-        //     }
-        // });
-        // console.log(keep_action_log);
 
         console.log("document นี้ต้องการ สำเนาบัตรประจำตัวอธิการบดี",update_doc_need)
     }
@@ -143,15 +123,6 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
             }
         });
 
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc.id } },
-        //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
-        //         node_text : `${find_req.name}`
-        //     }
-        // });
-        // console.log(keep_action_log);
 
         console.log("document นี้ต้องการ ทะเบียนบ้านมหาวิทยาลัย",update_doc_need)
     }

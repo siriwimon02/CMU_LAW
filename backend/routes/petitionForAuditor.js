@@ -906,7 +906,7 @@ const uploadBoth = multer({ storage: storageDynamic }).fields([
 
 //----------------------------------ตอนเพิ่มเอกสารที่ อธิการบดี ได้ทำการอนุมัติเรียบร้อยแล้ว------------------------------//
 router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
-    const { decision, date_of_signing } = req.body; // 'approve' หรือ 'reject'
+    const { decision, date_of_signing} = req.body; // 'approve' หรือ 'reject'
     const documentId = parseInt(req.params.docId, 10);
 
     if (isNaN(documentId)) {
@@ -971,6 +971,7 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
 
       // ---------------------- APPROVE ----------------------
       if (decision === "approve") {
+        const {order_number} = req.body;
         const uploadPresidentCard = req.body.uploadPresidentCard === "true";
         const uploadUniversityHouse = req.body.uploadUniversityHouse === "true";
 
@@ -1006,15 +1007,6 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
                 }
               });
 
-              // const keep_action_log = await prisma.documentActionsLog.create({
-              //     data : {
-              //         user : { connect : { id : user.id } },
-              //         document : { connect : { id : documentId } },
-              //         action : "อัปโหลดเอกสารที่ต้องการ",
-              //         node_text : `${find_req.name}`
-              //     }
-              // });
-              // console.log(keep_action_log);
             }
           }
 
@@ -1043,15 +1035,6 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
                 }
               });
 
-              // const keep_action_log = await prisma.documentActionsLog.create({
-              //     data : {
-              //         user : { connect : { id : user.id } },
-              //         document : { connect : { id : documentId } },
-              //         action : "อัปโหลดเอกสารที่ต้องการ",
-              //         node_text : `${find_req.name}`
-              //     }
-              // });
-              // console.log(keep_action_log);
             }
           }
 
@@ -1077,15 +1060,6 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
               });
               console.log("saved:", doc_attachment);
 
-              // const keep_action_log = await prisma.documentActionsLog.create({
-              //     data : {
-              //         user : { connect : { id : user.id } },
-              //         document : { connect : { id : doc } },
-              //         action : "อัปโหลดเอกสารเพิ่มเติม สำหรับประกอบเอกสารคำร้อง",
-              //         node_text : `path file : ${file.path} & file name : ${file.originalname}`
-              //     }
-              // });
-              // console.log(keep_action_log);
             }
           }
 
@@ -1127,17 +1101,6 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
                   attachmentType: { connect : { id : find_attachment_type.id } },
                 },
               });
-
-              // const keep_action_log = await prisma.documentActionsLog.create({
-              //     data : {
-              //         user : { connect : { id : user.id } },
-              //         document : { connect : { id : doc } },
-              //         action : "อัปโหลดเอกสารคำร้อง ที่ผ่านการอนุมัติเรียบร้อยแล้ว",
-              //         node_text : `path file : ${file.path} & file name : ${file.originalname}`
-              //     }
-              // });
-              // console.log(keep_action_log);
-
             }
           }
         }
@@ -1147,7 +1110,8 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
           where: { id: doc.id },
           data: { 
             statusId : find_status2.id,
-            date_of_signing: signingDate
+            date_of_signing: signingDate,
+            order_number : order_number
           },
         });
 
@@ -1161,15 +1125,6 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
         });
         console.log(his_st);
 
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc } },
-        //         action : "อัพเดตสถานะเอกสาร ที่ผ่านการอนุมัติคำร้องแล้ว",
-        //         node_text : ""
-        //     }
-        // });
-        // console.log(keep_action_log);
 
         return res.status(201).json({
           message: "Document approved and saved",
@@ -1199,16 +1154,6 @@ router.put("/upload_endorser_document/:docId", uploadBoth, async (req, res) => {
             note_text: `เอกสารคำร้องถูกปฏิเสธ รายละเอียด : ${text_suggesttion}`,
           },
         });
-
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc } },
-        //         action : "อัพเดตสถานะเอกสาร ที่ถูกปฏิเสธคำร้องแล้ว",
-        //         node_text : ""
-        //     }
-        // });
-        // console.log(keep_action_log);
 
     
         return res.status(201).json({

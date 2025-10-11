@@ -154,8 +154,8 @@ function FinalAuditCheck() {
                                     className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center"
                                     >
                                     {/* ฝั่งซ้าย */}
-                                    <div className="space-y-1 text-gray-800">
-                                        <h3 className="font-bold text-xl text-gray-800 mb-2">{doc.title}</h3>
+                                    <div className="flex-1 min-w-0 max-w-[800px]">
+                                        <h3 className="font-bold text-xl text-gray-800 mb-2 break-words line-clamp-2">{doc.title}</h3>
 
                                         <p className="font-bold">
                                             เลขที่คำขอ :{" "}
@@ -350,14 +350,21 @@ function FinalAuditCheck() {
             return (
                 <div className="space-y-4 mt-4">
                 {historyFinalAudited.map((item) => (
-                    <div key={`final-${item.historyId}`} className="bg-white p-4 shadow rounded-lg">  
-                        <div className="flex flex-col md:flex-row md:items-start gap-4">
+                    <div key={`final-${item.historyId}`} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">  
+                        <div className="flex-1 min-w-0 max-w-[800px]">
                             {/* ข้อมูลฝั่งซ้าย */}
-                            <div className="flex-1 md:basis-3/5">
-                            <p className="font-bold text-xl text-green-700">{item.status}</p>
+                            <h3 className="font-bold text-xl text-gray-800  break-words line-clamp-2">{item.doc_title}</h3>
 
-                            <p>เลขที่: {item.idformal}</p>
-                            <p>ชื่อเรื่อง: {item.doc_title}</p>
+                            <p>
+                                <span style={{ color: "#05A967" }} className="font-bold">
+                                {item.status}
+                                </span>
+                            </p>
+
+                            <p className="font-bold">
+                                เลขที่คำขอ :{" "}
+                                <span className="font-medium">{item.idformal}</span>
+                            </p>
 
                             <p>
                                 ผู้ยื่นคำร้อง :{" "}
@@ -391,47 +398,48 @@ function FinalAuditCheck() {
                                 <p className="text-gray-700">หมายเหตุ : {item.note}</p>
                             )}
 
-                            <p className="text-sm text-gray-500">
+                            <p className="text-gray-500">
                                 สถานะปัจจุบัน : {item.doc_statusNow}
                             </p>
-                            </div>
+
+
+                        </div>
 
                             {/* ปุ่มฝั่งขวา */}
-                            <div className="flex gap-2 md:mt-0 shrink-0 md:basis-2/5 md:max-w-[280px]">
-                                <button
-                                    onClick={() => ClickForMoreDetail(item.docId)}
-                                    className="border px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100"
+                        <div className="flex gap-2 mt-3 md:mt-0">
+                            <button
+                                onClick={() => ClickForMoreDetail(item.docId)}
+                                className="border px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100"
+                            >
+                                <svg
+                                viewBox="0 0 24 24"
+                                className="h-5 w-5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
                                 >
-                                    <svg
-                                    viewBox="0 0 24 24"
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    >
-                                    <circle cx="11" cy="11" r="7" />
-                                    <path d="M21 21l-4.3-4.3" />
-                                    </svg>
-                                    ดูรายละเอียด
-                                </button>
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="M21 21l-4.3-4.3" />
+                                </svg>
+                                ดูรายละเอียด
+                            </button>
 
-                                <button
-                                    className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
-                                    onClick={() => ClickForViewPet(item.docId)}>
-                                    <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    className="w-5 h-5"
-                                    aria-hidden="true"
-                                    >
-                                    <path
-                                        fill="currentColor"
-                                        d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
-                                    />
-                                    </svg>
-                                    ดูเอกสาร
-                                </button>
-                            </div>
+                            <button
+                                className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                onClick={() => ClickForViewPet(item.docId)}>
+                                <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                className="w-5 h-5"
+                                aria-hidden="true"
+                                >
+                                <path
+                                    fill="currentColor"
+                                    d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
+                                />
+                                </svg>
+                                ดูเอกสาร
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -455,73 +463,80 @@ function FinalAuditCheck() {
             return (
                 <div className="space-y-4 mt-4">
                 {list.map((edit) => (
-                    <div key={edit.historyId} className="bg-white p-4 shadow rounded-lg">
-                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                    <div key={edit.historyId} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div className="flex-1 min-w-0 max-w-[800px]">
                             {/* ซ้าย */}
-                            <div className="space-y-1">
-                                <p className="font-bold text-xl text-red-700">{edit.oldstatus}</p>
-                                <p>เลขที่: {edit.idformal}</p>
-                                <p>ชื่อเรื่องเก่า: {edit.title}</p>
+                            <h3 className="font-bold text-xl text-gray-800 break-words line-clamp-2">{edit.title}</h3>
+                            <p>
+                                <span style={{ color: "#0073D9" }} className="font-bold">
+                                {edit.oldstatus}
+                                </span>
+                            </p>
 
-                                <p>
-                                    ผู้ยื่นคำร้อง :{" "}
-                                    <span className="font-medium">
-                                    {edit.ownername} ({edit.owneremail})
-                                    </span>
-                                </p>
 
-                                <p>
-                                    เจ้าหน้าที่ตรวจสอบ :{" "}
-                                    <span className="font-medium">
-                                    {edit.auditByname} ({edit.auditByemail})
-                                    </span>
-                                </p>
+                            <p className="font-bold">
+                                เลขที่คำขอ :{" "}
+                                <span className="font-medium">{edit.idformal}</span>
+                            </p>
 
-                                <p>
-                                    หัวหน้าตรวจสอบ :{" "}
-                                    <span className="font-medium">
-                                    {edit.headauditByname} ({edit.headauditByemail})
-                                    </span>
-                                </p>
+                            <p>
+                                ผู้ยื่นคำร้อง :{" "}
+                                <span className="font-medium">
+                                {edit.ownername} ({edit.owneremail})
+                                </span>
+                            </p>
 
-                                <p>
-                                    วันที่ตรวจสอบ :{" "}
-                                    <span className="font-medium">{formatThaiDate(edit.editedAt)}</span>
-                                </p>
+                            <p>
+                                เจ้าหน้าที่ตรวจสอบ :{" "}
+                                <span className="font-medium">
+                                {edit.auditByname} ({edit.auditByemail})
+                                </span>
+                            </p>
 
-                                <p>หมายเหตุ: {edit.note_text}</p>
+                            <p>
+                                หัวหน้าตรวจสอบ :{" "}
+                                <span className="font-medium">
+                                {edit.headauditByname} ({edit.headauditByemail})
+                                </span>
+                            </p>
 
-                                <p className="text-sm text-gray-500">
-                                    สถานะปัจจุบัน : {edit.nowstatus}
-                                </p>
-                            </div>
+                            <p>
+                                วันที่ตรวจสอบ :{" "}
+                                <span className="font-medium">{formatThaiDate(edit.editedAt)}</span>
+                            </p>
+
+                            <p className="break-words line-clamp-2" >หมายเหตุ: {edit.note_text}</p>
+
+                            <p className="text-gray-500">
+                                สถานะปัจจุบัน : {edit.nowstatus}
+                            </p>
+                        </div>
 
                             {/* ขวา */}
-                            <div className="flex gap-2 md:mt-0">
-                                <button
-                                    onClick={() => ClickForMoreDetail(edit.docId /* หรือ edit.documentId */)}
-                                    className="border px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <circle cx="11" cy="11" r="7" />
-                                    <path d="M21 21l-4.3-4.3" />
-                                    </svg>
-                                    ดูรายละเอียด
-                                </button>
+                        <div className="flex gap-2 md:mt-0">
+                            <button
+                                onClick={() => ClickForMoreDetail(edit.docId /* หรือ edit.documentId */)}
+                                className="border px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100"
+                            >
+                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="M21 21l-4.3-4.3" />
+                                </svg>
+                                ดูรายละเอียด
+                            </button>
 
-                                <button
-                                    className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
-                                    onClick={() => ClickForViewPet(edit)} // หรือส่ง edit.docId ก็ได้ตามที่ฟังก์ชันต้องการ
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
-                                    <path
-                                        fill="currentColor"
-                                        d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
-                                    />
-                                    </svg>
-                                    ดูเอกสาร
-                                </button>
-                            </div>
+                            <button
+                                className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                onClick={() => ClickForViewPet(edit)} // หรือส่ง edit.docId ก็ได้ตามที่ฟังก์ชันต้องการ
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
+                                <path
+                                    fill="currentColor"
+                                    d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
+                                />
+                                </svg>
+                                ดูเอกสาร
+                            </button>  
                         </div>
                     </div>
                 ))}

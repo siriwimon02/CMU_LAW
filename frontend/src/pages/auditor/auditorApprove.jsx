@@ -14,6 +14,7 @@ function UploadDocumentApproved () {
     const [filter, setFilter] = useState("รอการพิจารณา");
 
     const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const navigate = useNavigate(); 
 
@@ -26,6 +27,7 @@ function UploadDocumentApproved () {
     useEffect(() => {
         async function fetchData() {
         try {
+            setRefreshing(true);
             const headers = { Authorization: authHeader };
             // Documents
             const resDocs = await fetch(
@@ -63,6 +65,7 @@ function UploadDocumentApproved () {
     // ✅ ฟังก์ชันรีเฟรช (พาเรนต์มีสิทธิ์อัปเดตสเตตของตัวเอง)
     const refreshDocuments = async () => {
         try {
+          
           const headers = { Authorization: authHeader };
 
           const resDocs = await fetch("http://localhost:3001/petitionAudit/get_document_audited", { headers });
@@ -78,6 +81,8 @@ function UploadDocumentApproved () {
           setHistoryRejectDoc(rejects || []);
         } catch (err) {
           console.error("โหลดข้อมูลล้มเหลว", err);
+        } finally {
+          setRefreshing(false);
         }
     };
 
@@ -146,8 +151,8 @@ function UploadDocumentApproved () {
                             const hasGenerated = !!doc.attachmentsByType?.GenerateDocument?.length;
                             return (
                                 <div key={doc.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-                                    <div className="space-y-1 text-gray-800">
-                                        <h3 className="font-bold text-xl text-gray-800 mb-2">{doc.title}</h3>
+                                    <div className="flex-1 min-w-0 max-w-[800px]">
+                                        <h3 className="font-bold text-xl text-gray-800 mb-2 break-words line-clamp-2">{doc.title}</h3>
                                         <p className="font-bold">
                                             เลขที่คำขอ :{" "}
                                             <span className="font-medium">{doc.doc_id}</span>
@@ -211,7 +216,7 @@ function UploadDocumentApproved () {
                                         </button>
                                     
                                         <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
-                                          onClick={() => ClickForViewPet(doc) }>
+                                          onClick={() => ClickForViewPet(doc.id) }>
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 viewBox="0 0 24 24"
@@ -248,7 +253,7 @@ function UploadDocumentApproved () {
                                         {/* ปุ่ม Generate / Download ตามสถานะไฟล์ที่สร้างแล้ว */}
                                         {hasGenerated ? (
                                             <button className="bg-[#DE9631] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-[#c77814]"
-                                              onClick={() => ClickToDownloadFileGenerate(doc.id)}>
+                                              onClick={() => ClickToDownloadFileGenerate(doc.id)} disabled={loading}>
                                                 <svg
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
@@ -364,20 +369,20 @@ function UploadDocumentApproved () {
                                         ดูรายละเอียด
                                     </button>
                                 
-                                    <button className="bg-green-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700">
+                                    <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                      onClick={() => ClickForViewPet(h.document.id) }>
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24"
-                                            fill="currentColor"
                                             className="w-5 h-5"
+                                            aria-hidden="true"
                                         >
                                             <path
-                                            fillRule="evenodd"
-                                            d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
-                                            clipRule="evenodd"
+                                            fill="currentColor"
+                                            d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
                                             />
                                         </svg>
-                                        ดาวน์โหลดเอกสาร
+                                        ดูเอกสาร
                                     </button>
                                 </div>
                             </div>
@@ -455,7 +460,8 @@ function UploadDocumentApproved () {
                                         ดูรายละเอียด
                                     </button>
 
-                                    <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700">
+                                    <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                      onClick={() => ClickForViewPet(h.document.id) }>
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24"
@@ -485,172 +491,167 @@ function UploadDocumentApproved () {
 
   //------------------------------------generate file-------------------------------------//
 
-    // ===== ModalLoader.jsx (จะวางในไฟล์เดียวกับหน้าเดิมก็ได้) =====
-    function ModalLoader({ open, type = "loading", title, onClose }) {
-      if (!open) return null;
+  // ===== ModalLoader.jsx (จะวางในไฟล์เดียวกับหน้าเดิมก็ได้) =====
+  function ModalLoader({ open, type = "loading", title, onClose }) {
+    if (!open) return null;
 
-      const isLoading = type === "loading";
-      const isSuccess = type === "success";
-      const isError   = type === "error";
+    const isLoading = type === "loading";
+    const isSuccess = type === "success";
+    const isError   = type === "error";
 
-      return (
-        <div style={backdrop}>
-          <div style={card}>
-            {isLoading && <div style={spinner} />}
-            {isSuccess && <div style={{...icon, borderColor:'#16a34a'}} />}
-            {isError   && <div style={{...icon, borderColor:'#dc2626'}} />}
+    return (
+      <div style={backdrop}>
+        <div style={card}>
+          {isLoading && <div style={spinner} />}
+          {isSuccess && <div style={{...icon, borderColor:'#16a34a'}} />}
+          {isError   && <div style={{...icon, borderColor:'#dc2626'}} />}
 
-            <div style={{ marginTop: 12, fontSize: 16, textAlign: 'center' }}>
-              {title}
-            </div>
-            {!isLoading && (
-              <button style={btn} onClick={onClose}>ปิด</button>
-            )}
+          <div style={{ marginTop: 12, fontSize: 16, textAlign: 'center' }}>
+            {title}
           </div>
+          {!isLoading && (
+            <button style={btn} onClick={onClose}>ปิด</button>
+          )}
         </div>
-      );
-    }
-
-    // ===== styles (inline ง่าย ๆ) =====
-    const backdrop = {
-      position:'fixed', inset:0, background:'rgba(0,0,0,.35)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000
-    };
-    const card = {
-      width: 320, minHeight: 160, background:'#fff', borderRadius:12,
-      boxShadow:'0 10px 30px rgba(0,0,0,.2)', padding:'24px 20px',
-      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'
-    };
-    const btn = {
-      marginTop:16, padding:'8px 14px', borderRadius:8, border:'1px solid #e5e7eb',
-      background:'#111827', color:'#fff', cursor:'pointer'
-    };
-    const spinner = {
-      width: 42, height: 42, border:'4px solid #e5e7eb', borderTopColor:'#2563eb',
-      borderRadius:'50%', animation:'spin 1s linear infinite'
-    };
-    const icon = {
-      width: 32, height: 32, border:'6px solid', borderRadius:'50%'
-    };
-
-    // ใส่ keyframes ให้หมุน (ใส่ไว้ครั้งเดียวในแอป—ถ้ายังไม่มี)
-    // คุณสามารถย้ายไปไว้ใน CSS global ก็ได้
-    const styleEl = typeof document !== 'undefined' && document.createElement('style');
-    if (styleEl && !document.getElementById('modal-loader-kf')) {
-      styleEl.id = 'modal-loader-kf';
-      styleEl.innerHTML = `@keyframes spin{to{transform:rotate(360deg)}}`;
-      document.head.appendChild(styleEl);
-    }
-
-    // state สำหรับ modal
-    const [modalOpen1, setModalOpen1] = useState(false);
-    const [modalType, setModalType] = useState("loading"); // loading | success | error
-    const [modalText, setModalText] = useState("");
-
-
-    const ClickToGeneratePDF = async (id) => {
-      setLoading(true);
-      // เปิดป๊อปอัพสถานะกำลังทำงาน
-      setModalType("loading");
-      setModalText("กำลังสร้างไฟล์ PDF…");
-      setModalOpen1(true);
-      try {
-        const res = await fetch(
-          `http://localhost:3001/petitionAudit/generate_pdf/${id}`,
-          {
-            method : "POST",
-            headers : {Authorization: authHeader}
-          }
-        )
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setModalType("error");
-          setModalText(data.message || `ส่งคำร้องไม่สำเร็จ (HTTP ${res.status})`);
-          return; // ให้ผู้ใช้กดปิดเอง
-        }
-
-        // สำเร็จ
-        setModalType("success");
-        setModalText(data.message || "สร้างไฟล์สำเร็จ!");
-
-        // ปิดอัตโนมัติหลัง 1.2 วิ (ปรับตามชอบ)
-        setTimeout(() => setModalOpen1(false), 500);     
-
-      } catch (err) {
-        console.error(err);
-        alert("Server error: ไม่สามารถติดต่อเซิร์ฟเวอร์ได้");
-      } finally {
-        setLoading(false);
-      }
-    };
-  //------------------------------------generate file-------------------------------------//
-
-
-
-
-
-
-    // ดึงชื่อไฟล์จาก Content-Disposition
-    function getFilenameFromDisposition(disposition = "") {
-      // ตัวอย่าง: attachment; filename="12345.pdf"
-      const m = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
-      if (!m) return null;
-      try {
-        return decodeURIComponent(m[1].replace(/\"/g, ''));
-      } catch {
-        return m[1].replace(/\"/g, '');
-      }
-    }
-
-    // สร้างลิงก์ดาวน์โหลดจาก Blob แล้วคลิก
-    async function downloadByFetch(url, token) {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: token },
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status} ${res.statusText} - ${text}`);
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get("Content-Disposition") || "";
-      const filename = getFilenameFromDisposition(cd) || url.split("/").pop() || "download";
-
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(blobUrl);
-    }
-    //download file aready to approve
-    const ClickToDownloadFileGenerate = async (id) => {
-      setLoading(true);
-      try {
-        // โหลดทีละไฟล์ เพื่อหลีกเลี่ยงบางเบราว์เซอร์บล็อกหลายดาวน์โหลดพร้อมกัน
-        await downloadByFetch(`http://localhost:3001/petitionAudit/download_docx_generate/${id}`, authHeader);
-        await downloadByFetch(`http://localhost:3001/petitionAudit/download_pdf_generate/${id}`, authHeader);
-
-        // ถ้าอยากไวขึ้น (พร้อมกัน) ใช้:
-        // await Promise.all([
-        //   downloadByFetch(`/download_docx_generate/${id}`, authHeader),
-        //   downloadByFetch(`/download_pdf_generate/${id}`, authHeader),
-        // ]);
-      } catch (err) {
-        console.error(err);
-        alert("ดาวน์โหลดไม่สำเร็จ: " + err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-
-  const ClickForViewPet = (doc) => {
-      navigate(`/view/${doc.id}`);
+      </div>
+    );
   }
 
+  // ===== styles (inline ง่าย ๆ) =====
+  const backdrop = {
+    position:'fixed', inset:0, background:'rgba(0,0,0,.35)',
+    display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000
+  };
+  const card = {
+    width: 320, minHeight: 160, background:'#fff', borderRadius:12,
+    boxShadow:'0 10px 30px rgba(0,0,0,.2)', padding:'24px 20px',
+    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'
+  };
+  const btn = {
+    marginTop:16, padding:'8px 14px', borderRadius:8, border:'1px solid #e5e7eb',
+    background:'#111827', color:'#fff', cursor:'pointer'
+  };
+  const spinner = {
+    width: 42, height: 42, border:'4px solid #e5e7eb', borderTopColor:'#2563eb',
+    borderRadius:'50%', animation:'spin 1s linear infinite'
+  };
+  const icon = {
+    width: 32, height: 32, border:'6px solid', borderRadius:'50%'
+  };
+
+  // ใส่ keyframes ให้หมุน (ใส่ไว้ครั้งเดียวในแอป—ถ้ายังไม่มี)
+  // คุณสามารถย้ายไปไว้ใน CSS global ก็ได้
+  const styleEl = typeof document !== 'undefined' && document.createElement('style');
+  if (styleEl && !document.getElementById('modal-loader-kf')) {
+    styleEl.id = 'modal-loader-kf';
+    styleEl.innerHTML = `@keyframes spin{to{transform:rotate(360deg)}}`;
+    document.head.appendChild(styleEl);
+  }
+
+  // state สำหรับ modal
+  const [modalOpen1, setModalOpen1] = useState(false);
+  const [modalType, setModalType] = useState("loading"); // loading | success | error
+  const [modalText, setModalText] = useState("");
+
+
+  const ClickToGeneratePDF = async (id) => {
+    setLoading(true);
+    // เปิดป๊อปอัพสถานะกำลังทำงาน
+    setModalType("loading");
+    setModalText("กำลังสร้างไฟล์ PDF…");
+    setModalOpen1(true);
+    try {
+      const res = await fetch(
+        `http://localhost:3001/petitionAudit/generate_pdf/${id}`,
+        {
+          method : "POST",
+          headers : {Authorization: authHeader}
+        }
+      )
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setModalType("error");
+        setModalText(data.message || `ส่งคำร้องไม่สำเร็จ (HTTP ${res.status})`);
+        return; // ให้ผู้ใช้กดปิดเอง
+      }
+
+      // สำเร็จ
+      setModalType("success");
+      setModalText(data.message || "สร้างไฟล์สำเร็จ!");
+
+      // ปิดอัตโนมัติหลัง 1.2 วิ (ปรับตามชอบ)
+      setTimeout(() => setModalOpen1(false), 500);     
+
+    } catch (err) {
+      console.error(err);
+      alert("Server error: ไม่สามารถติดต่อเซิร์ฟเวอร์ได้");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  //------------------------------------generate file-------------------------------------//
+
+  // ดึงชื่อไฟล์จาก Content-Disposition
+  function getFilenameFromDisposition(disposition = "") {
+    // ตัวอย่าง: attachment; filename="12345.pdf"
+    const m = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+    if (!m) return null;
+    try {
+      return decodeURIComponent(m[1].replace(/\"/g, ''));
+    } catch {
+      return m[1].replace(/\"/g, '');
+    }
+  }
+
+  // สร้างลิงก์ดาวน์โหลดจาก Blob แล้วคลิก
+  async function downloadByFetch(url, token) {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: token },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${res.statusText} - ${text}`);
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") || "";
+    const filename = getFilenameFromDisposition(cd) || url.split("/").pop() || "download";
+
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  }
+
+
+  //download file aready to approve
+  const ClickToDownloadFileGenerate = async (id) => {
+    setLoading(true);
+    try {
+      // โหลดทีละไฟล์ เพื่อหลีกเลี่ยงบางเบราว์เซอร์บล็อกหลายดาวน์โหลดพร้อมกัน
+      await downloadByFetch(`http://localhost:3001/petitionAudit/download_docx_generate/${id}`, authHeader);
+      await downloadByFetch(`http://localhost:3001/petitionAudit/download_pdf_generate/${id}`, authHeader);
+
+      await refreshDocuments();
+    } catch (err) {
+      console.error(err);
+      alert("ดาวน์โหลดไม่สำเร็จ: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const ClickForViewPet = (id) => {
+      navigate(`/view/${id}`);
+  }
 
 
 
@@ -769,6 +770,7 @@ function DecisionModal({ open, onClose, docId, authHeader, onDone }) {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [order_number, setOrder_Number] = useState("");
   const [date_of_signing, setDate_of_signing] = useState("");
 
   const [attachments, setAttachments] = useState([]);
@@ -791,6 +793,7 @@ function DecisionModal({ open, onClose, docId, authHeader, onDone }) {
   const resetForm = () => {
     setChoice("approve");
     setNote("");
+    setOrder_Number("");
     setDate_of_signing("");
     setAttachments([]);
     setEndorsorfile([]);
@@ -837,6 +840,7 @@ function DecisionModal({ open, onClose, docId, authHeader, onDone }) {
       const formData = new FormData();
       if (isApprove) {
         formData.append("decision", "approve");
+        formData.append("order_number", order_number)
         formData.append("date_of_signing", date_of_signing); // YYYY-MM-DD
         formData.append("uploadPresidentCard", uploadPresidentCard ? "true" : "false");
         formData.append("uploadUniversityHouse", uploadUniversityHouse ? "true" : "false");
@@ -962,7 +966,21 @@ function DecisionModal({ open, onClose, docId, authHeader, onDone }) {
         {/* วันที่ลงนาม: แสดงเฉพาะตอนอนุมัติ */}
         {isApprove && (
           <label className="block mt-4">
-            <span className="block text-sm font-medium text-gray-700">วันที่ลงนาม</span>
+
+            <span className="block text-sm font-medium text-gray-700 mt-2">เลขที่คำสั่ง</span>
+            <input
+              id="order_number"
+              name="order_number"
+              type="text"
+              value={order_number}
+              placeholder="เช่น กรุณากรอกเลขที่คำสั่ง"
+              onChange={(e) => setOrder_Number(e.target.value)}
+              autoComplete="off"
+              className="mt-1 w-full rounded-lg border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={loading}
+            />
+
+            <span className="block text-sm font-medium text-gray-700 mt-2">วันที่ลงนาม</span>
             <input
               type="date"
               value={date_of_signing}
