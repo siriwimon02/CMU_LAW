@@ -267,6 +267,7 @@ app.get('/document/:docId', authMiddle ,checkRole(["admin", "user", "spv_auditor
     const setdoc = {
       id: doc.id,
       doc_id: doc.id_doc,
+      order_n : doc.order_number,
       department_name: doc.department.department_name,
       destination_name: doc.destination.des_name,
       title: doc.title,
@@ -443,6 +444,183 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
       res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
+//---------------------------------history status for user-----------------------------------------//
+app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]) , async (req, res) =>{
+
+    const documentId = parseInt(req.params.docId, 10);
+
+    if (isNaN(documentId)) {
+      return res.status(400).json({ error: "docId is invalid integer" });
+    }
+
+    try {
+
+      const find_history_status = await prisma.documentStatusHistory.findMany({
+        where : { documentId : documentId }
+      });
+      //console.log(find_history_status);
+
+      const find_st1 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+      });
+
+      const find_st2 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง" }
+      });
+
+      const find_st3 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+      });
+
+      const find_st4 = await prisma.status.findUnique({
+        where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว" }
+      });
+
+      const find_st5 = await prisma.status.findUnique({
+        where : { status : "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติมแล้ว" }
+      });
+
+      const find_st6 = await prisma.status.findUnique({
+        where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
+      });
+
+      const find_st7 = await prisma.status.findUnique({
+        where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
+      });
+
+      const history_all = []
+      for ( const his of find_history_status ) {
+        //console.log("history status", his.id)
+        if ( his.statusId === find_st7.id ){
+
+          const find_his_edit = await prisma.documentPetitionHistory.findMany({
+            where: { his_statusId: his.id },
+            include: {
+              editedBy: { select: { email: true, firstname: true, lastname: true } },
+              statusHistory: {
+                include: {
+                  status: { select: { status: true } }
+                }
+              },
+              document: true
+            }
+          });
+          //console.log(find_his_edit);
+
+          const result = find_his_edit.map(item => ({
+            historyId: item.id,
+            documentId: item.documentId,
+            docFormalId: item.document.id_doc,
+            historyTitle: item.title,                   // title ตอนแก้
+            currentTitle: item.document.title,          // title ปัจจุบัน
+            status: item.statusHistory.status.status,   // ชื่อสถานะ
+            //statusNote: item.statusHistory.note_text,   // Note ของ statusHistory
+            note: item.note_text, 
+            editedByemail : item.editedBy.email,                      // Note ของการแก้ไข
+            editedByname : item.editedBy.firstname,
+            editedBylname : item.editedBy.lastname,
+            editAt: item.editAt,
+
+            //ประวัติเอกสารเก่า
+            oldTitle : item.title,
+            oldAuthorize_to : item.authorize_to,
+            oldPosition : item.position,
+            oldAffiliation : item.affiliation,
+            oldAuthorize_text : item.authorize_text
+          }));
+
+          history_all.push(result[0]);
+        }
+        else if ( his.statusId === find_st6.id ) {
+          const find_his_change_des = await prisma.documentPetitionHistoryTranfers.findFirst({
+            where: { his_statusId: his.id },
+            include: {
+              transferFrom: { select: { des_name: true } },
+              transferTo: { select: { des_name: true } },
+              transferBy: { select: { email: true, firstname: true, lastname: true } },
+              statusHistory: {
+                include: {
+                  status: { select: { status: true } }  // <<-- ดึงชื่อสถานะด้วย
+              }},
+              document : true
+            }
+          });
+          const set_json = {
+            docId : find_his_change_des.document.id,
+            idformal : find_his_change_des.document.id_doc,
+            status : find_his_change_des.statusHistory.status.status,
+            transferFrom : find_his_change_des.transferFrom.des_name,
+            transferTo : find_his_change_des.transferTo.des_name,
+            transferByemail : find_his_change_des.transferBy.email,
+            transferByname : find_his_change_des.transferBy.firstname,
+            transferBylname : find_his_change_des.transferBy.lastname,
+            transferAt : find_his_change_des.statusHistory.changedAt,
+            note : find_his_change_des.note_text
+          }
+
+          history_all.push(set_json);
+        }
+        else if (his.statusId === find_st3.id) {
+          const find_his = await prisma.documentStatusHistory.findUnique({
+            where : { id : his.id },
+            include : {
+              status : {select : { status : true }},
+              changedBy : { select : { email : true, firstname : true, lastname : true } }, 
+              document : true
+            }
+          });
+
+          const set_json = {
+            docId : find_his.document.id,
+            idformal : find_his.document.id_doc,
+            status : find_his.status.status,
+            changeBy_email : find_his.changedBy.email,
+            changeBy_name : find_his.changedBy.firstname,
+            changeBy_lname : find_his.changedBy.lastname,
+            changeAt : find_his.changedAt,
+            date_of_signing : find_his.date_of_signing,
+            note : find_his.note_text
+          }
+          history_all.push(set_json)
+        }
+        else {
+          const find_his = await prisma.documentStatusHistory.findUnique({
+            where : { id : his.id },
+            include : {
+              status : {select : { status : true }},
+              changedBy : { select : { email : true, firstname : true, lastname : true } }, 
+              document : true
+            }
+          });
+
+          const set_json = {
+            docId : find_his.document.id,
+            idformal : find_his.document.id_doc,
+            status : find_his.status.status,
+            changeBy_email : find_his.changedBy.email,
+            changeBy_name : find_his.changedBy.firstname,
+            changeBy_lname : find_his.changedBy.lastname,
+            changeAt : find_his.changedAt,
+            date_of_signing : find_his.date_of_signing,
+          }
+          history_all.push(set_json)
+        }
+      }
+      console.log(history_all);
+      res.json(history_all);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+
 
 
 

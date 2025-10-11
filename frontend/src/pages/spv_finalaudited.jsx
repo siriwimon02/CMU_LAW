@@ -129,8 +129,8 @@ function FinalAuditCheck() {
         navigate(`/detail/${id}`); // ✅ ใช้ navigate
     };
 
-    const ClickForViewPet = (doc) => {
-        navigate(`/view/${doc.id}`);
+    const ClickForViewPet = (id) => {
+        navigate(`/view/${id}`);
     }
 
 
@@ -210,7 +210,7 @@ function FinalAuditCheck() {
                                         </button>
 
                                         <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
-                                        onClick={() => ClickForViewPet(doc)}>
+                                        onClick={() => ClickForViewPet(doc.id)}>
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24"
@@ -405,7 +405,7 @@ function FinalAuditCheck() {
 
                         </div>
 
-                            {/* ปุ่มฝั่งขวา */}
+                        {/* ปุ่มฝั่งขวา */}
                         <div className="flex gap-2 mt-3 md:mt-0">
                             <button
                                 onClick={() => ClickForMoreDetail(item.docId)}
@@ -527,7 +527,7 @@ function FinalAuditCheck() {
 
                             <button
                                 className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
-                                onClick={() => ClickForViewPet(edit)} // หรือส่ง edit.docId ก็ได้ตามที่ฟังก์ชันต้องการ
+                                onClick={() => ClickForViewPet(edit.docId)} // หรือส่ง edit.docId ก็ได้ตามที่ฟังก์ชันต้องการ
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
                                 <path

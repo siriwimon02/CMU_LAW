@@ -253,7 +253,7 @@ function UploadDocumentApproved () {
                                         {/* ปุ่ม Generate / Download ตามสถานะไฟล์ที่สร้างแล้ว */}
                                         {hasGenerated ? (
                                             <button className="bg-[#DE9631] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-[#c77814]"
-                                              onClick={() => ClickToDownloadFileGenerate(doc.id)} disabled={loading}>
+                                              onClick={() => ClickToDownloadFileGenerate(doc.id)}>
                                                 <svg
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
@@ -311,8 +311,8 @@ function UploadDocumentApproved () {
                     ) : (
                         historyApprove.map((h) => (
                             <div key={h.document.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-                                <div className="space-y-1 text-gray-800">
-                                    <h3 className="font-bold text-xl text-gray-800 mb-2">{h.document.title}</h3>
+                                <div className="flex-1 min-w-0 max-w-[800px]">
+                                    <h3 className="font-bold text-xl text-gray-800 mb-2 break-words line-clamp-2">{h.document.title}</h3>
                                     
                                     <p className="font-bold">
                                         เลขที่คำขอ :{" "}
@@ -344,10 +344,11 @@ function UploadDocumentApproved () {
                                     <p> วันที่อนุมัติคำร้อง : {formatThaiDate(h.changedAt)} </p>
 
                                     <p>
-                                        <span style={{ color: "#00e439ff" }} className="font-bold">
+                                        <span style={{ color: "#05A967" }} className="font-bold">
                                         {h.status.status}
                                         </span>
                                     </p>
+
                                 </div>
 
                                 {/* ปุ่ม ฝั่งขวา */}
@@ -402,8 +403,8 @@ function UploadDocumentApproved () {
                     ) : (
                         historyRejectDoc.map((h) => (
                             <div key={h.document.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-                                <div className="space-y-1 text-gray-800">
-                                    <h3 className="font-bold text-xl text-gray-800 mb-2">{h.document.title}</h3>
+                                <div className="flex-1 min-w-0 max-w-[800px]">
+                                    <h3 className="font-bold text-xl text-gray-800 mb-2 break-words line-clamp-2">{h.document.title}</h3>
                                     
                                     <p className="font-bold">
                                         เลขที่คำขอ :{" "}
@@ -435,7 +436,7 @@ function UploadDocumentApproved () {
                                     <p> วันที่ปฏิเสธคำร้อง : {formatThaiDate(h.changedAt)} </p>
 
                                     <p>
-                                        <span style={{ color: "#f01a0fff" }} className="font-bold">
+                                        <span style={{ color: "#CD0000" }} className="font-bold">
                                         {h.status.status}
                                         </span>
                                     </p>
@@ -580,6 +581,7 @@ function UploadDocumentApproved () {
       setModalText(data.message || "สร้างไฟล์สำเร็จ!");
 
       // ปิดอัตโนมัติหลัง 1.2 วิ (ปรับตามชอบ)
+      await refreshDocuments();
       setTimeout(() => setModalOpen1(false), 500);     
 
     } catch (err) {
@@ -639,7 +641,6 @@ function UploadDocumentApproved () {
       await downloadByFetch(`http://localhost:3001/petitionAudit/download_docx_generate/${id}`, authHeader);
       await downloadByFetch(`http://localhost:3001/petitionAudit/download_pdf_generate/${id}`, authHeader);
 
-      await refreshDocuments();
     } catch (err) {
       console.error(err);
       alert("ดาวน์โหลดไม่สำเร็จ: " + err.message);
