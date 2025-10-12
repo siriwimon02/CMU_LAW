@@ -89,6 +89,29 @@ function HeadAuditorTracking() {
   getDocs();
 }, [token, reloadKey]);
 
+// ตรวจสอบเอกสารที่เข้ามาแบบไม่รีหน้าจอเอง
+useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch("http://localhost:3001/petitionHeadAudit/wait_to_accept_byHeadaudit", {
+        headers: { Authorization: `${token}` },
+      });
+      const data = await res.json();
+      const newDocs = data?.document_json || [];
+
+      if (newDocs.length > documentAll.length) {
+        console.log("พบเอกสารรอตรวจสอบใหม่ รีเฟรชหน้า...");
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Error checking new docs:", err);
+    }
+  }, 3000); 
+
+  return () => clearInterval(interval);
+}, [documentAll, token]);
+
+
 
 //  Submit ตรวจสอบ 
 const submitCheck = async () => {
@@ -105,49 +128,33 @@ const submitCheck = async () => {
       }
     );
 
-    let data = {};
-    try {
-      data = await res.json();
-    } catch (e) {
-      console.log("no response json");
-    }
+    const data = await res.json();
 
     if (res.ok) {
       setCheckPopupOpen(false);
-      setCheckConfirmedOpen(true);
-
       const newCard = {
         id: selectedDoc.id,
         docId: selectedDoc.docId || selectedDoc.id,
         title: selectedDoc.title,
         ownername: selectedDoc.ownername,
         owneremail: selectedDoc.owneremail,
-
         auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
         auditByemail: selectedDoc.auditByemail || null,
-
         status_name: "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น",
-        createAt:selectedDoc.createAt ,
-
-        updatedAt: data.updatedAt || selectedDoc.changeAt || new Date().toISOString(),
-
+        createAt: selectedDoc.createAt,
+        updatedAt: data.updatedAt || new Date().toISOString(),
         __bucket: "ตรวจสอบเสร็จสิ้น",
       };
 
-      setHistoryAccept((prev) => {
-        const merged = [...prev, newCard];
-        localStorage.setItem(LS_KEY_ACCEPT, JSON.stringify(merged));
-        return merged;
-      });
+      setDocumentAll((prev) => prev.filter((d) => d.docId !== newCard.docId));
+      setHistoryAccept((prev) => [...prev, newCard]);
 
-      setDocumentAll((prev) => {
-      const filtered = prev.filter((d) => d.docId !== newCard.docId);
-      localStorage.setItem("documentAll", JSON.stringify(filtered));
-      return filtered;
-    });
+      setCheckConfirmedOpen(true);
 
-      setReloadKey((k) => k + 1);
-      setTimeout(() => setCheckConfirmedOpen(false), 1500);
+      setTimeout(() => {
+        setCheckConfirmedOpen(false);
+        window.location.reload();
+      }, 1500);
     } else {
       console.error("submitCheck failed:", await res.text());
     }
@@ -155,6 +162,7 @@ const submitCheck = async () => {
     console.error("submitCheck error:", err);
   }
 };
+
 
 
 //  Submit ส่งกลับแก้ไข 
@@ -226,6 +234,7 @@ const submitEdit = async () => {
       setTimeout(() => {
         setEditConfirmedOpen(false);
         setReloadKey((k) => k + 1);
+        window.location.reload();
       }, 1500);
     } else {
       console.error("Submit failed:", await res.text());
@@ -272,11 +281,21 @@ const currentItems = useMemo(() => {
     ];
   };
 
-  return pick().sort(
-    (a, b) =>
-      new Date(b.updatedAt || b.editedAt || b.createAt || b.createdAt || 0) -
-      new Date(a.updatedAt || a.editedAt || a.createAt || a.createdAt || 0)
-  );
+  return pick().sort((a, b) => {
+  // ให้ "รอตรวจโดยหัวหน้ากอง" อยู่บนสุดเสมอ
+  const isAWait = a.__bucket === "รอตรวจโดยหัวหน้ากอง";
+  const isBWait = b.__bucket === "รอตรวจโดยหัวหน้ากอง";
+
+  if (isAWait && !isBWait) return -1; // a ขึ้นก่อน
+  if (!isAWait && isBWait) return 1;  // b ขึ้นก่อน
+
+  // ถ้าไม่ใช่สถานะรอตรวจ ให้เรียงตามวันที่ส่งคืนแก้ไขล่าสุด
+  const dateA = new Date(a.editedAt || a.updatedAt || a.createAt || a.createdAt || 0);
+  const dateB = new Date(b.editedAt || b.updatedAt || b.createAt || b.createdAt || 0);
+
+  return dateB - dateA;
+});
+
 }, [activeTab, documentAll, historySendBack, historyAccept]);
 
 
@@ -304,12 +323,24 @@ const formatDateTime = (dateString) => {
   }
 };
 
+const getDocNumber = (doc) => {
+  return (
+    doc.idformal ||
+    doc.id_doc ||
+    doc.doc_id ||
+    doc.docId ||
+    doc.id ||
+    doc.idFormal || 
+    "-"
+  );
+};
 
-  const greenList = ["ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น","อยู่ระหว่างการตรวจสอบขั้นสุดท้าย"];
-  const orangeList = ["อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง"];
-  const redList = ["อยู่ระหว่างการตรวจสอบขั้นต้น","ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"];
 
-  if (loading) return <div>Loading...</div>;
+const greenList = ["ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น","อยู่ระหว่างการตรวจสอบขั้นสุดท้าย"];
+const orangeList = ["อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง"];
+const redList = ["อยู่ระหว่างการตรวจสอบขั้นต้น","ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"];
+
+if (loading) return <div>Loading...</div>;
 
 
 
@@ -390,7 +421,8 @@ const formatDateTime = (dateString) => {
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-lg break-words overflow-hidden line-clamp-2">{doc.title}</p>
+                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
+                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
                             <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
                               ผู้ยื่นคำขอ: {doc.ownername} {doc.owneremail}
                             </p>
@@ -505,7 +537,8 @@ const formatDateTime = (dateString) => {
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-lg break-words overflow-hidden line-clamp-2">{doc.title}</p>
+                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
+                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
                             <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
                                   ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
                                 </p>
@@ -581,7 +614,8 @@ const formatDateTime = (dateString) => {
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-lg break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
+                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
+                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
                             <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
                                 ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
                                 </p>
@@ -677,7 +711,8 @@ const formatDateTime = (dateString) => {
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-lg break-words overflow-hidden line-clamp-2">{doc.title}</p>
+                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
+                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
                             <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
                               ผู้ยื่นคำขอ: {doc.ownername} {doc.owneremail}
                             </p>
@@ -791,7 +826,7 @@ const formatDateTime = (dateString) => {
               <>
                 {historySendBack.length === 0 ? (
                   <p className="text-2xl text-gray-500 flex item-center mt-10 justify-center">
-                    ไม่มีเอกสารที่ต้องตรวจสอบ
+                    ไม่มีเอกสารที่ส่งกลับแก้ไข
                   </p>
                 ) : (
                   historySendBack.map((doc) => {
@@ -813,7 +848,8 @@ const formatDateTime = (dateString) => {
                       >
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-lg break-words overflow-hidden line-clamp-2">{doc.title}</p>
+                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
+                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
                             <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
                               ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
                             </p>
@@ -888,7 +924,7 @@ const formatDateTime = (dateString) => {
               <>
                 {historyAccept.length === 0 ? (
                   <p className="text-2xl text-gray-500 flex item-center mt-10 justify-center">
-                    ไม่มีเอกสารที่ต้องตรวจสอบ
+                    ไม่มีเอกสารที่ตรวจสอบเสร็จสิ้น
                   </p>
                 ) : (
                   historyAccept.map((doc) => {
@@ -908,7 +944,8 @@ const formatDateTime = (dateString) => {
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-lg break-words line-clamp-2 overflow-hidden text-ellipsis">{doc.doc_title || doc.title || "-"}</p>
+                            <p className="font-bold text-xl break-words line-clamp-2 overflow-hidden text-ellipsis"> {doc.doc_title || doc.title || "-"}</p>
+                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
                             <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
                                   ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
                                 </p>
@@ -1012,9 +1049,6 @@ const formatDateTime = (dateString) => {
 export default HeadAuditorTracking;
 
 
-
-
-// ชื่อผู้ใช้
 
 
 

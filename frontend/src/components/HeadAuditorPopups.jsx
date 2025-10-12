@@ -17,8 +17,8 @@ export function CheckPopup({ selectedDoc, onClose, onSubmit }) {
             <p className="text-[#05A967]  text-3xl font-bold ">
                 ตรวจสอบคำขอ
             </p>
-            <p className="text-lg text-black  break-words overflow-hidden line-clamp-2">
-                เรื่อง:{" "} <span>{selectedDoc.title_now || selectedDoc.title}</span>
+            <p className="text-lg text-black break-words overflow-hidden line-clamp-2">
+                เรื่อง:{" "} {selectedDoc.title_now || selectedDoc.title}
             </p>
             <p className="text-lg text-black  break-words overflow-hidden line-clamp-2">
                 ผู้ยื่นคำขอ:{" "} <span>{selectedDoc.ownername} {selectedDoc.owneremail}</span>

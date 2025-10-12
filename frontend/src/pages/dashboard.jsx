@@ -2,12 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
-
 function Dashboard() {
   const [userInfo, setUserInfo] = useState(null);
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
+  // นับจำนวนเอกสารที่รอตรวจสอบ
+  const [pendingAuditDocs, setPendingAuditDocs] = useState(0);
+  const [pendingDocs, setPendingDocs] = useState(0);
+  const [pendingSpvDocs, setPendingSpvDocs] = useState(0);
+  const [pendingSpvAcceptDocs, setPendingSpvAcceptDocs] = useState(0);
+
+
 
   //ถ้าไม่ได้ Login เข้าไม่ได้
 
@@ -16,7 +22,7 @@ function Dashboard() {
     return <Navigate to="/login" replace />;
   }
 
-  useEffect(() => {
+useEffect(() => {
     fetch('http://localhost:3001/auth/user', {
       headers: {
         'Authorization': `${token}`
@@ -30,8 +36,59 @@ function Dashboard() {
         console.error(err);
       });
   }, [token]);
+// ด้านบนสุด
 
-  console.log(userInfo);
+
+useEffect(() => {
+  if (!userInfo || !token) return;
+
+  const fetchAll = async () => {
+    try {
+      // auditor
+      if (userInfo.role_n === "auditor") {
+        const res = await fetch("http://localhost:3001/petitionAudit/wait_to_audit_byAudit", {
+          headers: { Authorization: token },
+        });
+        const data = await res.json();
+        setPendingAuditDocs(Array.isArray(data.document_json) ? data.document_json.length : 0);
+      }
+
+      // head_auditor
+      if (userInfo.role_n === "head_auditor") {
+        const res = await fetch("http://localhost:3001/petitionHeadAudit/wait_to_accept_byHeadaudit", {
+          headers: { Authorization: token },
+        });
+        const data = await res.json();
+        setPendingDocs(Array.isArray(data.document_json) ? data.document_json.length : 0);
+      }
+
+      // spv_auditor
+      if (userInfo.role_n === "spv_auditor") {
+        const res1 = await fetch("http://localhost:3001/petitionSuperAudit/wait_to_audit_bySpvAudit", {
+          headers: { Authorization: token },
+        });
+        const data1 = await res1.json();
+        setPendingSpvDocs(Array.isArray(data1.document_json) ? data1.document_json.length : 0);
+
+        // spv_auditor
+        const res2 = await fetch("http://localhost:3001/petitionSuperAudit/wait_to_accept", {
+          headers: { Authorization: token },
+        });
+        const data2 = await res2.json();
+        setPendingSpvAcceptDocs(Array.isArray(data2.document_json) ? data2.document_json.length : 0);
+      }
+    } catch (err) {
+      console.error("Error auto-refreshing dashboard:", err);
+    }
+  };
+
+  fetchAll();
+
+  const interval = setInterval(fetchAll, 3000);
+
+  return () => clearInterval(interval);
+}, [userInfo, token]);
+
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -113,7 +170,7 @@ function Dashboard() {
           width={40} 
           height={40}
           viewBox="0 0 24 24"
-          class="border border-[#B9B9B9] rounded-full">
+          className="border border-[#B9B9B9] rounded-full">
           <path fill="currentColor" 
           fillRule="evenodd"
           d="M8 7a4 4 0 1 1 8 0a4 4 0 0 1-8 0m0 6a5 5 0 0 0-5 5a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3a5 5 0 0 0-5-5z"
@@ -146,7 +203,7 @@ function Dashboard() {
           onClick={() => handleClick(["user"], ClicktoPetition)} 
         >
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+             <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width={40} 
@@ -179,7 +236,7 @@ function Dashboard() {
           onClick={() => handleClick(["user"], ClickToTracking)}
         >
           <div className="mb-5">
-              <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+              <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
                   <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   width={40} 
@@ -204,32 +261,47 @@ function Dashboard() {
        {(userInfo.role_n === "auditor" ) && (
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
         {/* block1 */}
-        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-           onClick={() => handleClick(["auditor"], ClickToAuditor)}
+       <div
+          className="relative bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
+          onClick={() => handleClick(["auditor"], ClickToAuditor)}
         >
+          {pendingAuditDocs > 0 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+              รอตรวจสอบ ({pendingAuditDocs})
+            </div>
+          )}
+
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
-                <svg
-                xmlns="http://www.w3.org/2000/svg" 
-                width={40} 
-                height={40} 
+            <div className="bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={40}
+                height={40}
                 viewBox="0 0 24 24"
-                className="text-black"  >
-                <path 
-                fill="currentColor" 
-                d="M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8-9h-6v2h6zm0 4h-6v2h6zm0 4h-6v2h6zm2-12h-8v2h8v14H2V6h8V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m-9 2h-2V2h2z">
-                </path></svg>
-             </div>
+                className="text-black"
+              >
+                <path
+                  fill="currentColor"
+                  d="M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8-9h-6v2h6zm0 4h-6v2h6zm0 4h-6v2h6zm2-12h-8v2h8v14H2V6h8V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m-9 2h-2V2h2z"
+                ></path>
+              </svg>
+            </div>
           </div>
-          <p className="text-[#66009F] font-bold text-2xl">เจ้าหน้าที่ตรวจสอบเอกสารคำร้อง</p>
-          <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบเอกสารคำร้องที่ผ่านการรับเข้ากองเรียบร้อยแล้ว</p>
+
+          <p className="text-[#66009F] font-bold text-2xl">
+            เจ้าหน้าที่ตรวจสอบเอกสารคำร้อง
+          </p>
+          <p className="text-[#B9B9B9] mt-2 text-base">
+            ตรวจสอบเอกสารคำร้องที่ผ่านการรับเข้ากองเรียบร้อยแล้ว
+          </p>
         </div>
+
 
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
            onClick={() => handleClick(["auditor"], ClickToApprove)}
         >
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+             <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
                 <svg
                 xmlns="http://www.w3.org/2000/svg" 
                 width={40} 
@@ -248,79 +320,122 @@ function Dashboard() {
       </div>
       )}
 
-      {/* หัวหน้างาน */}
-      {(userInfo.role_n === "head_auditor" ) && (
-        <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
-        {/* block1 */}
-        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={() => handleClick(["head_auditor"], ClicktoHeadAuditor)}
-        >
-          <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
-                <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width={40} 
-                height={40}  
-                viewBox="0 0 24 24"
-                className="text-black" >
-                <path 
-                  fill="currentColor"
-                  d="M22 4h-8v3h-4V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8 1h-6v-2h6zm0-4h-6v-2h6zm0-4h-6V8h6zm-7-4h-2V2h2z">
-                </path></svg>
-             </div>
-          </div>
-          <p className="text-[#66009F] font-bold text-2xl">หัวหน้างาน</p>
-          <p className="text-[#B9B9B9] mt-2 text-base">ตรวจสอบ อนุมัติ คำขออนุมัติเอกสารตามขั้นตอนที่กำหนด</p>
+{/* หัวหน้างาน */}
+{userInfo.role_n === "head_auditor" && (
+  <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
+    {/* block1 */}
+    <div
+      className="relative bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
+      onClick={() => handleClick(["head_auditor"], ClicktoHeadAuditor)}
+    >
+      {pendingDocs > 0 && (
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+          รอตรวจสอบ ({pendingDocs})
         </div>
-        
-      </div>
       )}
 
+      <div className="mb-5">
+        <div className="bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={40}
+            height={40}
+            viewBox="0 0 24 24"
+            className="text-black"
+          >
+            <path
+              fill="currentColor"
+              d="M22 4h-8v3h-4V4H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2M8 9a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m4 8H4v-1c0-1.33 2.67-2 4-2s4 .67 4 2zm8 1h-6v-2h6zm0-4h-6v-2h6zm0-4h-6V8h6zm-7-4h-2V2h2z"
+            ></path>
+          </svg>
+        </div>
+      </div>
+
+      <p className="text-[#66009F] font-bold text-2xl flex items-center">
+        หัวหน้างาน
+      </p>
+      <p className="text-[#B9B9B9] mt-2 text-base">
+        ตรวจสอบ อนุมัติ คำขออนุมัติเอกสารตามขั้นตอนที่กำหนด
+      </p>
+    </div>
+  </div>
+)}
       {/* ผู้อำนวยการกอง */}
       {(userInfo.role_n === "spv_auditor" ) && (
         <div className="flex flex-col items-center justify-center mt-10 gap-5 px-5">
         {/* block1 */}
-        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-           onClick={() => handleClick(["spv_auditor"], ClickToFinalAudit)}
+        <div
+          className="relative bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
+          onClick={() => handleClick(["spv_auditor"], ClickToFinalAudit)}
         >
+          {pendingSpvDocs > 0 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+              รอตรวจสอบ ({pendingSpvDocs})
+            </div>
+          )}
+
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
-                <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width={40} 
-                height={40}   
+            <div className="bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={40}
+                height={40}
                 viewBox="0 0 24 24"
-                className="text-black">
-                <path 
-                fill="currentColor"
-                d="M14 17h4v-3l5 4.5l-5 4.5v-3h-4zm-1-8h5.5L13 3.5zM6 2h8l6 6v4.34c-.63-.22-1.3-.34-2-.34a6 6 0 0 0-6 6c0 1.54.58 2.94 1.53 4H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2">
-                </path></svg>
-             </div>
+                className="text-black"
+              >
+                <path
+                  fill="currentColor"
+                  d="M14 17h4v-3l5 4.5l-5 4.5v-3h-4zm-1-8h5.5L13 3.5zM6 2h8l6 6v4.34c-.63-.22-1.3-.34-2-.34a6 6 0 0 0-6 6c0 1.54.58 2.94 1.53 4H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2"
+                ></path>
+              </svg>
+            </div>
           </div>
-          <p className="text-[#66009F] font-bold text-2xl">ผู้อำนวยการกองตรวจสอบเอกสาร</p>
-          <p className="text-[#B9B9B9] mt-2 text-base">คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง</p>
+
+          <p className="text-[#66009F] font-bold text-2xl">
+            ผู้อำนวยการกองตรวจสอบเอกสาร
+          </p>
+          <p className="text-[#B9B9B9] mt-2 text-base">
+            คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง
+          </p>
         </div>
+
         {/* บล็อก2 */}
-        <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-            onClick={() => handleClick(["spv_auditor"], ClicktoSpvauditor)}
-        >
-          <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
-                <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width={40} 
-                height={40}   
-                viewBox="0 0 24 24"
-                className="text-black">
-                <path 
+        <div
+        className="relative bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
+        onClick={() => handleClick(["spv_auditor"], ClicktoSpvauditor)}
+      >
+
+        {pendingSpvAcceptDocs > 0 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+              รอตรวจสอบ ({pendingSpvAcceptDocs})
+            </div>
+          )}
+
+        <div className="mb-5">
+          <div className="bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={40}
+              height={40}
+              viewBox="0 0 24 24"
+              className="text-black"
+            >
+              <path
                 fill="currentColor"
-                d="M14 17h4v-3l5 4.5l-5 4.5v-3h-4zm-1-8h5.5L13 3.5zM6 2h8l6 6v4.34c-.63-.22-1.3-.34-2-.34a6 6 0 0 0-6 6c0 1.54.58 2.94 1.53 4H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2">
-                </path></svg>
-             </div>
+                d="M14 17h4v-3l5 4.5l-5 4.5v-3h-4zm-1-8h5.5L13 3.5zM6 2h8l6 6v4.34c-.63-.22-1.3-.34-2-.34a6 6 0 0 0-6 6c0 1.54.58 2.94 1.53 4H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2"
+              ></path>
+            </svg>
           </div>
-          <p className="text-[#66009F] font-bold text-2xl">ผู้อำนวยการกองคัดกรองเอกสาร</p>
-          <p className="text-[#B9B9B9] mt-2 text-base">คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง</p>
         </div>
+
+        <p className="text-[#66009F] font-bold text-2xl">
+          ผู้อำนวยการกองคัดกรองเอกสาร
+        </p>
+        <p className="text-[#B9B9B9] mt-2 text-base">
+          คัดกรองเอกสารเพื่อส่งไปยังหน่วยงานที่ถูกต้อง
+        </p>
+      </div>
+
         
       </div>
       )}
@@ -341,7 +456,7 @@ function Dashboard() {
           onClick={() => handleClick(["admin"], ClicktoAdminedit)}
         >
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+             <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" 
               width={40} height={40}
               viewBox="0 0 24 24"
@@ -360,7 +475,7 @@ function Dashboard() {
           onClick={() => handleClick(["admin"], ClicktoAdminedit)}
         >
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+             <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
               <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   width={40} 
@@ -398,7 +513,7 @@ function Dashboard() {
           onClick={() => handleClick(["endorser"],["se_endorser"], ClicktoAdminedit)}
         >
           <div className="mb-5">
-             <div class="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
+             <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" 
               width={40} 
               height={40} 
