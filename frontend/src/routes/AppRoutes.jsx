@@ -23,6 +23,7 @@ import AuditorTracking from '../pages/auditor/auditorTracking';
 import SpvFinalAudited from '../pages/spv_finalaudited';
 
 // auditor
+import AuditorModify from "../pages/auditor/auditorModify";
 
 // head auditor (BEL)
 import HeadAuditorTracking from '../pages/headAuditor/headAuditorTracking';
@@ -49,6 +50,8 @@ export default function AppRoutes() {
         {/* auditor */}
         <Route path="/auditTracking" element={<RequireAuth roles={['auditor']}> <AuditorTracking/> </RequireAuth>} />
         <Route path="/pending_approval" element={<RequireAuth roles={['auditor']}> <UploadDocumentApproved/> </RequireAuth>}/>
+        <Route path="/auditorModify/:id" element={<RequireAuth roles={['auditor']}> <AuditorModify/> </RequireAuth>}/>
+
 
         {/* ผู้อำนวยการคัดกรองเอกสาร Super Auditor */}
         <Route path="/spvAuditTracking" element={<RequireAuth roles={['spv_auditor']}> <SuperAuditorTracking/> </RequireAuth>} />

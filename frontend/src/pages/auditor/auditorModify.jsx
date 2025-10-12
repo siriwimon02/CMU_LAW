@@ -3,9 +3,9 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/docIcon";
 // import BackB from "../../components/backToDashboardButton";
 
-const ALLOW_STATUS = "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"; // only this status can edit
+const ALLOW_STATUS = "อยู่ระหว่างการตรวจสอบขั้นต้น"; // only this status can edit
 
-function Modify() {
+function AuditorModify() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const { id } = useParams();
@@ -48,6 +48,8 @@ function Modify() {
     return <Navigate to="/login" replace />;
   }
 
+  
+
   // load document
   useEffect(() => {
     let alive = true;
@@ -55,7 +57,7 @@ function Modify() {
       try {
         setLoading(true);
         const res = await fetch(`http://localhost:3001/document/${id}`, {
-          headers: { Authorization: `${token}` },
+            headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
 
@@ -66,7 +68,7 @@ function Modify() {
         // gate by status
         if (doc?.status_name !== ALLOW_STATUS) {
           setStatusName(doc?.status_name || "");
-          navigate("/tracking", {
+          navigate("/auditTracking", {
             replace: true,
             state: { msg: "เอกสารไม่อยู่ในสถานะที่อนุญาตให้แก้ไข" },
           });
@@ -171,7 +173,7 @@ function Modify() {
 
       files.forEach((f) => form.append("attachments", f));
 
-      const res = await fetch(`http://localhost:3001/petition/edit/${id}`, {
+      const res = await fetch(`http://localhost:3001/petitionAudit/update_document_ByAuditor/${id}`, {
         method: "PUT",
         headers: { Authorization: `${token}` }, // don't set Content-Type
         body: form,
@@ -183,13 +185,19 @@ function Modify() {
       }
 
       setOkMsg(data?.message || "อัปเดตเอกสารสำเร็จ");
-      setTimeout(() => navigate("/tracking"), 800);
+      setTimeout(() => navigate("/auditTracking"), 800);
     } catch (e) {
       setError(e.message || String(e));
     } finally {
       setSending(false);
     }
   }
+
+  const ClicktoDashboard = () => {
+        navigate('/auditTracking');
+    }
+
+  
 
   return (
     <div className="min-h-screen bg-[#F6F7FB] px-4 py-10 font-[Kanit] text-black">
@@ -203,7 +211,22 @@ function Modify() {
                 ยื่นคำขอมอบอำนาจ
               </h1>
             </div>
-            <BackB />
+            <button
+            onClick={ClicktoDashboard}
+            className="bg-[#66009F] w-10 h-10 flex items-center justify-center rounded-xl shadow hover:bg-[#4A0073] transition"
+            title="ย้อนกลับ"
+            >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="w-5 h-5"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+            >
+                <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+        </button>
           </div>
 
           <div className="p-2">
@@ -439,4 +462,4 @@ function Modify() {
   );
 }
 
-export default Modify;
+export default AuditorModify;

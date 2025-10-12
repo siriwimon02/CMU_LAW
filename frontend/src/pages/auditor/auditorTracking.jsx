@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import Header from "../../components/trackingHeader";
 import ForwardToHeadAuditor from "../../components/ForwardToHeadAuditor";
+import ForwardToUser from "../../components/ForwardToUser"; 
+// import { console } from "inspector";
+
 
 function Employee_Paper() {
   // ===== Auth token (ไม่ใส่ Bearer) =====
@@ -24,7 +27,10 @@ function Employee_Paper() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [deptView, setDeptView] = useState("form"); // form | success
   const [selected, setSelected] = useState(null);
-  
+
+  const [sendBackOpen, setSendBackOpen] = useState(false);
+  const [sendBackTarget, setSendBackTarget] = useState(null);
+  const [submittingSendBack, setSubmittingSendBack] = useState(false);
 
   // optional
   const [destinations, setDestinations] = useState([]);
@@ -118,12 +124,14 @@ function Employee_Paper() {
   // const getDocIdNumeric = (o) =>
   //   Number(o?.id ?? o?.docId ?? o?.documentId ?? o?.doc_id ?? o?.request_no ?? 0);
 
+  // แทนที่ฟังก์ชันตรวจสี
   const isBlueStatus = (txt = "") =>
-    txt.includes("ส่งกลับ");
+    txt.includes("ส่งกลับ") || txt.includes("โดยหัวหน้ากอง");
   const isGreenStatus = (txt = "") =>
     txt.includes("ตรวจสอบขั้นต้นเสร็จสิ้น");
   const isOrangeStatus = (txt = "") =>
     txt.includes("อยู่ระหว่าง");
+
 
   // รวมศูนย์ normalize array
   const norm = (raw) =>
@@ -141,9 +149,9 @@ function Employee_Paper() {
   const fetchUrl = useMemo(() => {
     switch (activeTab) {
       case "history_change_des":
-        return "http://localhost:3001/petitionAudit/history_thesendtoEditByauditor";
+        return "http://localhost:3001/petitionAudit/history_send_back_edit_auditor";
       case "history_accept":
-        return "http://localhost:3001/petitionAudit/history_theAuditByauditor";
+        return "http://localhost:3001/petitionAudit/history_audited";
       case "documentAll":
         return "http://localhost:3001/petitionAudit/wait_to_audit_byAudit";
       default:
@@ -200,11 +208,11 @@ function Employee_Paper() {
               headers: { Authorization: authHeader },
               signal: ac.signal,
             }),
-            fetch("http://localhost:3001/petitionAudit/history_thesendtoEditByauditor", {
+            fetch("http://localhost:3001/petitionAudit/history_send_back_edit_auditor", {
               headers: { Authorization: authHeader },
               signal: ac.signal,
             }),
-            fetch("http://localhost:3001/petitionAudit/history_theAuditByauditor", {
+            fetch("http://localhost:3001/petitionAudit/history_audited", {
               headers: { Authorization: authHeader },
               signal: ac.signal,
             }),
@@ -273,171 +281,274 @@ function Employee_Paper() {
     return () => ac.abort();
   }, [activeTab, fetchUrl, authHeader, reloadKey, navigate]);
 
-  const currentItems = useMemo(() => {
-    if (activeTab !== "all") {
-      return activeTab === "documentAll"
-        ? documentAll
-        : activeTab === "history_change_des"
-        ? historyChangeDes
-        : historyAccept;
-    }
-    const tag = (x, bucket) => ({ ...x, __bucket: bucket });
-    return [
-      ...documentAll.map((x) => tag(x, "ที่รอตรวจขั้นต้น")),
-      ...historyChangeDes.map((x) => tag(x, "ประวัติส่งกลับแก้ไข")),
-      ...historyAccept.map((x) => tag(x, "ประวัติตรวจเสร็จสิ้น")),
-    ];
-  }, [activeTab, documentAll, historyChangeDes, historyAccept]);
+
+  // const currentItems = useMemo(() => {
+  //   if (activeTab !== "all") {
+  //     return activeTab === "documentAll"
+  //       ? documentAll
+  //       : activeTab === "history_change_des"
+  //       ? historyChangeDes
+  //       : historyAccept;
+  //   }
+  //   const tag = (x, bucket) => ({ ...x, __bucket: bucket });
+  //   return [
+  //     ...documentAll.map((x) => tag(x, "ที่รอตรวจขั้นต้น")),
+  //     ...historyChangeDes.map((x) => tag(x, "ประวัติส่งกลับแก้ไข")),
+  //     ...historyAccept.map((x) => tag(x, "ประวัติตรวจเสร็จสิ้น")),
+  //   ];
+  // }, [activeTab, documentAll, historyChangeDes, historyAccept]);
+
+
 
   // ===== Detail modal =====
-  const openDetail = async (doc) => {
-    try {
-      const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-      if (!docId) return alert("ไม่พบรหัสเอกสาร");
-      setDetailOpen(true);
-      setDetailLoading(true);
-      setDetailData(null);
+  // const openDetail = async (doc) => {
+  //   try {
+  //     const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
+  //     if (!docId) return alert("ไม่พบรหัสเอกสาร");
+  //     setDetailOpen(true);
+  //     setDetailLoading(true);
+  //     setDetailData(null);
 
-      const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
-        headers: { Authorization: authHeader },
-      });
-      if (res.status === 401) {
-        navigate("/login", { replace: true });
-        return;
-      }
-      const data = res.ok ? await res.json() : null;
-      setDetailData((data?.setdoc || data) || { error: true, message: "ไม่พบข้อมูลเอกสาร" });
-    } catch (e) {
-      setDetailData({ error: true, message: "โหลดรายละเอียดไม่สำเร็จ" });
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-  const closeDetail = () => {
-    setDetailOpen(false);
-    setDetailData(null);
-    setDetailLoading(false);
-  };
+  //     const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
+  //       headers: { Authorization: authHeader },
+  //     });
+  //     if (res.status === 401) {
+  //       navigate("/login", { replace: true });
+  //       return;
+  //     }
+  //     const data = res.ok ? await res.json() : null;
+  //     setDetailData((data?.setdoc || data) || { error: true, message: "ไม่พบข้อมูลเอกสาร" });
+  //   } catch (e) {
+  //     setDetailData({ error: true, message: "โหลดรายละเอียดไม่สำเร็จ" });
+  //   } finally {
+  //     setDetailLoading(false);
+  //   }
+  // };
+  // const closeDetail = () => {
+  //   setDetailOpen(false);
+  //   setDetailData(null);
+  //   setDetailLoading(false);
+  // };
 
   // ===== alert fallback =====
-  const viewDetail = async (doc) => {
-    try {
-      const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-      if (!docId) return alert("ไม่พบรหัสเอกสาร");
-      const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
-        headers: { Authorization: authHeader },
-      });
-      if (res.status === 401) return navigate("/login", { replace: true });
-      if (!res.ok) return alert("โหลดรายละเอียดไม่สำเร็จ");
-      const json = await res.json();
-      const d = json?.setdoc || json;
-      alert(
-        [
-          `เรื่อง: ${d.title || "-"}`,
-          `ผู้ยื่น: ${d.authorize_to || "-"}`,
-          `สถานะ: ${d.status_name || "-"}`,
-          `ปลายทาง: ${d.destination_name || "-"}`,
-          `สร้างเมื่อ: ${formatThaiDateTime(d.createdAt)}`,
-        ].join("\n")
-      );
-    } catch (e) {
-      alert("เกิดข้อผิดพลาดในการโหลดรายละเอียด");
-    }
-  };
+  // const viewDetail = async (doc) => {
+  //   try {
+  //     const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
+  //     if (!docId) return alert("ไม่พบรหัสเอกสาร");
+  //     const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
+  //       headers: { Authorization: authHeader },
+  //     });
+  //     if (res.status === 401) return navigate("/login", { replace: true });
+  //     if (!res.ok) return alert("โหลดรายละเอียดไม่สำเร็จ");
+  //     const json = await res.json();
+  //     const d = json?.setdoc || json;
+  //     alert(
+  //       [
+  //         `เรื่อง: ${d.title || "-"}`,
+  //         `ผู้ยื่น: ${d.authorize_to || "-"}`,
+  //         `สถานะ: ${d.status_name || "-"}`,
+  //         `ปลายทาง: ${d.destination_name || "-"}`,
+  //         `สร้างเมื่อ: ${formatThaiDateTime(d.createdAt)}`,
+  //       ].join("\n")
+  //     );
+  //   } catch (e) {
+  //     alert("เกิดข้อผิดพลาดในการโหลดรายละเอียด");
+  //   }
+  // };
+
   // ดูเอกสารแนบ/ข้อมูลเอกสารแบบย่อ
-  const viewDocs = async (doc) => {
-    try {
-      const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-      if (!docId) return alert("ไม่พบรหัสเอกสาร");
-      const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
-        headers: { Authorization: authHeader },
-      });
-      if (res.status === 401) return navigate("/login", { replace: true });
-      if (!res.ok) return alert("ไม่สามารถดึงเอกสารได้");
-      const json = await res.json();
-      const d = json?.setdoc || json;
-      const files = (d.attachments || d.files || []).map((f) => `• ${f?.originalname || f?.name || f}`);
-      alert([`ไฟล์แนบ (${files.length}):`, ...(files.length ? files : ["— ไม่มีไฟล์แนบ —"])].join("\n"));
-    } catch (e) {
-      alert("เกิดข้อผิดพลาดในการดึงเอกสาร");
-    }
-  };
+  // const viewDocs = async (doc) => {
+  //   try {
+  //     const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
+  //     if (!docId) return alert("ไม่พบรหัสเอกสาร");
+  //     const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
+  //       headers: { Authorization: authHeader },
+  //     });
+  //     if (res.status === 401) return navigate("/login", { replace: true });
+  //     if (!res.ok) return alert("ไม่สามารถดึงเอกสารได้");
+  //     const json = await res.json();
+  //     const d = json?.setdoc || json;
+  //     const files = (d.attachments || d.files || []).map((f) => `• ${f?.originalname || f?.name || f}`);
+  //     alert([`ไฟล์แนบ (${files.length}):`, ...(files.length ? files : ["— ไม่มีไฟล์แนบ —"])].join("\n"));
+  //   } catch (e) {
+  //     alert("เกิดข้อผิดพลาดในการดึงเอกสาร");
+  //   }
+  // };
 
+  // แทนที่ฟังก์ชันเดิมสองอันนี้
   const ClickForMoreDetail = (doc) => {
-    navigate(`/detail/${doc.id}`);
-  }
-  // view petition
+    const id = getDocIdNumeric(doc);
+    if (!id) return alert("ไม่พบรหัสเอกสาร");
+    navigate(`/detail/${id}`);
+  };
   const ClickForViewPet = (doc) => {
-    navigate(`/view/${doc.id}`);
+    const id = getDocIdNumeric(doc);
+    if (!id) return alert("ไม่พบรหัสเอกสาร");
+    navigate(`/view/${id}`);
   };
 
-  const approveDoc = async (doc) => {
-    const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-    if (!docId) return alert("ไม่พบรหัสเอกสาร");
-    const text = window.prompt("บันทึกข้อเสนอแนะ (ไม่บังคับ)", "");
-    try {
-      const res = await fetch(`http://localhost:3001/petitionAudit/update_st_audit_by_audit/${docId}`, {
-        method: "PUT",
-        headers: { Authorization: authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ text_suggesttion: text || "" }),
-      });
-      if (res.status === 401) return navigate("/login", { replace: true });
-      if (!res.ok) return alert(`ตรวจสอบไม่สำเร็จ (${res.status})`);
-      alert("อัปเดตสถานะ: ตรวจสอบเสร็จสิ้น");
-      setReloadKey((k) => k + 1);
-    } catch (e) {
-      alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
-    }
-  };
 
-  const sendBack = async (doc) => {
-    const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
+  // const approveDoc = async (doc) => {
+  //   const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
+  //   if (!docId) return alert("ไม่พบรหัสเอกสาร");
+  //   const text = window.prompt("บันทึกข้อเสนอแนะ (ไม่บังคับ)", "");
+  //   try {
+  //     const res = await fetch(`http://localhost:3001/petitionAudit/update_st_audit_by_audit/${docId}`, {
+  //       method: "PUT",
+  //       headers: { Authorization: authHeader, "Content-Type": "application/json" },
+  //       body: JSON.stringify({ text_suggesttion: text || "" }),
+  //     });
+  //     if (res.status === 401) return navigate("/login", { replace: true });
+  //     if (!res.ok) return alert(`ตรวจสอบไม่สำเร็จ (${res.status})`);
+
+  //     // ✅ คงการ์ดไว้ในลิสต์ แต่ปรับสถานะใหม่แทนการ reload
+  //     setDocumentAll(prev =>
+  //       prev.map(d =>
+  //         (d.id ?? d.docId ?? d.documentId ?? d.doc_id) === docId
+  //           ? { ...d, status_name: "ตรวจสอบขั้นต้นเสร็จสิ้น", updated_at: new Date().toISOString() }
+  //           : d
+  //       )
+  //     );
+  //     alert("อัปเดตสถานะ: ตรวจสอบเสร็จสิ้น");
+  //     // ❌ ลบ setReloadKey
+  //   } catch (e) {
+  //     alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+  //   }
+  // };
+
+
+  const submitSendBack = async ({ item, note }) => {
+    if (!item) return;
+    const docId = item?.id ?? item?.docId ?? item?.documentId ?? item?.doc_id;
     if (!docId) return alert("ไม่พบรหัสเอกสาร");
-    const text = window.prompt("ระบุเหตุผล/สิ่งที่ต้องแก้ไข", "กรุณาแนบเอกสารฉบับจริง …");
-    if (text == null) return;
+
+    setSubmittingSendBack(true);
     try {
       const res = await fetch(`http://localhost:3001/petitionAudit/edit_ByAuditor/${docId}`, {
         method: "PUT",
         headers: { Authorization: authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ text_edit_suggesttion: text }),
+        body: JSON.stringify({ text_edit_suggesttion: (note || "").trim() }),
       });
       if (res.status === 401) return navigate("/login", { replace: true });
       if (!res.ok) return alert(`ส่งกลับไม่สำเร็จ (${res.status})`);
-      alert("ส่งกลับให้แก้ไขเรียบร้อย");
-      setReloadKey((k) => k + 1);
+
+      // ✅ คงการ์ดไว้ แล้วเปลี่ยนสถานะในหน้า
+      setDocumentAll(prev =>
+        prev.map(d =>
+          (d.id ?? d.docId ?? d.documentId ?? d.doc_id) === docId
+            ? {
+                ...d,
+                status_name: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร",
+                updated_at: new Date().toISOString(),
+                note_text: (note || "").trim() || "-",
+              }
+            : d
+        )
+      );
+
+      setSendBackOpen(false);
+      setSendBackTarget(null);
+      // alert("ส่งกลับให้ผู้ใช้แก้ไขเรียบร้อย");
+      // ❌ ลบ setReloadKey
     } catch (e) {
-      alert("เกิดข้อผิดพลาดในการส่งกลับ");
+      console.error(e);
+      // alert("เกิดข้อผิดพลาดในการส่งกลับ");
+    } finally {
+      setSubmittingSendBack(false);
     }
   };
 
-  const attachFiles = async (doc) => {
-    const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-    if (!docId) return alert("ไม่พบรหัสเอกสาร");
+  // const sendBack = (doc) => {
+  //   if (!doc) return;
+  //   setSendBackTarget(doc);
+  //   setSendBackOpen(true);
+  // };
 
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.onchange = async () => {
-      const files = Array.from(input.files || []);
-      if (!files.length) return;
-      const fd = new FormData();
-      files.forEach((f) => fd.append("attachments", f));
-      try {
-        const res = await fetch(`http://localhost:3001/petitionAudit/update_document_ByAuditor/${docId}`, {
-          method: "PUT",
-          headers: { Authorization: authHeader },
-          body: fd,
-        });
-        if (res.status === 401) return navigate("/login", { replace: true });
-        if (!res.ok) return alert(`แนบไฟล์ไม่สำเร็จ (${res.status})`);
-        alert("อัปโหลดไฟล์เรียบร้อย");
-        setReloadKey((k) => k + 1);
-      } catch (e) {
-        alert("เกิดข้อผิดพลาดในการอัปโหลดไฟล์");
-      }
-    };
-    input.click();
+  // const attachFiles = async (doc) => {
+  //   // ใช้ helper เดิมถ้ามี; ถ้าไม่มีใช้บรรทัด fallback นี้
+  //   const docId = (typeof getDocIdNumeric === "function")
+  //     ? getDocIdNumeric(doc)
+  //     : (doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id ?? 0);
+
+  //   if (!docId) return alert("ไม่พบรหัสเอกสาร");
+
+  //   // ฟอร์มแก้ไขอย่างเร็ว (ถ้าจะสวย ค่อยเปลี่ยนเป็น modal ภายหลัง)
+  //   const title = window.prompt("เรื่อง (title):", doc?.title ?? "");
+  //   if (title === null) return; // กดยกเลิก
+
+  //   const authorizeTo = window.prompt("ผู้รับมอบอำนาจ (authorizeTo):", doc?.authorize_to ?? "");
+  //   if (authorizeTo === null) return;
+
+  //   const position = window.prompt("ตำแหน่ง (position):", doc?.position ?? "");
+  //   if (position === null) return;
+
+  //   const affiliation = window.prompt("สังกัด/หน่วยงาน (affiliation):", doc?.affiliation ?? "");
+  //   if (affiliation === null) return;
+
+  //   const authorizeText = window.prompt("รายละเอียด (authorizeText):", doc?.authorize_text ?? "");
+  //   if (authorizeText === null) return;
+
+  //   // ส่งเฉพาะ "ฟิลด์" เท่านั้น (multer().none() รองรับ form-data ที่มีแต่ฟิลด์)
+  //   const fd = new FormData();
+  //   fd.append("title", (title || "").trim());
+  //   fd.append("authorizeTo", (authorizeTo || "").trim());
+  //   fd.append("position", (position || "").trim());
+  //   fd.append("affiliation", (affiliation || "").trim());
+  //   fd.append("authorizeText", (authorizeText || "").trim());
+
+  //   try {
+  //     const res = await fetch(`http://localhost:3001/petitionAudit/update_document_ByAuditor/${docId}`, {
+  //       method: "PUT",
+  //       headers: { Authorization: authHeader },
+  //       body: fd,
+  //     });
+
+
+  //     if (res.status === 401) return navigate("/login", { replace: true });
+  //     if (!res.ok) {
+  //       const t = await res.text().catch(() => "");
+  //       return alert(`แก้ไขเอกสารไม่สำเร็จ (${res.status})\n${t}`);
+  //     }
+
+  //     // อัปเดตการ์ดให้ "คงอยู่" และสะท้อนค่าที่แก้ไขแล้ว
+  //     const applyPatch = (arr) =>
+  //       (Array.isArray(arr) ? arr : []).map((d) => {
+  //         const idA =
+  //           d?.id ?? d?.docId ?? d?.documentId ?? d?.doc_id ?? d?.request_no;
+  //         if (String(idA) !== String(docId)) return d;
+  //         return {
+  //           ...d,
+  //           title,
+  //           authorize_to: authorizeTo,
+  //           position,
+  //           affiliation,
+  //           authorize_text: authorizeText,
+  //           status_name: "เจ้าหน้าที่แก้ไขเอกสารแล้ว",
+  //           updated_at: new Date().toISOString(),
+  //         };
+  //       });
+
+  //     // อัปเดตทุกลิสต์ที่อาจมีเอกสารนี้อยู่
+  //     setDocumentAll((prev) => applyPatch(prev));
+  //     setHistoryChangeDes?.((prev) => applyPatch(prev));
+  //     setHistoryAccept?.((prev) => applyPatch(prev));
+
+  //     alert("บันทึกการแก้ไขเรียบร้อย");
+  //   } catch (e) {
+  //     console.error(e);
+  //     alert("เกิดข้อผิดพลาดในการแก้ไขเอกสาร");
+  //   }
+  // };
+
+  const ClickForModify = (doc) => {
+    const id = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id ?? doc?.request_no;
+    if (!id) return alert("ไม่พบรหัสเอกสาร");
+    navigate(`/auditorModify/${id}`);
   };
+
+
+  console.log(documentAll);
+
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
@@ -506,147 +617,792 @@ function Employee_Paper() {
 
 
           {/* รายการเอกสาร */}
-          {Array.isArray(currentItems) && currentItems.length > 0 ? (
-            currentItems.map((doc, i) => {
-              const id = getId(doc);
-              const title = getTitle(doc);
-              const requester = getRequester(doc);
-              const createdAt = getCreatedAt(doc);
-              const statusText = getStatusText(doc);
-              const destination = getDestination(doc);
+          {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
+          {activeTab === "all" && (
+            <div>
+              {(documentAll || []).map((doc, i) => {
+                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
+                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
+                const isBlue = isBlueStatus(statusText);
+                const isGreen = isGreenStatus(statusText);
+                const isOrange = isOrangeStatus(statusText);
 
-              const createdPretty = formatThaiPretty(createdAt);
+                const isFinalized =
+                  statusText.includes("ตรวจสอบขั้นต้นเสร็จสิ้น") ||
+                  statusText.includes("ส่งกลับให้ผู้ใช้แก้ไขเอกสาร");
 
-              const created = createdAt
-                ? new Date(createdAt).toLocaleString("th-TH", {
-                    timeZone: "Asia/Bangkok",
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "-";
+                // ทำ id สำหรับ key และการนำทาง
+                // const docId =
+                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+                
+                const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
-              const isBlue = isBlueStatus(statusText);
-              const isGreen = isGreenStatus(statusText);
-              const isOrange = isOrangeStatus(statusText);
+                return (
+                  <article
+                    key={`${docId}-${i}`}
+                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1 text-gray-800">
+                        
+                        <p className="font-medium text-2xl" style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          wordBreak: "break-word" // หรือ "break-all"
+                        }}>
+                          <span>{doc.title ?? "—"}</span>
+                        </p>
 
-              return (
-                <article
-                  key={doc.id ?? doc.docId ?? `${id}-${i}`}
-                  className="rounded-md bg-white shadow p-4 mx-6 mt-4"
-                  style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1 text-gray-800">
-                      <p className="font-medium text-2xl"><span>{title}</span></p>
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            เลขที่คำขอ:{" "}
+                            <span className="font-medium">{doc.doc_id ?? doc.id_doc ?? "—"}</span>
+                          </span>
+                        </p>
 
-                      <p className="flex flex-wrap items-center">
-                        <span>
-                          ผู้ที่ยื่นคำขอ: <span className="font-medium">{requester}</span>
-                        </span>
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            ผู้ที่ยื่นคำขอ:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                          </span>
 
-                        {/* กลุ่มวันที่ — ขยับห่างด้วย ml และกันขึ้นบรรทัดใหม่ของวันที่ */}
-                        <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                          <span>วันที่คำขอ:</span>
-                          <span className="whitespace-nowrap">{createdPretty}</span>
-                        </span>
-                      </p>
+                          {/* กลุ่มวันที่ */}
+                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
+                            <span>วันที่คำขอ:</span>
+                            <span className="whitespace-nowrap">
+                              {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
+                            </span>
+                          </span>
+                        </p>
 
-                      <p className="font-medium">
-                        <span className="text-black">สถานะ</span>{" "}
-                        <span
-                          style={
-                            isBlue ? { color: "#0078E2" } :
-                            isGreen ? { color: "#05A967" } :
-                            isOrange ? { color: "#E48500" } :
-                            { color: "#666666" }
-                          }
+                        <p className="font-medium">
+                          <span className="text-black">สถานะ</span>{" "}
+                          <span
+                            style={
+                              isBlue
+                                ? { color: "#0078E2" }
+                                : isGreen
+                                ? { color: "#05A967" }
+                                : isOrange
+                                ? { color: "#E48500" }
+                                : { color: "#666666" }
+                            }
+                          >
+                            {statusText || "—"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* ปุ่มการทำงาน */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ClickForMoreDetail(doc)}
+                          className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
                         >
-                          {statusText}
-                        </span>
-                      </p>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                          </svg>
+                          <span>ดูรายละเอียด</span>
+                        </button>
 
-                    </div>
-
-                    {/* ปุ่มการทำงาน */}
-                    <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
-                      <button
-                        type="button"
-                        onClick={() => ClickForMoreDetail(doc)}
-                        className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
-                          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="11" cy="11" r="7" />
-                          <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
-                        </svg>
-                        <span>ดูรายละเอียด</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => ClickForViewPet(doc)}
-                        className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5"
-                          aria-hidden="true"
+                        <button
+                          type="button"
+                          onClick={() => ClickForViewPet(doc)}
+                          className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
                         >
-                          <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
-                        </svg>
-                        <span>ดูเอกสาร</span>
-                      </button>
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
+                          </svg>
+                          <span>ดูเอกสาร</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => { setSelected(doc); setDeptView("form"); setRejectOpen(true); }}
-                        className="bg-[#16A34A] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16A34A] transition"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                          fill="currentColor" className="w-5 h-5">
-                          <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                        </svg>
-                        <span>ตรวจสอบ</span>
-                      </button>
+                        <button
+                          type="button"
+                          disabled={isFinalized}
+                          onClick={() => { setSelected(doc); setDeptView("form"); setRejectOpen(true); }}
+                          className="bg-[#16A34A] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16A34A] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                            fill="currentColor" className="w-5 h-5">
+                            <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                          </svg>
+                          <span>ตรวจสอบ</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => sendBack(doc)}
-                        className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D4ED8] transition"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5" fill="none" stroke="currentColor"
-                          strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                          <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11zm7.318-19.539l-10.94 10.939"/>
-                        </svg>
-                        <span>ส่งแก้ไข</span>
-                      </button>
+                        <button
+                          type="button"
+                          disabled={isFinalized}
+                          onClick={() => { setSendBackTarget(doc); setSendBackOpen(true); }}
+                          className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D4ED8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5" fill="none" stroke="currentColor"
+                            strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11zm7.318-19.539l-10.94 10.939"/>
+                          </svg>
+                          <span>ส่งแก้ไข</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => attachFiles(doc)}
-                        className="bg-[#D97706] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D97706] transition"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                          className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-                          <path fill="currentColor" d="M17 17h-2.025q-.425 0-.7-.288T14 16t.288-.712T15 15h2v-2q0-.425.288-.712T18 12t.713.288T19 13v2h2q.425 0 .713.288T22 16t-.288.713T21 17h-2v2q0 .425-.288.713T18 20t-.712-.288T17 19zm-7 0H7q-2.075 0-3.537-1.463T2 12t1.463-3.537T7 7h3q.425 0 .713.288T11 8t-.288.713T10 9H7q-1.25 0-2.125.875T4 12t.875 2.125T7 15h3q.425 0 .713.288T11 16t-.288.713T10 17m-1-4q-.425 0-.712-.288T8 12t.288-.712T9 11h6q.425 0 .713.288T16 12t-.288.713T15 13zm13-1h-2q0-1.25-.875-2.125T17 9h-3.025q-.425 0-.7-.288T13 8t.288-.712T14 7h3q2.075 0 3.538 1.463T22 12"/>
-                        </svg>
-                        <span>แนบไฟล์</span>
-                      </button>
+                        <button
+                          type="button"
+                          disabled={isFinalized}
+                          onClick={() => ClickForModify(doc)}
+                          className="bg-[#D97706] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D97706] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor" d="M17 17h-2.025q-.425 0-.7-.288T14 16t.288-.712T15 15h2v-2q0-.425.288-.712T18 12t.713.288T19 13v2h2q.425 0 .713.288T22 16t-.288.713T21 17h-2v2q0 .425-.288.713T18 20t-.712-.288T17 19zm-7 0H7q-2.075 0-3.537-1.463T2 12t1.463-3.537T7 7h3q.425 0 .713.288T11 8t-.288.713T10 9H7q-1.25 0-2.125.875T4 12t.875 2.125T7 15h3q.425 0 .713.288T11 16t-.288.713T10 17m-1-4q-.425 0-.712-.288T8 12t.288-.712T9 11h6q.425 0 .713.288T16 12t-.288.713T15 13zm13-1h-2q0-1.25-.875-2.125T17 9h-3.025q-.425 0-.7-.288T13 8t.288-.712T14 7h3q2.075 0 3.538 1.463T22 12"/>
+                          </svg>
+                          <span>แก้ไขเอกสาร</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })
-          ) : (
-            !loading && <p className="text-gray-500 mx-6 mt-6">ไม่พบเอกสารในแท็บนี้</p>
+                  </article>
+                );
+              })}
+            
+
+              {(historyChangeDes||[]).map((doc, i) => {
+                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
+                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
+                const isBlue = isBlueStatus(statusText);
+                const isGreen = isGreenStatus(statusText);
+                const isOrange = isOrangeStatus(statusText);
+
+                // ทำ id สำหรับ key และการนำทาง
+                // const docId =
+                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+
+                const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
+
+                return (
+                  <article
+                    key={`${docId}-${i}`}
+                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1 text-gray-800">
+                        {/* <p className="font-medium text-2xl">
+                          <span>{doc.idformal ?? doc.idformal ?? "—"}</span>
+                        </p> */}
+                        <p className="font-medium text-2xl" style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          wordBreak: "break-word" // หรือ "break-all"
+                        }}>
+                          <span>{doc.title ?? "—"}</span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            เลขที่คำขอ:{" "}
+                            <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            ผู้ที่ยื่นคำขอ:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                          </span>
+
+                          {/* กลุ่มวันที่ */}
+                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
+                            <span>วันที่คำขอ:</span>
+                            <span className="whitespace-nowrap">
+                              {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
+                            </span>
+                          </span>
+                        </p>
+
+                        <p className="font-medium">
+                          <span className="text-black">สถานะ</span>{" "}
+                          <span
+                            style={
+                              isBlue
+                                ? { color: "#0078E2" }
+                                : isGreen
+                                ? { color: "#05A967" }
+                                : isOrange
+                                ? { color: "#E48500" }
+                                : { color: "#666666" }
+                            }
+                          >
+                            {statusText || "—"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* ปุ่มการทำงาน */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ClickForMoreDetail(doc)}
+                          className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                          </svg>
+                          <span>ดูรายละเอียด</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => ClickForViewPet(doc)}
+                          className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
+                          </svg>
+                          <span>ดูเอกสาร</span>
+                        </button>
+
+                      </div>
+                    </div>
+                  </article>
+                );
+
+              })}
+
+              {(historyAccept||[]).map((doc, i) => {
+
+                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
+                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
+                const isBlue = isBlueStatus(statusText);
+                const isGreen = isGreenStatus(statusText);
+                const isOrange = isOrangeStatus(statusText);
+
+                // ทำ id สำหรับ key และการนำทาง
+                // const docId =
+                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+
+                const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
+
+                return (
+                  <article
+                    key={`${docId}-${i}`}
+                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1 text-gray-800">
+                        {/* <p className="font-medium text-2xl">
+                          <span>{doc.idformal ?? doc.idformal ?? "—"}</span>
+                        </p> */}
+                        <p className="font-medium text-2xl" style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          wordBreak: "break-word" // หรือ "break-all"
+                        }}>
+                          <span>{doc.doc_title ?? "—"}</span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            เลขที่คำขอ:{" "}
+                            <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            ผู้ที่ยื่นคำขอ:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                          </span>
+
+                          {/* กลุ่มวันที่ */}
+                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
+                            <span>วันที่คำขอ:</span>
+                            <span className="whitespace-nowrap">
+                              {formatThaiPretty(getCreatedAt(doc))}
+                            </span>
+                          </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้ากองผู้ตรวจสอบเอกสาร:{" "}
+                            <span className="font-medium">{doc.headauditByemail ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        <p className="font-medium">
+                          <span className="text-black">สถานะ</span>{" "}
+                          <span
+                            style={
+                              isBlue
+                                ? { color: "#0078E2" }
+                                : isGreen
+                                ? { color: "#05A967" }
+                                : isOrange
+                                ? { color: "#E48500" }
+                                : { color: "#666666" }
+                            }
+                          >
+                            {statusText || "—"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* ปุ่มการทำงาน */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ClickForMoreDetail(doc)}
+                          className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                          </svg>
+                          <span>ดูรายละเอียด</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => ClickForViewPet(doc)}
+                          className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
+                          </svg>
+                          <span>ดูเอกสาร</span>
+                        </button>
+
+                      </div>
+                    </div>
+                  </article>
+                );
+
+              })}
+            </div>
+
           )}
-        </div>
-      </main>
+
+          {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
+          {activeTab === "documentAll" && (
+            <div>
+              {(documentAll || []).map((doc, i) => {
+                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
+                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
+                const isBlue = isBlueStatus(statusText);
+                const isGreen = isGreenStatus(statusText);
+                const isOrange = isOrangeStatus(statusText);
+
+                // ทำ id สำหรับ key และการนำทาง
+                // const docId =
+                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+                
+                const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
+
+                return (
+                  <article
+                    key={`${docId}-${i}`}
+                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1 text-gray-800">
+                        {/* <p className="font-medium text-2xl">
+                          <span>{doc.doc_id ?? doc.id_doc ?? "—"}</span>
+                        </p> */}
+                        <p className="font-medium text-2xl" style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          wordBreak: "break-word" // หรือ "break-all"
+                        }}>
+                          <span>{doc.title ?? "—"}</span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            เลขที่คำขอ:{" "}
+                            <span className="font-medium">{doc.doc_id ?? doc.id_doc ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            ผู้ที่ยื่นคำขอ:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                          </span>
+
+                          {/* กลุ่มวันที่ */}
+                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
+                            <span>วันที่คำขอ:</span>
+                            <span className="whitespace-nowrap">
+                              {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
+                            </span>
+                          </span>
+                        </p>
+
+                        <p className="font-medium">
+                          <span className="text-black">สถานะ</span>{" "}
+                          <span
+                            style={
+                              isBlue
+                                ? { color: "#0078E2" }
+                                : isGreen
+                                ? { color: "#05A967" }
+                                : isOrange
+                                ? { color: "#E48500" }
+                                : { color: "#666666" }
+                            }
+                          >
+                            {statusText || "—"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* ปุ่มการทำงาน */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ClickForMoreDetail(doc)}
+                          className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                          </svg>
+                          <span>ดูรายละเอียด</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => ClickForViewPet(doc)}
+                          className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
+                          </svg>
+                          <span>ดูเอกสาร</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { setSelected(doc); setDeptView("form"); setRejectOpen(true); }}
+                          className="bg-[#16A34A] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16A34A] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                            fill="currentColor" className="w-5 h-5">
+                            <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                          </svg>
+                          <span>ตรวจสอบ</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { setSendBackTarget(doc); setSendBackOpen(true); }}
+                          className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D4ED8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5" fill="none" stroke="currentColor"
+                            strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11zm7.318-19.539l-10.94 10.939"/>
+                          </svg>
+                          <span>ส่งแก้ไข</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => ClickForModify(doc)}
+                          className="bg-[#D97706] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D97706] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor" d="M17 17h-2.025q-.425 0-.7-.288T14 16t.288-.712T15 15h2v-2q0-.425.288-.712T18 12t.713.288T19 13v2h2q.425 0 .713.288T22 16t-.288.713T21 17h-2v2q0 .425-.288.713T18 20t-.712-.288T17 19zm-7 0H7q-2.075 0-3.537-1.463T2 12t1.463-3.537T7 7h3q.425 0 .713.288T11 8t-.288.713T10 9H7q-1.25 0-2.125.875T4 12t.875 2.125T7 15h3q.425 0 .713.288T11 16t-.288.713T10 17m-1-4q-.425 0-.712-.288T8 12t.288-.712T9 11h6q.425 0 .713.288T16 12t-.288.713T15 13zm13-1h-2q0-1.25-.875-2.125T17 9h-3.025q-.425 0-.7-.288T13 8t.288-.712T14 7h3q2.075 0 3.538 1.463T22 12"/>
+                          </svg>
+                          <span>แก้ไขเอกสาร</span>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+
+          {/* ส่งกลับให้ผู้ใช้แก้ไขเอกสาร */}
+          {activeTab === "history_change_des" && (
+            <div>
+              {(historyChangeDes||[]).map((doc, i) => {
+                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
+                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
+                const isBlue = isBlueStatus(statusText);
+                const isGreen = isGreenStatus(statusText);
+                const isOrange = isOrangeStatus(statusText);
+
+                // ทำ id สำหรับ key และการนำทาง
+                // const docId =
+                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+
+                const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
+
+                return (
+                  <article
+                    key={`${docId}-${i}`}
+                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1 text-gray-800">
+                        {/* <p className="font-medium text-2xl">
+                          <span>{doc.idformal ?? doc.idformal ?? "—"}</span>
+                        </p> */}
+                        <p className="font-medium text-2xl" style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          wordBreak: "break-word" // หรือ "break-all"
+                        }}>
+                          <span>{doc.title ?? "—"}</span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            เลขที่คำขอ:{" "}
+                            <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            ผู้ที่ยื่นคำขอ:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"} {doc.ownername}</span>
+                          </span>
+
+                          {/* กลุ่มวันที่ */}
+                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
+                            <span>วันที่คำขอ:</span>
+                            <span className="whitespace-nowrap">
+                              {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
+                            </span>
+                          </span>
+                        </p>
+
+                        <p className="font-medium">
+                          <span className="text-black">สถานะ</span>{" "}
+                          <span
+                            style={
+                              isBlue
+                                ? { color: "#0078E2" }
+                                : isGreen
+                                ? { color: "#05A967" }
+                                : isOrange
+                                ? { color: "#E48500" }
+                                : { color: "#666666" }
+                            }
+                          >
+                            {statusText || "—"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* ปุ่มการทำงาน */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ClickForMoreDetail(doc)}
+                          className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                          </svg>
+                          <span>ดูรายละเอียด</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => ClickForViewPet(doc)}
+                          className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
+                          </svg>
+                          <span>ดูเอกสาร</span>
+                        </button>
+
+                      </div>
+                    </div>
+                  </article>
+                );
+
+              })}
+            </div>
+          )}
+
+          {/* ตรวจสอบขั้นต้นเสร็จสิ้น */}
+          {activeTab === "history_accept" && (
+            <div>
+              {(historyAccept||[]).map((doc, i) => {
+
+                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
+                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
+                const isBlue = isBlueStatus(statusText);
+                const isGreen = isGreenStatus(statusText);
+                const isOrange = isOrangeStatus(statusText);
+
+                // ทำ id สำหรับ key และการนำทาง
+                // const docId =
+                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+
+                const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
+
+                return (
+                  <article
+                    key={`${docId}-${i}`}
+                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1 text-gray-800">
+                        {/* <p className="font-medium text-2xl">
+                          <span>{doc.idformal ?? doc.idformal ?? "—"}</span>
+                        </p> */}
+                        <p className="font-medium text-2xl" style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          wordBreak: "break-word" // หรือ "break-all"
+                        }}>
+                          <span>{doc.doc_title ?? "—"}</span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            เลขที่คำขอ:{" "}
+                            <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            ผู้ที่ยื่นคำขอ:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                          </span>
+
+                          {/* กลุ่มวันที่ */}
+                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
+                            <span>วันที่คำขอ:</span>
+                            <span className="whitespace-nowrap">
+                              {formatThaiPretty(getCreatedAt(doc))}
+                            </span>
+                          </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้ากองผู้ตรวจสอบเอกสาร:{" "}
+                            <span className="font-medium">{doc.headauditByemail ?? "—"}</span>
+                          </span>
+                        </p>
+
+                        <p className="font-medium">
+                          <span className="text-black">สถานะ</span>{" "}
+                          <span
+                            style={
+                              isBlue
+                                ? { color: "#0078E2" }
+                                : isGreen
+                                ? { color: "#05A967" }
+                                : isOrange
+                                ? { color: "#E48500" }
+                                : { color: "#666666" }
+                            }
+                          >
+                            {statusText || "—"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* ปุ่มการทำงาน */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => ClickForMoreDetail(doc)}
+                          className="bg-white border border-gray-300 text-black px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="M21 21l-3.6-3.6" strokeLinecap="round" />
+                          </svg>
+                          <span>ดูรายละเอียด</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => ClickForViewPet(doc)}
+                          className="bg-[#6B21A8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6B21A8] transition"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-5"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l-4 4z"/>
+                          </svg>
+                          <span>ดูเอกสาร</span>
+                        </button>
+
+                      </div>
+                    </div>
+                  </article>
+                );
+
+              })}
+            </div>
+          )}
+
+         </div>
+      </main> 
 
       {/* ป๊อปอัป: ส่งต่อไปที่ผู้ตรวจสอบ (API จริง) */}
       <ForwardToHeadAuditor
@@ -663,11 +1419,16 @@ function Employee_Paper() {
           const targetItem = submittedItem || selected;
           if (!targetItem || acceptingDocument) return;
 
+          const allowStatuses = [
+            "อยู่ระหว่างการตรวจสอบขั้นต้น",
+            "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
+          ];
           const statusNow = (targetItem.status_name || "").trim();
-          if (!statusNow.includes("อยู่ระหว่างการตรวจสอบขั้นต้น")) {
-            alert("เอกสารนี้ไม่อยู่ในสถานะ 'อยู่ระหว่างการตรวจสอบขั้นต้น'");
+          if (!allowStatuses.some(s => statusNow.includes(s))) {
+            alert("เอกสารนี้ไม่อยู่ในสถานะที่สามารถส่งต่อหัวหน้ากองได้");
             return;
           }
+
 
           if (!auditId || Number.isNaN(Number(auditId))) {
             alert("กรุณาเลือกหัวหน้ากองให้ถูกต้อง");
@@ -731,11 +1492,22 @@ function Employee_Paper() {
         }}
       />
 
-
-
+      {/* ป๊อปอัป: ส่งกลับให้ผู้ใช้แก้ไขเอกสาร */}
+      <ForwardToUser
+        item={sendBackTarget}
+        open={sendBackOpen}
+        onClose={() => {
+          setSendBackOpen(false);
+          setSendBackTarget(null);
+        }}
+        view="form"
+        defaultNote=""
+        submitting={submittingSendBack}
+        onSubmit={submitSendBack}
+      />
 
       {/* ===== Modal ดูรายละเอียดเอกสาร ===== */}
-      {detailOpen && (
+      {/* {detailOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
@@ -770,7 +1542,7 @@ function Employee_Paper() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

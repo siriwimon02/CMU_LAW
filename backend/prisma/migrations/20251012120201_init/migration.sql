@@ -42,6 +42,7 @@ CREATE TABLE "public"."DocumentPetition" (
     "headauditIdBy" INTEGER,
     "statusId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "order_number" TEXT,
     "date_of_signing" TIMESTAMP(3),
 
     CONSTRAINT "DocumentPetition_pkey" PRIMARY KEY ("id")
