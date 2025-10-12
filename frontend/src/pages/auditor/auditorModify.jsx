@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/docIcon";
 // import BackB from "../../components/backToDashboardButton";
 
-const ALLOW_STATUS = "อยู่ระหว่างการตรวจสอบขั้นต้น"; // only this status can edit
+const ALLOW_STATUS = ["อยู่ระหว่างการตรวจสอบขั้นต้น", "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"];
 
 function AuditorModify() {
   const navigate = useNavigate();
@@ -66,14 +66,15 @@ function AuditorModify() {
         if (!alive) return;
 
         // gate by status
-        if (doc?.status_name !== ALLOW_STATUS) {
-          setStatusName(doc?.status_name || "");
-          navigate("/auditTracking", {
-            replace: true,
-            state: { msg: "เอกสารไม่อยู่ในสถานะที่อนุญาตให้แก้ไข" },
-          });
-          return;
+        if (!ALLOW_STATUS.includes(doc?.status_name ?? "")) {
+            setStatusName(doc?.status_name || "");
+            navigate("/auditTracking", {
+                replace: true,
+                state: { msg: "เอกสารไม่อยู่ในสถานะที่อนุญาตให้แก้ไข" },
+            });
+            return;
         }
+
         setStatusName(doc?.status_name || "");
 
         // prefill text

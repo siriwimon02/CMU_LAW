@@ -683,7 +683,7 @@ function Employee_Paper() {
                           <span
                             style={
                               isBlue
-                                ? { color: "#0078E2" }
+                                ? { color: "#CD0000" }
                                 : isGreen
                                 ? { color: "#05A967" }
                                 : isOrange
@@ -834,7 +834,7 @@ function Employee_Paper() {
                           <span
                             style={
                               isBlue
-                                ? { color: "#0078E2" }
+                                ? { color: "#CD0000" }
                                 : isGreen
                                 ? { color: "#05A967" }
                                 : isOrange
@@ -955,7 +955,7 @@ function Employee_Paper() {
                           <span
                             style={
                               isBlue
-                                ? { color: "#0078E2" }
+                                ? { color: "#CD0000" }
                                 : isGreen
                                 ? { color: "#05A967" }
                                 : isOrange
@@ -1072,7 +1072,7 @@ function Employee_Paper() {
                           <span
                             style={
                               isBlue
-                                ? { color: "#0078E2" }
+                                ? { color: "#CD0000" }
                                 : isGreen
                                 ? { color: "#05A967" }
                                 : isOrange
@@ -1225,7 +1225,7 @@ function Employee_Paper() {
                           <span
                             style={
                               isBlue
-                                ? { color: "#0078E2" }
+                                ? { color: "#CD0000" }
                                 : isGreen
                                 ? { color: "#05A967" }
                                 : isOrange
@@ -1349,7 +1349,7 @@ function Employee_Paper() {
                           <span
                             style={
                               isBlue
-                                ? { color: "#0078E2" }
+                                ? { color: "#CD0000" }
                                 : isGreen
                                 ? { color: "#05A967" }
                                 : isOrange
