@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-import Header from "../../components/trackingHeader";
+import Navbar from '../../components/navbar'
 
 function Admin_Action_Log() {
     const token = localStorage.getItem("token");
@@ -67,7 +67,7 @@ function Admin_Action_Log() {
 
     return (
         <div className='min-h-screen font-kanit bg-[#F8F8F8] pb-10'>
-            <Header />
+            <Navbar />
             <div className="flex items-center justify-center mt-5">
                 <div className="bg-white rounded-2xl shadow-md p-6 w-[75vw] h-[75vh] flex flex-col shadow-[30px]">
                     <h1 className="ml-5 text-2xl font-bold">ประวัติเอกสาร</h1>
