@@ -14,7 +14,7 @@ const router = express.Router();
 // ออกแบบมาใช้ตอน dev
 
 router.post('/register', async (req, res) => {
-  const { email, firstname, lastname, departmentName, role_id } = req.body;
+  const { email, firstname, lastname, departmentName} = req.body;
   console.log(departmentName);
 
   try {

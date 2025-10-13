@@ -11,6 +11,7 @@ import petition from './routes/petitionForUser.js';
 import petition_Audit from './routes/petitionForAuditor.js';
 import petition_SuperAudit from './routes/petitionForSuperAudit.js';
 import petition_HeadAudit from './routes/petitionForHeadAuditor.js';
+import petition_Admin from './routes/petitionForAdmin.js';
 import checkRole from './middleware/checkRole.js';
 
 
@@ -57,7 +58,7 @@ app.use('/petition', authMiddle, checkRole(["user"]), petition); //user
 app.use('/petitionAudit', authMiddle, checkRole(["auditor"]), petition_Audit); //สำหรับคนตรวจสอบ
 app.use('/petitionSuperAudit', authMiddle, checkRole(["spv_auditor"]), petition_SuperAudit); //สำหรับผอ กอง
 app.use('/petitionHeadAudit', authMiddle, checkRole(["head_auditor"]), petition_HeadAudit);
-
+app.use('/admin', authMiddle, checkRole(["admin"]), petition_Admin);
 
 
 
@@ -211,6 +212,13 @@ app.get('/api/history/document', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
 //--------------------------------------ตอนคลิกดูรายละเอียดเอกสารแต่ละอัน กับ ดึง data ตอนแก้ไข---------------------------//
 app.get('/document/:docId', authMiddle ,checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]), async (req, res) => {
   try {
@@ -296,6 +304,19 @@ app.get('/document/:docId', authMiddle ,checkRole(["admin", "user", "spv_auditor
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 //---------------------------------history status-----------------------------------------//
 app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]) , async (req, res) =>{
 
@@ -308,28 +329,13 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
     try {
 
       const find_history_status = await prisma.documentStatusHistory.findMany({
-        where : { documentId : documentId }
+        where : { documentId : documentId },
+        orderBy: { changedAt: 'asc' } 
       });
       //console.log(find_history_status);
 
-      const find_st1 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
-      });
-
-      const find_st2 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง" }
-      });
-
-      const find_st3 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
-      });
-
       const find_st4 = await prisma.status.findUnique({
         where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว" }
-      });
-
-      const find_st5 = await prisma.status.findUnique({
-        where : { status : "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติมแล้ว" }
       });
 
       const find_st6 = await prisma.status.findUnique({
@@ -437,6 +443,9 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
           history_all.push(set_json)
         }
       }
+
+      // ถ้าพร้อมแก้ array ต้นฉบับ (in-place)
+      history_all.sort((a, b) => new Date(a.changeAt) - new Date(b.changeAt));
       console.log(history_all);
       res.json(history_all);
     } catch (err) {
@@ -444,6 +453,29 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_a
       res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -461,43 +493,66 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
     try {
 
       const find_history_status = await prisma.documentStatusHistory.findMany({
-        where : { documentId : documentId }
+        where: { documentId },
+        include: { status: true },
+        orderBy: { changedAt: 'asc' } 
       });
-      //console.log(find_history_status);
+      console.log(find_history_status);
+
 
       const find_st1 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย" }
+        where : { status : "รอรับเข้ากอง" }
       });
 
       const find_st2 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง" }
+        where : { status : "รับเข้ากองเรียบร้อย" }
       });
 
       const find_st3 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
-      });
-
-      const find_st4 = await prisma.status.findUnique({
-        where : { status : "เจ้าหน้าที่แก้ไขเอกสารแล้ว" }
-      });
-
-      const find_st5 = await prisma.status.findUnique({
-        where : { status : "เจ้าหน้าที่อัปโหลดเอกสารเพิ่มเติมแล้ว" }
-      });
-
-      const find_st6 = await prisma.status.findUnique({
         where : { status : "ส่งต่อไปยังหน่วยงานอื่นที่เกี่ยวข้อง" }
       });
 
-      const find_st7 = await prisma.status.findUnique({
+      const find_st4 = await prisma.status.findUnique({
+        where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+      });
+
+      const find_st5 = await prisma.status.findUnique({
         where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
       });
 
+      const find_st6 = await prisma.status.findUnique({
+        where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
+      });
+      
+      const find_st7 = await prisma.status.findUnique({
+        where : { status : "รอการพิจารณาอนุมัติจากอธิการบดี" }
+      });
+
+      const find_st8 = await prisma.status.findUnique({
+        where : { status : "อธิการบดีอนุมัติแล้ว" }
+      });
+
+      const find_st9 = await prisma.status.findUnique({
+        where : { status : "อธิการบดีปฏิเสธคำร้อง" }
+      });
+
+      let count_st = 0;
       const history_all = []
       for ( const his of find_history_status ) {
-        //console.log("history status", his.id)
-        if ( his.statusId === find_st7.id ){
 
+        console.log(count_st);
+        const arr_st = [
+          find_st1.id,
+          find_st2.id,
+          find_st4.id,
+          find_st7.id,
+          find_st8.id,
+          find_st9.id
+        ]
+
+        //----------------------------------ประวัติการแก้ไขเอกสาร-----------------------//
+        if ( his.statusId === find_st5.id ){
+          count_st = 0;
           const find_his_edit = await prisma.documentPetitionHistory.findMany({
             where: { his_statusId: his.id },
             include: {
@@ -511,7 +566,6 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
             }
           });
           //console.log(find_his_edit);
-
           const result = find_his_edit.map(item => ({
             historyId: item.id,
             documentId: item.documentId,
@@ -536,7 +590,11 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
 
           history_all.push(result[0]);
         }
-        else if ( his.statusId === find_st6.id ) {
+
+
+        //----------------------------ประวัติการย้ายกองของเอกสาร---------------------------//
+        else if ( his.statusId === find_st3.id ) {
+          count_st = 0;
           const find_his_change_des = await prisma.documentPetitionHistoryTranfers.findFirst({
             where: { his_statusId: his.id },
             include: {
@@ -565,7 +623,36 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
 
           history_all.push(set_json);
         }
-        else if (his.statusId === find_st3.id) {
+
+        //-------------------ประวัติเอกสารที่ user เห็นได้---------------------------------//
+        else if ( his.statusId === find_st6.id ) {
+          count_st = 0;
+          const find_his = await prisma.documentStatusHistory.findUnique({
+            where : { id : his.id },
+            include : {
+              status : {select : { status : true }},
+              changedBy : { select : { email : true, firstname : true, lastname : true } }, 
+              document : true
+            }
+          });
+
+          const set_json = {
+            docId : find_his.document.id,
+            idformal : find_his.document.id_doc,
+            status : "ตรวจสอบเอกสารเรียบร้อยแล้ว",
+            changeBy_email : find_his.changedBy.email,
+            changeBy_name : find_his.changedBy.firstname,
+            changeBy_lname : find_his.changedBy.lastname,
+            changeAt : find_his.changedAt,
+            date_of_signing : find_his.date_of_signing,
+            note : find_his.note_text
+          }
+          history_all.push(set_json)
+        }
+
+        //-------------------ประวัติเอกสารที่ user เห็นได้---------------------------------//
+        else if (arr_st.includes(his.statusId)) {
+          count_st = 0;
           const find_his = await prisma.documentStatusHistory.findUnique({
             where : { id : his.id },
             include : {
@@ -589,28 +676,35 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
           history_all.push(set_json)
         }
         else {
-          const find_his = await prisma.documentStatusHistory.findUnique({
-            where : { id : his.id },
-            include : {
-              status : {select : { status : true }},
-              changedBy : { select : { email : true, firstname : true, lastname : true } }, 
-              document : true
-            }
-          });
+          count_st += 1;
+          if ( count_st === 1 ) {
+            const find_his = await prisma.documentStatusHistory.findUnique({
+              where : { id : his.id },
+              include : {
+                status : {select : { status : true }},
+                changedBy : { select : { email : true, firstname : true, lastname : true } }, 
+                document : true
+              }
+            });
 
-          const set_json = {
-            docId : find_his.document.id,
-            idformal : find_his.document.id_doc,
-            status : find_his.status.status,
-            changeBy_email : find_his.changedBy.email,
-            changeBy_name : find_his.changedBy.firstname,
-            changeBy_lname : find_his.changedBy.lastname,
-            changeAt : find_his.changedAt,
-            date_of_signing : find_his.date_of_signing,
+            const set_json = {
+              docId : find_his.document.id,
+              idformal : find_his.document.id_doc,
+              status : "เอกสารอยู่ระหว่างการตรวจสอบเอกสารภายในกอง",
+              changeBy_email : find_his.changedBy.email,
+              changeBy_name : find_his.changedBy.firstname,
+              changeBy_lname : find_his.changedBy.lastname,
+              changeAt : find_his.changedAt,
+              date_of_signing : find_his.date_of_signing,
+            }
+            history_all.push(set_json)            
           }
-          history_all.push(set_json)
         }
       }
+
+      // ถ้าพร้อมแก้ array ต้นฉบับ (in-place)
+      history_all.sort((a, b) => new Date(a.changeAt) - new Date(b.changeAt));
+      
       console.log(history_all);
       res.json(history_all);
     } catch (err) {
@@ -618,6 +712,22 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
       res.status(500).json({ message: "Server error" });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -858,6 +968,8 @@ app.get('/attachments/:attachId/download', authMiddle, checkRole(["admin", "user
   }
 
 })
+
+
 
 
 

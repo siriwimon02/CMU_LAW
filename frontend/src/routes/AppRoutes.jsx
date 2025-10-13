@@ -10,6 +10,7 @@ import Detail from "../pages/detail";
 import FormPetition from '../pages/staff/form_petition';
 import Tracking from '../pages/staff/tracking';
 import Modify from "../pages/staff/modify";
+import DetailForUser from '../pages/staff/detailForUser';
 // อธิการ
 import TrackingForChancellor from "../pages/Chancellor/tracking"
 // admin
@@ -20,7 +21,7 @@ import SuperAuditorTracking from "../pages/superAuditor/superAuditorTracking";
 import AuditorTracking from '../pages/auditor/auditorTracking';
 // ผู้อำนวยการคัดกรองเอกสาร
 
-import SpvFinalAudited from '../pages/spv_finalaudited';
+import SpvFinalAudited from '../pages/superAuditor/spv_finalaudited';
 
 // auditor
 import AuditorModify from "../pages/auditor/auditorModify";
@@ -61,8 +62,9 @@ export default function AppRoutes() {
         {/* staff */}
         <Route path="/formPetition" element={<RequireAuth roles={['user']}> <FormPetition/> </RequireAuth>} />
         <Route path="/tracking" element={<RequireAuth roles={['user']}> <Tracking/> </RequireAuth>}/>
-        <Route path="/detail/:id" element={<RequireAuth> <Detail/> </RequireAuth>} />
+        <Route path="/detail/:id" element={<RequireAuth roles={['spv_auditor', 'admin', 'auditor', 'head_auditor']}> <Detail/> </RequireAuth>} />
         <Route path="/modify/:id" element={<RequireAuth roles={['user']}> <Modify/> </RequireAuth>}/>
+        <Route path="/detailForUser/:id" element={<RequireAuth roles={['user']}> <DetailForUser/> </RequireAuth>}/>
 
 
         

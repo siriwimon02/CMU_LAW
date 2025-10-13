@@ -148,7 +148,9 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
             const latestHistory = await prisma.documentStatusHistory.findFirst({
                 where: { documentId: doc.id },
                 orderBy: { changedAt: 'desc' },     // ล่าสุดสุด
-                include: { status: true },          // ดึงชื่อสถานะมาด้วย
+                include: { 
+                  status: true
+                },          // ดึงชื่อสถานะมาด้วย
             });
             
             if (latestHistory.statusId === findstatus4.id || latestHistory.statusId === findstatus5.id){
@@ -157,7 +159,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                   doc_id : doc.id_doc,
                   department_name: doc.department.department_name,
                   destination_name: doc.destination.des_name,
-                  owneremail : doc.user.email,
+                  owneremail : `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
                   title:doc.title,
                   authorize_to: doc.authorize_to,
                   position: doc.position,
@@ -175,7 +177,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 doc_id : doc.id_doc,
                 department_name: doc.department.department_name,
                 destination_name: doc.destination.des_name,
-                owneremail : doc.user.email,
+                owneremail : `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
                 title:doc.title,
                 authorize_to: doc.authorize_to,
                 position: doc.position,

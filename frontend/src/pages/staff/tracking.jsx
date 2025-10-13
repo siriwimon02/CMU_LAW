@@ -88,7 +88,7 @@ function Tracking() {
   }
   
   const ClickForMoreDetail = (doc) => {
-    navigate(`/detail/${doc.id}`);
+    navigate(`/detailForUser/${doc.id}`);
   }
   
   const ClickForViewPet = (doc) => {
