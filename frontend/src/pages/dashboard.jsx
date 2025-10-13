@@ -111,6 +111,10 @@ useEffect(() => {
     navigate('/admin_panel');
   }
 
+  const ClicktoActionLog = () => {
+    navigate('/admin_action_log');
+  }
+
   const ClicktoHeadAuditor = () => {
     navigate('/headAuditTracking');
   }
@@ -472,7 +476,7 @@ useEffect(() => {
         {/* block2 */}
         {/* onClick ยังไม่ถูกที่ */}
         <div className="bg-white hover:scale-105 shadow-[#E0E5F9] w-full max-w-lg p-6 shadow-2xl rounded-2xl flex flex-col items-center justify-center text-center border border-[#F5F5F5] cursor-pointer hover:shadow-xl transition"
-          onClick={() => handleClick(["admin"], ClicktoAdminedit)}
+          onClick={() => handleClick(["admin"], ClicktoActionLog)}
         >
           <div className="mb-5">
              <div className="bg bg-[#E0E5F9] w-15 h-15 rounded flex items-center justify-center">

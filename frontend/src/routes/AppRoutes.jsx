@@ -15,6 +15,9 @@ import DetailForUser from '../pages/staff/detailForUser';
 import TrackingForChancellor from "../pages/Chancellor/tracking"
 // admin
 import Admin_Panel from '../pages/admin/admin_panel';
+import Admin_Action_Log from '../pages/admin/admin_action_log';
+import DocumentDetails from "../pages/admin/DocumentDetails";
+
 // ผู้อำนวยการคัดกรองเอกสาร (EYE)
 import SuperAuditorTracking from "../pages/superAuditor/superAuditorTracking";
 // auditor (NOT)
@@ -29,8 +32,6 @@ import AuditorModify from "../pages/auditor/auditorModify";
 // head auditor (BEL)
 import HeadAuditorTracking from '../pages/headAuditor/headAuditorTracking';
 import UploadDocumentApproved from '../pages/auditor/auditorApprove';
-
-
 import RequireAuth from '../components/RequireAuth';
 import Forbidden from '../pages/Forbidden';
 
@@ -70,6 +71,9 @@ export default function AppRoutes() {
         
         {/* admin */}
         <Route path="/admin_panel" element={<RequireAuth roles={['admin']}> <Admin_Panel/> </RequireAuth>} />
+        <Route path="/admin_action_log" element={<RequireAuth roles={['admin']}> <Admin_Action_Log/> </RequireAuth>} />
+        <Route path="/document/:docId" element={<RequireAuth roles={['admin']}> <DocumentDetails/> </RequireAuth>} />
+        
         {/* อธิการบดี */}
         <Route path="/chancellorTracking" element={<RequireAuth> <TrackingForChancellor/> </RequireAuth>}/>
         
