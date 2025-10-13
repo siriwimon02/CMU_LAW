@@ -669,7 +669,6 @@ function UploadDocumentApproved () {
       setModalOpen(true);
   };
 
-
     return (        
         <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
             <Navbar />
