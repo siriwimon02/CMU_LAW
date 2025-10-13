@@ -21,6 +21,8 @@ function HeadAuditorTracking() {
   const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [editConfirmedOpen, setEditConfirmedOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
 
   // ===== สร้าง key localStorage ตามอีเมลผู้ใช้ =====
   function getCurrentUserEmailFromToken(tk) {
@@ -132,19 +134,19 @@ const submitCheck = async () => {
 
     if (res.ok) {
       setCheckPopupOpen(false);
-      const newCard = {
-        id: selectedDoc.id,
-        docId: selectedDoc.docId || selectedDoc.id,
-        title: selectedDoc.title,
-        ownername: selectedDoc.ownername,
-        owneremail: selectedDoc.owneremail,
-        auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
-        auditByemail: selectedDoc.auditByemail || null,
-        status_name: "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น",
-        createAt: selectedDoc.createAt,
-        updatedAt: data.updatedAt || new Date().toISOString(),
-        __bucket: "ตรวจสอบเสร็จสิ้น",
-      };
+      // const newCard = {
+      //   id: selectedDoc.id,
+      //   docId: selectedDoc.docId || selectedDoc.id,
+      //   title: selectedDoc.title,
+      //   ownername: selectedDoc.ownername,
+      //   owneremail: selectedDoc.owneremail,
+      //   auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
+      //   auditByemail: selectedDoc.auditByemail || null,
+      //   status_name: "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น",
+      //   createAt: selectedDoc.createAt,
+      //   updatedAt: data.updatedAt || new Date().toISOString(),
+      //   __bucket: "ตรวจสอบเสร็จสิ้น",
+      // };
 
       setDocumentAll((prev) => prev.filter((d) => d.docId !== newCard.docId));
       setHistoryAccept((prev) => [...prev, newCard]);
@@ -188,29 +190,29 @@ const submitEdit = async () => {
     }
 
     if (res.ok) {
-      const newCard = {
-        docId: selectedDoc.docId || selectedDoc.id,
-        history_status_id: data.history_status_id || Date.now(),
-        title: selectedDoc.title,
-        ownername: selectedDoc.ownername,
-        owneremail: selectedDoc.owneremail,
+      // const newCard = {
+      //   docId: selectedDoc.docId || selectedDoc.id,
+      //   history_status_id: data.history_status_id || Date.now(),
+      //   title: selectedDoc.title,
+      //   ownername: selectedDoc.ownername,
+      //   owneremail: selectedDoc.owneremail,
 
-        auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
-        auditByemail: selectedDoc.auditByemail || null,
+      //   auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
+      //   auditByemail: selectedDoc.auditByemail || null,
 
-        status_name: "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
+      //   status_name: "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
 
-        createdAt:
-          selectedDoc.createAt ||
-          selectedDoc.documentCreatedAt ||
-          selectedDoc.createdAt ||
-          null,
+      //   createdAt:
+      //     selectedDoc.createAt ||
+      //     selectedDoc.documentCreatedAt ||
+      //     selectedDoc.createdAt ||
+      //     null,
 
-        updatedAt: data.updatedAt || selectedDoc.changeAt || new Date().toISOString(),
+      //   updatedAt: data.updatedAt || selectedDoc.changeAt || new Date().toISOString(),
 
-        __bucket: "ส่งกลับแก้ไข",
-        note_text: reason || "-",
-      };
+      //   __bucket: "ส่งกลับแก้ไข",
+      //   note_text: reason || "-",
+      // };
 
       setDocumentAll((prev) => {
       const filtered = prev.filter(
@@ -281,20 +283,41 @@ const currentItems = useMemo(() => {
     ];
   };
 
-  return pick().sort((a, b) => {
-  // ให้ "รอตรวจโดยหัวหน้ากอง" อยู่บนสุดเสมอ
-  const isAWait = a.__bucket === "รอตรวจโดยหัวหน้ากอง";
-  const isBWait = b.__bucket === "รอตรวจโดยหัวหน้ากอง";
+  // เลือกเวลาอัปเดตที่เหมาะสมต่อ bucket
+const getSortTime = (doc) => {
+  // กลุ่ม "รอตรวจโดยหัวหน้ากอง" ให้ใช้ changeAt ก่อน
+  if (doc.__bucket === "รอตรวจโดยหัวหน้ากอง") {
+    const t =
+      doc.changeAt || doc.updatedAt || doc.editedAt || doc.createdAt || doc.createAt;
+    const n = Date.parse(t);
+    return Number.isNaN(n) ? 0 : n;
+  }
 
-  if (isAWait && !isBWait) return -1; // a ขึ้นก่อน
-  if (!isAWait && isBWait) return 1;  // b ขึ้นก่อน
+  // กลุ่มอื่น ๆ ใช้ editedAt > updatedAt > changeAt > createdAt
+  const t =
+    doc.editedAt || doc.updatedAt || doc.changeAt || doc.createdAt || doc.createAt;
+  const n = Date.parse(t);
+  return Number.isNaN(n) ? 0 : n;
+};
 
-  // ถ้าไม่ใช่สถานะรอตรวจ ให้เรียงตามวันที่ส่งคืนแก้ไขล่าสุด
-  const dateA = new Date(a.editedAt || a.updatedAt || a.createAt || a.createdAt || 0);
-  const dateB = new Date(b.editedAt || b.updatedAt || b.createAt || b.createdAt || 0);
+return pick()
+  .slice() // กัน side-effect
+  .sort((a, b) => {
+    const aWait = a.__bucket === "รอตรวจโดยหัวหน้ากอง";
+    const bWait = b.__bucket === "รอตรวจโดยหัวหน้ากอง";
+    if (aWait !== bWait) return aWait ? -1 : 1; // กลุ่มรอตรวจอยู่บนสุดเสมอ
 
-  return dateB - dateA;
-});
+    // ภายในกลุ่มเดียวกัน เรียงตามเวลาล่าสุดก่อน
+    const ta = getSortTime(a);
+    const tb = getSortTime(b);
+    if (tb !== ta) return tb - ta;
+
+    // tie-breaker กันสลับตำแหน่งเมื่อเวลาเท่ากัน
+    const ida = a.historyId || a.docId || a.id || 0;
+    const idb = b.historyId || b.docId || b.id || 0;
+    return idb - ida;
+  });
+
 
 }, [activeTab, documentAll, historySendBack, historyAccept]);
 
@@ -362,17 +385,36 @@ if (loading) return <div>Loading...</div>;
       <div className="flex flex-col items-center justify-center mt-5 pb-10">
         <div className="bg-white rounded-2xl shadow-2xl border border-[#F5F5F5] w-[85vw] min-h-screen justify-center items-center  p-5">
           <p className="text-2xl font-bold mb-5">รายการเอกสารที่ต้องตรวจสอบ</p>
-         <div className="relative flex justify-left mb-2 w-full">
-            {/* ไอคอนซ้าย */} 
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#66009F]"> 
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"> 
-              <path d="M9.5 2A1.5 1.5 0 0 0 8 3.5v1A1.5 1.5 0 0 0 9.5 6h5A1.5 1.5 0 0 0 16 4.5v-1A1.5 1.5 0 0 0 14.5 2z"/> 
-              <path fillRule="evenodd" d="M6.5 4.037c-1.258.07-2.052.27-2.621.84C3 5.756 3 7.17 3 9.998v6c0 2.829 0 4.243.879 5.122c.878.878 2.293.878 5.121.878h6c2.828 0 4.243 0 5.121-.878c.879-.88.879-2.293.879-5.122v-6c0-2.828 0-4.242-.879-5.121c-.569-.57-1.363-.77-2.621-.84V4.5a3 3 0 0 1-3 3h-5a3 3 0 0 1-3-3zM7 9.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 13.25a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 16.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5z" clipRule="evenodd"/> 
-              </svg> 
-            </span>
+          {/* แถวค้นหา + เลือกสถานะ */}
+          <div className="flex flex-col md:flex-row gap-3 mb-4 w-full">
+            {/* ช่องค้นหาเอกสาร */}
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="พิมพ์เพื่อค้นหาเลขที่เอกสาร"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-12 pl-12 pr-4 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#66009F]"
+              />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 absolute left-3 top-1/2 -translate-y-1/2 text-[#66009F]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+                />
+              </svg>
+            </div>
 
-              {/* Dropdown */}
-               <select
+            {/* ช่องเลือกสถานะ */}
+            <div className="relative flex-1">
+              <select
                 value={activeTab}
                 onChange={(e) => setActiveTab(e.target.value)}
                 className="w-full h-12 pl-12 pr-10 rounded-lg border text-sm bg-white text-gray-800 border-gray-300 shadow-sm appearance-none"
@@ -383,20 +425,37 @@ if (loading) return <div>Loading...</div>;
                 <option value="history_accept">ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น</option>
               </select>
 
-              {/* ลูกศรขวา */} 
-              <svg className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor"> 
-              <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.2l3.71-2.97a.75.75 0 1 1 .94 1.16l-4.24 3.39a.75.75 0 0 1-.94 0L5.21 8.39a.75.75 0 0 1 .02-1.18z"/> </svg> 
+              {/* ไอคอนด้านซ้าย */}
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#66009F]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"> <path d="M9.5 2A1.5 1.5 0 0 0 8 3.5v1A1.5 1.5 0 0 0 9.5 6h5A1.5 1.5 0 0 0 16 4.5v-1A1.5 1.5 0 0 0 14.5 2z"/> <path fillRule="evenodd" d="M6.5 4.037c-1.258.07-2.052.27-2.621.84C3 5.756 3 7.17 3 9.998v6c0 2.829 0 4.243.879 5.122c.878.878 2.293.878 5.121.878h6c2.828 0 4.243 0 5.121-.878c.879-.88.879-2.293.879-5.122v-6c0-2.828 0-4.242-.879-5.121c-.569-.57-1.363-.77-2.621-.84V4.5a3 3 0 0 1-3 3h-5a3 3 0 0 1-3-3zM7 9.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 13.25a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 16.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5z" clipRule="evenodd"/> </svg>
+              </span>
+
+              {/* ลูกศรขวา */}
+              <svg
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.2l3.71-2.97a.75.75 0 1 1 .94 1.16l-4.24 3.39a.75.75 0 0 1-.94 0L5.21 8.39a.75.75 0 0 1 .02-1.18z" />
+              </svg>
             </div>
+          </div>
+
 
             {/* ทั้งหมด */}
-            {activeTab === "all" && (
-              <>
-                {currentItems.length === 0 ? (
-                  <p className="text-2xl text-gray-500 flex item-center mt-10 justify-center">
-                    ไม่มีเอกสารที่ต้องตรวจสอบ
-                  </p>
-                ) : (
-                  currentItems.map((doc, index) => {
+     {activeTab === "all" && (
+      <>
+        {currentItems.length === 0 ? (
+          <p className="text-2xl text-gray-500 flex item-center mt-10 justify-center">
+            ไม่มีเอกสารที่ต้องตรวจสอบ
+          </p>
+        ) : (
+           currentItems
+            .filter((doc) => {
+              const term = searchTerm.toLowerCase();
+              return !term || getDocNumber(doc)?.toLowerCase().includes(term);
+            })
+            .map((doc, index) =>  {
                   const statusNow =
                     doc.status_name ||
                     doc.oldstatus ||

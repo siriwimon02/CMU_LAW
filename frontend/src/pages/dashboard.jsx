@@ -266,7 +266,7 @@ useEffect(() => {
           onClick={() => handleClick(["auditor"], ClickToAuditor)}
         >
           {pendingAuditDocs > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+            <div className="absolute -top-2 -right-2 bg-[#CD0000] text-white text-sm px-3 py-1 rounded-full shadow-md">
               รอตรวจสอบ ({pendingAuditDocs})
             </div>
           )}
@@ -329,7 +329,7 @@ useEffect(() => {
       onClick={() => handleClick(["head_auditor"], ClicktoHeadAuditor)}
     >
       {pendingDocs > 0 && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+        <div className="absolute -top-2 -right-2 bg-[#CD0000] text-white text-sm px-3 py-1 rounded-full shadow-md">
           รอตรวจสอบ ({pendingDocs})
         </div>
       )}
@@ -369,7 +369,7 @@ useEffect(() => {
           onClick={() => handleClick(["spv_auditor"], ClickToFinalAudit)}
         >
           {pendingSpvDocs > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+            <div className="absolute -top-2 -right-2 bg-[#CD0000] text-white text-sm px-3 py-1 rounded-full shadow-md">
               รอตรวจสอบ ({pendingSpvDocs})
             </div>
           )}
@@ -406,7 +406,7 @@ useEffect(() => {
       >
 
         {pendingSpvAcceptDocs > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-sm px-3 py-1 rounded-full shadow-md">
+            <div className="absolute -top-2 -right-2 bg-[#CD0000] text-white text-sm px-3 py-1 rounded-full shadow-md">
               รอตรวจสอบ ({pendingSpvAcceptDocs})
             </div>
           )}
