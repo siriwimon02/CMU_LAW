@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/docIcon";
-// import BackB from "../../components/backToDashboardButton";
+import BackB from "../../components/backButton";
 
 const ALLOW_STATUS = "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"; // only this status can edit
 
@@ -33,6 +33,8 @@ function Modify() {
   // uploads
   const [files, setFiles] = useState([]);
   const fileChange = (e) => setFiles(Array.from(e.target.files || []));
+  const initialFlagsRef = useRef({ pres: false, house: false });
+
 
   // keep a snapshot of initial text values to detect "only flags changed" case
   const initialRef = useRef({
@@ -106,9 +108,14 @@ function Modify() {
           const hasHouse = doc.documentNeed.some(
             (d) => d.requiredDocument?.name === "ทะเบียนบ้านมหาวิทยาลัย"
           );
+
           setNeedPresidentCard(hasPres);
           setNeedUniversityHouse(hasHouse);
-        }
+
+          // ล็อกค่าเริ่มต้นไว้ ใช้ตัดสินใจว่าจะ disable หรือไม่
+          initialFlagsRef.current = { pres: hasPres, house: hasHouse };
+          }
+
 
         setError("");
       } catch (e) {
@@ -123,7 +130,6 @@ function Modify() {
   }, [id, token, navigate]);
 
   
-
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-[#F6F7FB] font-[Kanit]">
@@ -335,55 +341,45 @@ function Modify() {
                   <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
                 </label>
 
+                {/* สำเนาบัตรประจำตัวอธิการบดี */}
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={needPresidentCard}
-                    readOnly 
-                    onClick={(e) => e.preventDefault()}
-                    // onChange={(e) => setNeedPresidentCard(e.target.checked)}
+                    disabled={initialFlagsRef.current.pres}   // ถ้าเริ่มต้นเป็น true ให้แก้ไม่ได้
+                    onChange={(e) => {
+                      if (initialFlagsRef.current.pres) return; // กัน double safety
+                      setNeedPresidentCard(e.target.checked);
+                    }}
                   />
-                  <span>สำเนาบัตรประจำตัวอธิการบดี</span>
+                  <span>
+                    สำเนาบัตรประจำตัวอธิการบดี
+                    {initialFlagsRef.current.pres && (
+                      <span className="ml-2 text-xs ">(แก้ไขไม่ได้)</span>
+                    )}
+                  </span>
                 </label>
 
+                {/* ทะเบียนบ้านมหาวิทยาลัย */}
                 <label className="flex items-center gap-2 mt-2">
                   <input
                     type="checkbox"
                     checked={needUniversityHouse}
-                    readOnly 
-                    onClick={(e) => e.preventDefault()}
-                    // onChange={(e) => setNeedUniversityHouse(e.target.checked)}
+                    disabled={initialFlagsRef.current.house}  // ถ้าเริ่มต้นเป็น true ให้แก้ไม่ได้
+                    onChange={(e) => {
+                      if (initialFlagsRef.current.house) return;
+                      setNeedUniversityHouse(e.target.checked);
+                    }}
                   />
-                  <span>ทะเบียนบ้านมหาวิทยาลัย</span>
+                  <span>
+                    ทะเบียนบ้านมหาวิทยาลัย
+                    {initialFlagsRef.current.house && (
+                      <span className="ml-2 text-xs ">(แก้ไขไม่ได้)</span>
+                    )}
+                  </span>
                 </label>
               </div>
-              {/* <div>
-                <label className="mb-1 block text-[15px] ">
-                  <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
-                </label>
 
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={needPresidentCard}
-                    onChange={(e) => setNeedPresidentCard(e.target.checked)}
-                  />
-                  <span>สำเนาบัตรประจำตัวอธิการบดี</span>
-                </label>
-
-                <label className="flex items-center gap-2 mt-2">
-                  <input
-                    type="checkbox"
-                    checked={needUniversityHouse}
-                    onChange={(e) => setNeedUniversityHouse(e.target.checked)}
-                  />
-                  <span>ทะเบียนบ้านมหาวิทยาลัย</span>
-                </label>
-
-                <p className="text-sm text-gray-600 mt-2">
-                  หมายเหตุ : หากปรับเฉพาะตัวเลือกด้านบนโดยไม่แก้ไขข้อความหรือแนบไฟล์ ระบบฝั่งเซิร์ฟเวอร์จะไม่บันทึก (จะต้องแก้ไขฟิลด์อย่างน้อย 1 ช่องหรือแนบไฟล์)
-                </p>
-              </div> */}
 
               {/* 8: uploads */}
               <div>

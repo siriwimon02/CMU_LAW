@@ -301,10 +301,21 @@ function ViewPetition() {
                       className="flex items-center justify-between rounded-lg bg-[#F7F7F7] border border-gray-200 px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
+                        {/* ไอคอน IMG/PDF/DOC */}
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-gray-200 text-gray-700 text-xs">
                           {isImage ? "IMG" : isPdf ? "PDF" : isDoc ? "DOC" : "FILE"}
                         </span>
-                        <span className="text-sm text-gray-800">{name}</span>
+
+                        {/* ชื่อไฟล์ + คำอธิบาย */}
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-800">{name}</span>
+                          <p className="text-xs text-gray-500 mt-[2px]">
+                            {att.attachmentType?.type_name === "UserUpload" && "เอกสารที่ผู้ใช้แนบ"}
+                            {att.attachmentType?.type_name === "SignedDocument" && "เอกสารที่อธิการบดีลงนามแล้ว"}
+                            {att.attachmentType?.type_name === "AuditorUpload" && "เอกสารที่ผู้ตรวจสอบแนบเพิ่มเติม"}
+                            {att.attachmentType?.type_name === "GenerateDocument" && "เอกสารคำร้องที่ระบบสร้าง"}
+                          </p>
+                        </div>
                       </div>
 
                       <button
@@ -314,6 +325,8 @@ function ViewPetition() {
                       >
                         ดาวน์โหลด
                       </button>
+
+
                     </li>
                   );
                 })}
