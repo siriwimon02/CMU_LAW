@@ -65,6 +65,17 @@ function Admin_Action_Log() {
         navigate(`/document/${docId}`);
     };
 
+    const getRoleColor = (des) => {
+        switch(des) {
+            case 'กองกฎหมาย':
+                return 'text-[#CC6666]'; // ม่วง
+            case 'สำนักงานบริหารงานวิจัย':
+                return 'text-[#66CC99]'; // เขียว
+            case 'ศูนย์บริหารพันธกิจสากล':
+                return 'text-[#6699FF]'; // ฟ้า
+        }
+    };
+
     return (
         <div className='min-h-screen font-kanit bg-[#F8F8F8] pb-10'>
             <Navbar />
@@ -72,7 +83,7 @@ function Admin_Action_Log() {
                 <div className="bg-white rounded-2xl shadow-md p-6 w-[75vw] h-[75vh] flex flex-col shadow-[30px]">
                     <h1 className="ml-5 text-2xl font-bold">ประวัติเอกสาร</h1>
                     <div className="relative w-full m-5 mb-3 flex items-center gap-2">
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative mr-10">
                             <input
                                 type="text"
                                 placeholder="ค้นหาด้วยชื่อเอกสาร"
@@ -109,8 +120,11 @@ function Admin_Action_Log() {
                                                 <span>วันที่ยื่นคำขอ:</span> {formatDate(doc.createdAt)}
                                             </p>
                                             {/* หน่วยงานปลายทาง */}
-                                            <p className="text-sm text-gray-600 truncate">
-                                                <span>หน่วยงานปลายทาง:</span> {doc.destination_name}
+                                            <p className={`text-sm truncate`}>
+                                                <span>หน่วยงานปลายทาง: </span> 
+                                                <span className={`${getRoleColor(doc.destination_name)}`}>
+                                                    {doc.destination_name}
+                                                </span>
                                             </p>
                                         </div>
                                         
@@ -130,11 +144,7 @@ function Admin_Action_Log() {
                                                 className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition"
                                                 onClick={() => handlePrimaryAction(doc.docId || doc.id)}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
-                                                    <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.18 1.18c.883.33 1.708.878 2.457 1.627l1.18-1.18a2.625 2.625 0 0 0 0-3.712ZM19.544 6.78l-4.78-4.78a.75.75 0 0 0-1.06 0l-.744.744a.75.75 0 1 0 1.06 1.06l.744-.744a.75.75 0 0 0 0-1.06Z" />
-                                                    <path fillRule="evenodd" d="M15.352 2.977a49.1 49.1 0 0 1 3.27 3.27l-5.941 5.941a2.25 2.25 0 0 1-.77 1.096l-7.79 3.633 1.258 1.258 3.633-7.79a2.25 2.25 0 0 1 1.096-.77l5.941-5.941Zm-8.487 11.23a1.5 1.5 0 0 1-1.06-2.56l5.44-5.44a1.5 1.5 0 0 1 2.12 2.12l-5.44 5.44a1.5 1.5 0 0 1-1.06.44Z" clipRule="evenodd" />
-                                                </svg>
-                                                จัดการ
+                                                ลบเอกสาร
                                             </button>
                                         </div>
                                     </div>

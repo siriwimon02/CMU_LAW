@@ -89,14 +89,8 @@ function Admin_Panel() {
                 return 'bg-[#FFEDD5] text-[#EA580C]'; // ส้ม
             case 'head_auditor':
                 return 'bg-[#FEE2E2] text-[#DC2626]'; // สีแดง
-            case 'endorser':
-                return 'bg-[#DCFCE7] text-[#16A34A]'; // เขียว
-            case 'se_endorser':
-                return 'bg-[#DBEAFE] text-[#1D4ED8]'; // น้ำเงิน
             case 'admin':
                 return 'bg-[#F1EDFF] text-[#66009F]'; // สีม่วง
-            default:
-                return 'bg-[#D9D9D9] text-[#000000]';
         }
     };
 
