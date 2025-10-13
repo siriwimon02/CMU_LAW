@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/navbar'
-import Header from '../../components/trackingHeader'
-
-
 
 function Tracking() {
   const token = localStorage.getItem("token");
@@ -109,8 +106,7 @@ function Tracking() {
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      {/* <Navbar/> */}
-      <Header/>
+      <Navbar/>
 
       {/* Main */}
       <div className="w-full px-6 mt-6 flex gap-4">

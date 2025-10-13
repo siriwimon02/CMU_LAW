@@ -72,6 +72,14 @@ function Navbar() {
                 </div>
                 </div>
             </div>
+            <div className="bg-[#66009F] w-full h-64 mt-2 flex flex-col items-center justify-center text-center px-4">
+                    <p className="text-white font-bold text-3xl">
+                    ระบบบริหารจัดการหนังสือมอบอำนาจออนไลน์
+                    </p>
+                    <p className="text-white text-lg mt-4">
+                    จัดการคำขอมอบอำนาจ ติดตามสถานะ และอนุมัติเอกสารได้อย่างมีประสิทธิภาพ
+                    </p>
+                </div>  
         </div>
     );
 };

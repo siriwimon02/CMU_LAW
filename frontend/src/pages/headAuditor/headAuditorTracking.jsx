@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import Header from "../../components/trackingHeader";
+import Navbar from '../../components/navbar'
 import {CheckPopup,EditPopup,CheckConfirmedPopup,EditConfirmedPopup,} from "../../components/HeadAuditorPopups";
 
 
@@ -343,7 +343,7 @@ if (loading) return <div>Loading...</div>;
 
    return (
     <div className="min-h-screen font-kanit bg-[#F8F8F8]">
-     <Header/>
+     <Navbar />
       <div className="flex flex-col items-center justify-center mt-5 pb-10">
         <div className="bg-white rounded-2xl shadow-2xl border border-[#F5F5F5] w-[85vw] min-h-screen justify-center items-center  p-5">
           <p className="text-2xl font-bold mb-5">รายการเอกสารที่ต้องตรวจสอบ</p>

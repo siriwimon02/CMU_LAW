@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import Header from "../../components/trackingHeader";
+import Navbar from '../../components/navbar'
 import ForwardToHeadAuditor from "../../components/ForwardToHeadAuditor";
 import ForwardToUser from "../../components/ForwardToUser"; 
 // import { console } from "inspector";
@@ -552,7 +552,7 @@ function Employee_Paper() {
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      <Header />
+      <Navbar />
 
       <main className="flex-1 bg-gray-100 p-4">
         <div

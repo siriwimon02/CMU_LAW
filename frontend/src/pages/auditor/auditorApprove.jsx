@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import Header from "../../components/trackingHeader";
+import Navbar from '../../components/navbar'
 import { Navigate, useNavigate } from "react-router-dom"; // ✅ import useNavigate
 
 function UploadDocumentApproved () {
@@ -672,7 +672,7 @@ function UploadDocumentApproved () {
 
     return (        
         <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-            <Header/>
+            <Navbar />
              <div className="flex gap-3 mt-4 ml-5">
 
                 <button
