@@ -102,7 +102,6 @@ useEffect(() => {
       const newDocs = data?.document_json || [];
 
       if (newDocs.length > documentAll.length) {
-        console.log("พบเอกสารรอตรวจสอบใหม่ รีเฟรชหน้า...");
         window.location.reload();
       }
     } catch (err) {
@@ -134,19 +133,6 @@ const submitCheck = async () => {
 
     if (res.ok) {
       setCheckPopupOpen(false);
-      // const newCard = {
-      //   id: selectedDoc.id,
-      //   docId: selectedDoc.docId || selectedDoc.id,
-      //   title: selectedDoc.title,
-      //   ownername: selectedDoc.ownername,
-      //   owneremail: selectedDoc.owneremail,
-      //   auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
-      //   auditByemail: selectedDoc.auditByemail || null,
-      //   status_name: "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น",
-      //   createAt: selectedDoc.createAt,
-      //   updatedAt: data.updatedAt || new Date().toISOString(),
-      //   __bucket: "ตรวจสอบเสร็จสิ้น",
-      // };
 
       setDocumentAll((prev) => prev.filter((d) => d.docId !== newCard.docId));
       setHistoryAccept((prev) => [...prev, newCard]);
@@ -190,30 +176,6 @@ const submitEdit = async () => {
     }
 
     if (res.ok) {
-      // const newCard = {
-      //   docId: selectedDoc.docId || selectedDoc.id,
-      //   history_status_id: data.history_status_id || Date.now(),
-      //   title: selectedDoc.title,
-      //   ownername: selectedDoc.ownername,
-      //   owneremail: selectedDoc.owneremail,
-
-      //   auditBy: selectedDoc.auditByname || selectedDoc.auditBy || null,
-      //   auditByemail: selectedDoc.auditByemail || null,
-
-      //   status_name: "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
-
-      //   createdAt:
-      //     selectedDoc.createAt ||
-      //     selectedDoc.documentCreatedAt ||
-      //     selectedDoc.createdAt ||
-      //     null,
-
-      //   updatedAt: data.updatedAt || selectedDoc.changeAt || new Date().toISOString(),
-
-      //   __bucket: "ส่งกลับแก้ไข",
-      //   note_text: reason || "-",
-      // };
-
       setDocumentAll((prev) => {
       const filtered = prev.filter(
         (d) => d.docId !== newCard.docId && d.id !== newCard.docId
@@ -283,7 +245,7 @@ const currentItems = useMemo(() => {
     ];
   };
 
-  // เลือกเวลาอัปเดตที่เหมาะสมต่อ bucket
+
 const getSortTime = (doc) => {
   // กลุ่ม "รอตรวจโดยหัวหน้ากอง" ให้ใช้ changeAt ก่อน
   if (doc.__bucket === "รอตรวจโดยหัวหน้ากอง") {
@@ -417,7 +379,7 @@ if (loading) return <div>Loading...</div>;
               <select
                 value={activeTab}
                 onChange={(e) => setActiveTab(e.target.value)}
-                className="w-full h-12 pl-12 pr-10 rounded-lg border text-sm bg-white text-gray-800 border-gray-300 shadow-sm appearance-none"
+                className="w-full h-12 pl-12 pr-10 rounded-lg border text-sm bg-white text-gray-800 border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#66009F] appearance-none"
               >
                 <option value="all">รวมทั้งหมด</option>
                 <option value="documentAll">อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง</option>
@@ -480,24 +442,34 @@ if (loading) return <div>Loading...</div>;
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              ผู้ยื่นคำขอ: {doc.ownername} {doc.owneremail}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              เจ้าหน้าที่ตรวจสอบ: {doc.auditBy} {doc.auditByemail}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              วันที่ส่งคำขอ: {formatDateTime(doc.createdAt)}
-                            </p>
-                          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              สถานะ : {" "}
-                              <span className={`font-medium ${statusClass}`}>
-                                {statusNow}
-                              </span>
-                            </p>
-
+                               <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
+                              <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
+                                  <span className="font-medium">
+                                    {getDocNumber(doc)}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">ผู้ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {doc.ownername} {doc.owneremail}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">เจ้าหน้าที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {doc.auditBy} {doc.auditByemail}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.createdAt)}
+                                  </span>
+                                </p>
+       
+                                <p className="text-black break-words overflow-hidden line-clamp-2">
+                      
+                                <span className={`font-medium ${statusClass}`}>
+                                  {statusNow}
+                                </span>
+                                </p>
                           </div>
 
                           <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
@@ -597,24 +569,38 @@ if (loading) return <div>Loading...</div>;
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
+                              <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
+                                  <span className="font-medium">
+                                    {getDocNumber(doc)}
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  เจ้าหน้าที่ตรวจสอบ: {doc.auditByname} ({doc.auditByemail})
+                                <p  className="break-words overflow-hidden line-clamp-2">ผู้ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {doc.ownername} ({doc.owneremail})
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  {doc.note_text || "-"}
+                                <p  className="break-words overflow-hidden line-clamp-2">เจ้าหน้าที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {doc.auditByname} ({doc.auditByemail})
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  วันที่ส่งคำขอ: {formatDateTime(doc.createAt)}
+                                <p  className="break-words overflow-hidden line-clamp-2">
+                                  <span className="font-medium">
+                                    {doc.note_text || "-"}
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  วันที่ส่งคืนแก้ไข: {formatDateTime(doc.editedAt)}
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.createAt)}
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  สถานะ :{" "}
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ส่งคืนแก้ไข:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.editedAt)}
+                                  </span>
+                                </p>
+                                <p className="text-black break-words overflow-hidden line-clamp-2">
+                      
                                 <span className={`font-medium ${statusClass}`}>
                                   {doc.oldstatus}
                                 </span>
@@ -673,25 +659,36 @@ if (loading) return <div>Loading...</div>;
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
-                                </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                เจ้าหน้าที่ตรวจสอบ: {doc.auditByname} ({doc.auditByemail})
-                                </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  วันที่ส่งคำขอ: {formatDateTime(doc.createdAt || doc.createAt)}
-                                </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  วันที่ตรวจสอบ: {formatDateTime(doc.updatedAt || doc.changeAt)}
-                                </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  สถานะ : {" "}
-                                  <span className={`font-medium ${statusClass}`}>
-                                    {doc.oldstatus}
+                              <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
+                              <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
+                                  <span className="font-medium">
+                                    {getDocNumber(doc)}
                                   </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">ผู้ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {doc.ownername} ({doc.owneremail})
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">เจ้าหน้าที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {doc.auditByname} ({doc.auditByemail})
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.createdAt || doc.createAt)}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.updatedAt || doc.changeAt)}
+                                  </span>
+                                </p>
+                                <p className="text-black break-words overflow-hidden line-clamp-2">            
+                                <span className={`font-medium ${statusClass}`}>
+                                  {doc.oldstatus}
+                                </span>
                                 </p>
                           </div>
 
@@ -770,23 +767,34 @@ if (loading) return <div>Loading...</div>;
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              ผู้ยื่นคำขอ: {doc.ownername} {doc.owneremail}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              เจ้าหน้าที่ตรวจสอบ: {doc.auditBy} {doc.auditByemail}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              วันที่ส่งคำขอ: {formatDateTime(doc.createdAt)}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              สถานะ : {" "}
-                              <span className={`font-medium ${statusClass}`}>
-                                {doc.status_name}
-                              </span>
-                            </p>
+                              <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title}</p>
+                              <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
+                                  <span className="font-medium">
+                                    {getDocNumber(doc)}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">ผู้ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {doc.ownername} {doc.owneremail}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">เจ้าหน้าที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {doc.auditBy} {doc.auditByemail}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.createdAt)}
+                                  </span>
+                                </p>
+       
+                                <p className="text-black break-words overflow-hidden line-clamp-2">
+                      
+                                <span className={`font-medium ${statusClass}`}>
+                                  {doc.status_name}
+                                </span>
+                                </p>
                           </div>
 
                           <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
@@ -908,28 +916,43 @@ if (loading) return <div>Loading...</div>;
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-xl break-words overflow-hidden line-clamp-2"> {doc.title}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              เจ้าหน้าที่ตรวจสอบ: {doc.auditByname} ({doc.auditByemail})
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              {doc.note_text || "-"}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              วันที่ส่งคำขอ: {formatDateTime(doc.createAt)}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              วันที่ส่งคืนแก้ไข: {formatDateTime(doc.editedAt)}
-                            </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              สถานะ : {" "}
-                              <span className={`font-medium ${statusClass}`}>
-                                {statusNow}
-                              </span>
-                            </p>
+                              <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
+                                  <span className="font-medium">
+                                    {getDocNumber(doc)}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">ผู้ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {doc.ownername} ({doc.owneremail})
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">เจ้าหน้าที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {doc.auditByname} ({doc.auditByemail})
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">
+                                  <span className="font-medium">
+                                    {doc.note_text || "-"}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.createAt)}
+                                  </span>
+                                </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ส่งคืนแก้ไข:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.editedAt)}
+                                  </span>
+                                </p>
+                                <p className="text-black break-words overflow-hidden line-clamp-2">
+                      
+                                <span className={`font-medium ${statusClass}`}>
+                                  {doc.oldstatus}
+                                </span>
+                                </p>
+
                           </div>
 
                           <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">
@@ -1002,27 +1025,38 @@ if (loading) return <div>Loading...</div>;
                         className="border border-white rounded-xl px-4 py-5 mb-4 bg-white shadow-md flex flex-col gap-4 min-h-[180px] h-auto break-words overflow-hidden"
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-xl break-words line-clamp-2 overflow-hidden text-ellipsis"> {doc.doc_title || doc.title || "-"}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">เลขที่เอกสาร: {getDocNumber(doc)}</p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  ผู้ยื่นคำขอ: {doc.ownername} ({doc.owneremail})
+                           <div className="flex-1 min-w-0">
+                              <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
+                              <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
+                                  <span className="font-medium">
+                                    {getDocNumber(doc)}
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                เจ้าหน้าที่ตรวจสอบ: {doc.auditByname} ({doc.auditByemail})
+                                <p  className="break-words overflow-hidden line-clamp-2">ผู้ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {doc.ownername} ({doc.owneremail})
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  วันที่ส่งคำขอ: {formatDateTime(doc.createdAt || doc.createAt)}
+                                <p  className="break-words overflow-hidden line-clamp-2">เจ้าหน้าที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {doc.auditByname} ({doc.auditByemail})
+                                  </span>
                                 </p>
-                                <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                                  วันที่ตรวจสอบ: {formatDateTime(doc.updatedAt || doc.changeAt)}
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ยื่นคำร้อง:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.createdAt || doc.createAt)}
+                                  </span>
                                 </p>
-                            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-                              สถานะ : {" "}
-                              <span className={`font-medium ${statusClass}`}>
-                                {doc.oldstatus}
-                              </span>
-                            </p>
+                                <p  className="break-words overflow-hidden line-clamp-2">วันที่ตรวจสอบ:{" "} 
+                                  <span className="font-medium">
+                                    {formatDateTime(doc.updatedAt || doc.changeAt)}
+                                  </span>
+                                </p>
+                                <p className="text-black break-words overflow-hidden line-clamp-2">            
+                                <span className={`font-medium ${statusClass}`}>
+                                  {doc.oldstatus}
+                                </span>
+                                </p>
                           </div>
 
                           <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end self-start shrink-0">

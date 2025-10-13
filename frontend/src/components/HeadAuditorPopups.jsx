@@ -7,7 +7,7 @@ export function CheckPopup({ selectedDoc, onClose, onSubmit }) {
   return (
        <div className="fixed inset-0 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/20"></div>
-            <div className="relative bg-white p-6 rounded-xl w-100  shadow-lg  ">
+            <div className="relative bg-white p-6 rounded-xl w-110  shadow-lg  ">
             <button
                 onClick={onClose}
                 className="absolute top-2 right-2 text-gray-500 hover:text-black"
@@ -20,8 +20,8 @@ export function CheckPopup({ selectedDoc, onClose, onSubmit }) {
             <p className="text-lg text-black break-words overflow-hidden line-clamp-2">
                 เรื่อง:{" "} {selectedDoc.title_now || selectedDoc.title}
             </p>
-            <p className="text-lg text-black  break-words overflow-hidden line-clamp-2">
-                ผู้ยื่นคำขอ:{" "} <span>{selectedDoc.ownername} {selectedDoc.owneremail}</span>
+            <p className="text-lg text-black  break-words overflow-hidden">
+                ผู้ยื่นคำร้อง:{" "} <span>{selectedDoc.ownername} {selectedDoc.owneremail}</span>
             </p>
             <div className="flex p-2 justify-end">
                 <button
@@ -55,7 +55,7 @@ export function EditPopup({ selectedDoc, reason, setReason, onClose, onSubmit })
   return (
     <div className="fixed inset-0 flex items-center justify-center ">
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative bg-white rounded-xl p-6 w-100 shadow-lg flex flex-col gap-1">
+        <div className="relative bg-white rounded-xl p-6 w-110 shadow-lg flex flex-col gap-1">
         <button
             onClick={onClose}
             className="absolute top-2 right-2 text-gray-500 hover:text-black"
@@ -68,8 +68,8 @@ export function EditPopup({ selectedDoc, reason, setReason, onClose, onSubmit })
             <p className="text-lg text-black break-words overflow-hidden line-clamp-2">
             เรื่อง:{" "}<span>{selectedDoc.title_now || selectedDoc.title}</span>
         </p>
-        <p className="text-lg text-black break-words overflow-hidden line-clamp-2">
-            ผู้ยื่นคำขอ:{" "} <span>{selectedDoc.ownername} {selectedDoc.owneremail}</span>
+        <p className="text-lg text-black break-words overflow-hidden">
+            ผู้ยื่นคำร้อง:{" "} <span>{selectedDoc.ownername} {selectedDoc.owneremail}</span>
         </p>
         <textarea
             className="border p-2 rounded h-35 resize-none"
