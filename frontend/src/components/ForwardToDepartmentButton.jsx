@@ -26,6 +26,28 @@ export default function ForwardToDepartmentButton({
     .replace(/^"+|"+$/g, "")
     .trim();
 
+  // 👇 helper: ชื่อเรื่อง
+  const getTitle = (row = {}) =>
+    row.title ?? row.doc_title ?? row.document_title ?? "-";
+
+  // 👇 helper: ชื่อ-อีเมลผู้ยื่นคำร้อง
+  const formatUser = (row = {}) => {
+    const email =
+      row.owneremail ??
+      row.authorize_to ??
+      row.owner_email ??
+      row.email ??
+      "";
+    const name =
+      [row.firstname, row.lastname].filter(Boolean).join(" ") ||
+      row.ownername ||
+      row.authorize_name ||
+      row.requester_name ||
+      "";
+    if (name && email) return `${name} · ${email}`;
+    return name || email || "-";
+  };
+
   const shouldFetch = !Array.isArray(auditorsProp);
 
   useEffect(() => {
@@ -163,11 +185,14 @@ export default function ForwardToDepartmentButton({
         <div className="flex min-h-[356px] flex-col">
           <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังผู้ตรวจสอบ</h2>
 
+          {/* เดิม: เลขที่คำขอ → ใหม่: เรื่อง */}
           <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
-            เลขที่คำขอ: {item?.request_no ?? item?.id ?? "-"}
+            เรื่อง: {getTitle(item)}
           </p>
+
+          {/* เดิม: ผู้ยื่นคำขอ → ใหม่: ผู้ยื่นคำร้อง (ชื่อและอีเมล) */}
           <p className="mt-2 text-lg sm:text-xl text-gray-800">
-            ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
+            ผู้ยื่นคำร้อง: {formatUser(item)}
           </p>
 
           <label className="mt-6 text-base sm:text-lg text-gray-900">

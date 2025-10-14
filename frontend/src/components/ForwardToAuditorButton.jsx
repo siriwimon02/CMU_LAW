@@ -19,6 +19,28 @@ export default function ForwardToAuditorButton({
   const [department, setDepartment] = useState("");
   const [textSuggest, setTextSuggest] = useState("");
 
+  // 👇 helper: แสดงชื่อ-อีเมลของผู้ยื่นคำร้อง
+  const formatUser = (row = {}) => {
+    const email =
+      row.owneremail ??
+      row.authorize_to ??
+      row.owner_email ??
+      row.email ??
+      "";
+    const name =
+      [row.firstname, row.lastname].filter(Boolean).join(" ") ||
+      row.ownername ||
+      row.authorize_name ||
+      row.requester_name ||
+      "";
+    if (name && email) return `${name} · ${email}`;
+    return name || email || "-";
+  };
+
+  // 👇 helper: ชื่อเรื่องของเอกสาร
+  const getTitle = (row = {}) =>
+    row.title ?? row.doc_title ?? row.document_title ?? "-";
+
   useEffect(() => {
     if (!open) return;
     setDepartment("");
@@ -105,7 +127,7 @@ export default function ForwardToAuditorButton({
             <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900">
               ส่งไปยังหน่วยงานอื่นเรียบร้อยแล้ว
             </h3>
-            {/* ✅ เปลี่ยนสีเป็นเขียว */}
+            {/* วงกลมเขียว + ติ๊กถูก */}
             <div className="mt-6 mx-auto w-14 h-14 rounded-full bg-[#05A967] grid place-items-center shadow">
               <svg
                 viewBox="0 0 24 24"
@@ -164,13 +186,14 @@ export default function ForwardToAuditorButton({
             ส่งคำขอไปยังหน่วยงานอื่น
           </h2>
 
-          {/* ❌ ลบปุ่มดูรายละเอียดออกแล้ว */}
-
+          {/* เดิม: เลขที่คำขอ → ใหม่: เรื่อง (ดึงชื่อเรื่อง) */}
           <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
-            เลขที่คำขอ: {item?.request_no ?? item?.id ?? "-"}
+            เรื่อง: {getTitle(item)}
           </p>
+
+          {/* เดิม: ผู้ยื่นคำขอ → ใหม่: ผู้ยื่นคำร้อง (ชื่อและอีเมล) */}
           <p className="mt-2 text-lg sm:text-xl text-gray-800">
-            ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
+            ผู้ยื่นคำร้อง: {formatUser(item)}
           </p>
 
           <label className="mt-6 text-base sm:text-lg text-gray-900">

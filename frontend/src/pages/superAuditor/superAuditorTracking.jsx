@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import ForwardToAuditorButton from "../../components/ForwardToAuditorButton";
 import ForwardToDepartmentButton from "../../components/ForwardToDepartmentButton";
-import Navbar from '../../components/navbar'
+import TrackingHeader from "../../components/trackingHeader";
 
 function SpvAuditor() {
   const authHeader = (localStorage.getItem("token") || "")
@@ -42,6 +42,32 @@ function SpvAuditor() {
   const [detailData, setDetailData] = useState(null);
 
   const BRAND_PURPLE = "#66009F";
+
+  // ✅ ช่องค้นหาเลขที่เอกสาร
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ✅ ฟอร์แมตวันที่-เวลา (ใหม่)
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const d = new Date(dateString);
+      if (Number.isNaN(d.getTime())) return dateString ?? "";
+      const datePart = d.toLocaleDateString("th-TH", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      });
+      let timePart = d.toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      timePart = timePart.replace(/\s*น\.\s*$/u, "");
+      return `${datePart} ${timePart} น.`;
+    } catch {
+      return dateString ?? "";
+    }
+  };
 
   // ================== Data mappers ==================
   const getId = (item) => item?.request_no ?? item?.id ?? item?.docId ?? Math.random();
@@ -366,99 +392,88 @@ function SpvAuditor() {
           {actions}
         </div>
 
-
         <div className="space-y-1 text-gray-800 pr-36">
-        <p
-          className="font-bold text-lg break-words overflow-hidden text-ellipsis line-clamp-2 pr-[260px] max-w-[calc(100%-12rem)]"
-        >
-          {item.title ?? item.doc_title ?? "-"}
-        </p>
-        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-          เลขที่คำขอ :{" "}
-          <span className="font-medium">
-            {item.doc_id ?? item.request_no ?? item.id ?? "-"}
-          </span>
-        </p>
-        
-        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-          ผู้ยื่นคำร้อง :{" "}
-          <span className="font-medium">
-            {item.owneremail ?? item.authorize_to ?? "-"}
-          </span>
-        </p>
-
-        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-          เจ้าหน้าที่ตรวจสอบ :{" "}
-          <span className="font-medium">
-            {item.auditBy ?? item.auditByname ?? item.auditedBy_name ?? "-"}
-          </span>
-        </p>
-
-        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-          หัวหน้าตรวจสอบ :{" "}
-          <span className="font-medium">
-            {item.headauditBy ?? item.headauditByname ?? "-"}
-          </span>
-        </p>
-
-        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-          วันที่ยื่นคำร้อง :{" "}
-          {item.createdAt
-            ? new Date(item.createdAt).toLocaleString("th-TH", {
-                timeZone: "Asia/Bangkok",
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "-"}
-        </p>
-
-        {showDestination && (
+          <p
+            className="font-bold text-lg break-words overflow-hidden text-ellipsis line-clamp-2 pr-[260px] max-w-[calc(100%-12rem)]"
+          >
+            {item.title ?? item.doc_title ?? "-"}
+          </p>
           <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-            ส่งไปยังหน่วยงาน :{" "}
+            เลขที่คำขอ :{" "}
             <span className="font-medium">
-              {String(toDept ?? "").trim() || "-"}
+              {item.doc_id ?? item.request_no ?? item.id ?? "-"}
             </span>
           </p>
-        )}
 
-        <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
-          <span
-            className="font-bold"
-            style={{
-              color: isOrange
-                ? "#E48500"
-                : isBlue
-                ? "#0078E2"
-                : isGreen
-                ? "#05A967"
-                : "#666",
-            }}
-          >
-            {statusText}
-          </span>
-        </p>
-      </div>
+          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+            ผู้ยื่นคำร้อง :{" "}
+            <span className="font-medium">
+              {item.owneremail ?? item.authorize_to ?? "-"}
+            </span>
+          </p>
 
+          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+            เจ้าหน้าที่ตรวจสอบ :{" "}
+            <span className="font-medium">
+              {item.auditBy ?? item.auditByname ?? item.auditedBy_name ?? "-"}
+            </span>
+          </p>
+
+          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+            หัวหน้าตรวจสอบ :{" "}
+            <span className="font-medium">
+              {item.headauditBy ?? item.headauditByname ?? "-"}
+            </span>
+          </p>
+
+          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+            วันที่ยื่นคำร้อง : {item.createdAt ? formatDateTime(item.createdAt) : "-"}
+          </p>
+
+          {showDestination && (
+            <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+              ส่งไปยังหน่วยงาน :{" "}
+              <span className="font-medium">
+                {String(toDept ?? "").trim() || "-"}
+              </span>
+            </p>
+          )}
+
+          <p className="text-sm text-black break-words overflow-hidden line-clamp-2">
+            <span
+              className="font-bold"
+              style={{
+                color: isOrange
+                  ? "#E48500"
+                  : isBlue
+                  ? "#0078E2"
+                  : isGreen
+                  ? "#05A967"
+                  : "#666",
+              }}
+            >
+              {statusText}
+            </span>
+          </p>
+        </div>
       </div>
     );
   }
   // ⬆⬆⬆ จบส่วนจัดตำแหน่งปุ่มขวาบน ⬆⬆⬆
 
-  function renderDocuments() {
+  // 🛠 ให้รองรับลิสต์ที่ถูกกรอง
+  function renderDocuments(list = currentItems) {
     if (filter === FILTER_WAIT) {
       return (
         <div className="space-y-4 mt-4">
-          {documentAll.map((doc) =>
+          {list.map((doc) =>
             renderRow(
               doc,
               [
                 <button
                   key="detail"
                   onClick={() => ClickForMoreDetail(doc)}
-                  className="border border-gray-200 bg-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100 shadow-sm transition"
+                  className="border border-gray-200 bg-white px-4 py-3 rounded-lg text-sm flex itemsCenter gap-1 hover:bg-gray-100 shadow-sm transition"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="7" />
@@ -481,8 +496,8 @@ function SpvAuditor() {
                   onClick={() => { setSelected(doc); setDeptView("form"); setRejectOpen(true); }}
                   className="bg-[#05A967] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-[#048a52]"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-5">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
                   </svg>
                   ส่งต่อผู้ตรวจสอบ
                 </button>,
@@ -497,7 +512,7 @@ function SpvAuditor() {
     if (filter === FILTER_TO_DEPT) {
       return (
         <div className="space-y-4 mt-4">
-          {historyChangeDes.map((h) =>
+          {list.map((h) =>
             renderRow(
               {
                 title: h.doc_title ?? h.title ?? "-",
@@ -531,7 +546,7 @@ function SpvAuditor() {
     if (filter === FILTER_TO_AUDITOR) {
       return (
         <div className="space-y-4 mt-4">
-          {historyAccept.map((r) =>
+          {list.map((r) =>
             renderRow(
               {
                 title: r.doc_title ?? r.title ?? "-",
@@ -570,9 +585,15 @@ function SpvAuditor() {
       ? historyChangeDes
       : historyAccept;
 
+  // ✅ กรองด้วยเลขที่เอกสาร (รองรับ request_no, doc_id, id)
+  const filteredItems = (currentItems || []).filter((doc) => {
+    const key = String(doc?.request_no ?? doc?.doc_id ?? doc?.id ?? "").toLowerCase();
+    return !searchTerm || key.includes(String(searchTerm).toLowerCase());
+  });
+
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      <Navbar />
+      <TrackingHeader />
 
       {userInfo && (
         <div className="bg-white shadow rounded-lg p-4 m-6">
@@ -592,7 +613,7 @@ function SpvAuditor() {
           title="รอรับเข้ากอง (Document All)"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke={BRAND_PURPLE} strokeWidth="1.5" className="size-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Zm3.75 11.625a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0  0 0-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Zm3.75 11.625a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
           </svg>
           รอรับเข้ากอง
         </button>
@@ -620,8 +641,37 @@ function SpvAuditor() {
         </button>
       </div>
 
+      {/* 🔍 ช่องค้นหาเอกสาร (อยู่ใต้ปุ่ม 3 ปุ่ม) — จำกัดความกว้าง */}
+      <div className="w-full px-6 mt-4">
+        <div className="relative w-full max-w-[570px]">
+          <input
+            type="text"
+            placeholder="พิมพ์เพื่อค้นหาเลขที่เอกสาร"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 pl-12 pr-4 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none"
+
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6 absolute left-3 top-1/2 -translate-y-1/2 text-[#66009F]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+            />
+          </svg>
+        </div>
+      </div>
+
+
       {/* รายการเอกสาร */}
-      <div className="mx-6">{renderDocuments()}</div>
+      <div className="mx-6">{renderDocuments(filteredItems)}</div>
 
       {/* ป๊อปอัป: ส่งคำขอไปยังหน่วยงานอื่น */}
       <ForwardToAuditorButton
