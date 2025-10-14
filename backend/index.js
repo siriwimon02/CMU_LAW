@@ -278,7 +278,7 @@ app.get('/document/:docId', authMiddle ,checkRole(["admin", "user", "spv_auditor
 
 
 //---------------------------------history status-----------------------------------------//
-app.get('/history_status/:docId', authMiddle, checkRole(["admin", "user", "spv_auditor", "head_auditor", "auditor"]) , async (req, res) =>{
+app.get('/history_status/:docId', authMiddle, checkRole(["admin", "spv_auditor", "head_auditor", "auditor"]) , async (req, res) =>{
 
     const documentId = parseInt(req.params.docId, 10);
 

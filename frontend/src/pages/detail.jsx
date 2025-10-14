@@ -15,7 +15,9 @@ function Detail() {
     alert("Please Login or SignIn First!!!");
     return <Navigate to="/login" replace />;
   }
+  // 
 
+  // status ไม่ตรง
   const redList = [
   'ส่งกลับให้ผู้ใช้แก้ไขเอกสาร',
   'ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง',
@@ -45,7 +47,6 @@ function Detail() {
     'อยู่ระหว่างการตรวจสอบก่อนเสนออธิการบดี',
     'รอการพิจารณาอนุมัติจากอธิการบดี',
   ];
-
   // helper: bg + border color per status
   function getStatusClasses(status) {
     if (redList.includes(status))   return { bg: "bg-[#FFF4F4]", border: "border-[#CD0000]" };
@@ -194,7 +195,7 @@ function renderStatusDetail(item) {
   if (item.editedByemail) {
     return (
       <div className="mt-2 space-y-1">
-        <p className="text-sm text-red-700">หมายเหตุ: {item.note}</p>
+        <p className="text-sm ">หมายเหตุ: {item.note}</p>
         <p className="text-sm text-gray-700">
           แก้ไขโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
         </p>
@@ -202,7 +203,7 @@ function renderStatusDetail(item) {
           เวลาแก้ไข: {item.editAt ? formatThaiDate(item.editAt) : "-"}
         </p>
         <hr className="my-2" />
-        <p className="text-sm text-gray-600">📌 ข้อมูลเดิม</p>
+        <p className="text-sm text-gray-600">ข้อมูลเดิม</p>
         <ul className="text-sm text-gray-500 list-disc list-inside">
           <li>เรื่อง: {item.oldTitle}</li>
           <li>ผู้รับมอบ: {item.oldAuthorize_to}</li>
@@ -214,7 +215,7 @@ function renderStatusDetail(item) {
     );
   }
 
-  // 🔵 กรณีส่งต่อไปยังหน่วยงาน
+  // กรณีส่งต่อไปยังหน่วยงาน
   if (item.status?.includes("ส่งต่อไปยังหน่วยงาน")) {
     return (
       <div className="mt-2 space-y-1">
@@ -232,7 +233,7 @@ function renderStatusDetail(item) {
     );
   }
 
-  // ⚪ กรณีประวัติสถานะทั่วไป (documentStatusHistory)
+  // กรณีประวัติสถานะทั่วไป (documentStatusHistory)
   return (
     <div className="mt-2 space-y-1">
       <p className="text-sm text-gray-700">

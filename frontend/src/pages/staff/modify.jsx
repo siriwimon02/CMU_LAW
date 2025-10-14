@@ -35,7 +35,8 @@ function Modify() {
   const fileChange = (e) => setFiles(Array.from(e.target.files || []));
   const initialFlagsRef = useRef({ pres: false, house: false });
 
-
+  // note that show what user need to edit
+  const [note,setNote] = useState("");
   // keep a snapshot of initial text values to detect "only flags changed" case
   const initialRef = useRef({
     title: "",
@@ -63,6 +64,16 @@ function Modify() {
 
         const data = await res.json();
         const doc = data.setdoc;
+
+        const response = await fetch(`http://localhost:3001/history_statusForUser/${id}`,{
+          headers: { Authorization: `${token}` },
+        });
+        const history = await response.json();
+
+        const last = history[history.length - 1]; 
+        setNote(last.note) // get only note of the last index
+
+
         if (!alive) return;
 
         // gate by status
@@ -128,8 +139,8 @@ function Modify() {
       alive = false;
     };
   }, [id, token, navigate]);
-
   
+  console.log(note)
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-[#F6F7FB] font-[Kanit]">
@@ -198,11 +209,11 @@ function Modify() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7FB] px-4 py-10 font-[Kanit] text-black">
-      <div className="mx-auto max-w-[980px]">
+    <div className="min-h-screen bg-[#F9FAFE] flex justify-center items-center px-4 py-10 overflow-hidden overscroll-none font-[Kanit]">
+      <div className="max-w-[850px] w-full p-6 border  border-gray-300 rounded-xl shadow-md bg-white ">
         {/* <div className="mx-auto max-w-full"> */}
-        <div className="rounded-2xl bg-white shadow-[0_6px_24px_rgba(0,0,0,0.06)] ring-1 ring-black/5 ">
-          <div className="mb-2 flex items-center justify-between pt-8 px-8">
+        <div className="rounded-xl">
+          <div className="mb-2 flex items-center justify-between  relative">
             <div className="flex items-center gap-3">
               <Icon />
               <h1 className="text-[22px] md:text-[26px] font-semibold ">
@@ -221,6 +232,12 @@ function Modify() {
               </div>
               <hr className="mt-3 border-gray-200" />
             </div>
+
+            {/* show note */}
+            <div className="mb-2 text-red-600 whitespace-pre-line break-words">
+              <p>{note}</p>
+            </div>
+
 
             {/* {statusName && (
               <div className="mb-4 text-[14px] text-gray-700">
