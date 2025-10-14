@@ -16,8 +16,11 @@ import TrackingForChancellor from "../pages/Chancellor/tracking"
 // admin
 import Admin_Panel from '../pages/admin/admin_panel';
 import Admin_Action_Log from '../pages/admin/admin_action_log';
+<<<<<<< Updated upstream
 import DocumentDetails from "../pages/admin/DocumentDetails";
 
+=======
+>>>>>>> Stashed changes
 // ผู้อำนวยการคัดกรองเอกสาร (EYE)
 import SuperAuditorTracking from "../pages/superAuditor/superAuditorTracking";
 // auditor (NOT)
@@ -72,8 +75,11 @@ export default function AppRoutes() {
         {/* admin */}
         <Route path="/admin_panel" element={<RequireAuth roles={['admin']}> <Admin_Panel/> </RequireAuth>} />
         <Route path="/admin_action_log" element={<RequireAuth roles={['admin']}> <Admin_Action_Log/> </RequireAuth>} />
+<<<<<<< Updated upstream
         <Route path="/document/:docId" element={<RequireAuth roles={['admin']}> <DocumentDetails/> </RequireAuth>} />
         
+=======
+>>>>>>> Stashed changes
         {/* อธิการบดี */}
         <Route path="/chancellorTracking" element={<RequireAuth> <TrackingForChancellor/> </RequireAuth>}/>
         
