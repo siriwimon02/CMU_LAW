@@ -206,17 +206,6 @@ router.put('/update_st_ToAccpet/:docId', async (req, res) => {
         }
     });
 
-    // const keep_action_log = await prisma.documentActionsLog.create({
-    //     data : {
-    //         user : { connect : { id : user.id } },
-    //         document : { connect : { id : doc } },
-    //         action : "รับเอกสารเข้ากอง",
-    //         node_text : ""
-    //     }
-    // });
-    // console.log(keep_action_log);
-
-
     res.json({
       message: "Document status updated to 'accepted in department'",
       updatedDoc
@@ -322,17 +311,6 @@ router.put('/change_destination/:docId', async( req, res) => {
           note_text: `ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร รายละเอียดเพิ่มเติม: ${text_suggest || "-"}`
         }
     });
-
-    // const keep_action_log = await prisma.documentActionsLog.create({
-    //     data : {
-    //         user : { connect : { id : user.id } },
-    //         document : { connect : { id : doc.id } },
-    //         action : "ส่งเอกสารไปยังกองที่เกี่ยวข้องกับเอกสาร",
-    //         node_text : `${find_new_des.des_name}`
-    //     }
-    // });
-    // console.log(keep_action_log);
-
 
     //เก็บประวัติการเปลี่ยน destination ของเอกสารนี้
     const his_destination_doc = await prisma.documentPetitionHistoryTranfers.create({
@@ -593,18 +571,6 @@ router.put('/update_st_audit_by_Spvaudit/:docId', async (req, res) => {
         });
         console.log(his_st);
 
-
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc.id } },
-        //         action : "ตรวจสอบเอกสารคำร้อง ขั้นตอนสุดท้าย",
-        //         node_text : ""
-        //     }
-        // });
-        // console.log(keep_action_log);
-
-
         res.json({ message: "Document status updated to the first audit is already", updatedDoc});
 
     } catch (err) {
@@ -674,16 +640,6 @@ router.put('/edit_BySpvAuditor/:docId', async (req, res) => {
               note_text: `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggestion || "-"}`
             }
         });
-
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc.id } },
-        //         action : "ส่งเอกสารกลับไปแก้ไข ที่เจ้าหน้าที่",
-        //         node_text : `รายละเอียดการแก้ไข : ${text_edit_suggestion}`
-        //     }
-        // });
-        // console.log(keep_action_log);
 
         const update_finish = await prisma.documentPetition.findUnique({
             where : { id : documentId }

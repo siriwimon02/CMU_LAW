@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import AddUserModal from '../../components/addUserModal';
@@ -11,6 +11,9 @@ function Admin_Panel() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+
     const token = localStorage.getItem("token");
     const navigate = useNavigate();
 
@@ -23,7 +26,7 @@ function Admin_Panel() {
         const fetchUsers = async () => {
             try {
                 console.log("TOKEN:", token);
-                const res = await fetch("/api/user", {
+                const res = await fetch("/petitionAdmin/api/user", {
                     headers: {
                         "Content-Type": "application/json",
                         "Authorization": token
@@ -48,16 +51,35 @@ function Admin_Panel() {
         }
     }, [token, navigate]);
 
+
+    const refreshUser = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            const res = await fetch(`/petitionAdmin/api/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed');
+            const data = await res.json();
+            const safe = (u) => ({ ...u, role: u.role ?? { id: u.rId ?? null, role_name: '' } });
+            setUsers(Array.isArray(data) ? data.map(safe) : []);
+        } catch (e) {
+            console.error('refreshUser error:', e);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [token]);
+
+
+
     const handleDeleteUser = async (userId) => {
         if (!window.confirm('คุณต้องการลบผู้ใช้นี้?')) {
             return;
         }
 
         try {
-            const res = await fetch(`/api/user/${userId}`, {
+            const res = await fetch(`/petitionAdmin/delete_user/${userId}`, {
                 method: 'DELETE',
                 headers: {
-                    "Content-Type": "application/json",
                     "Authorization": token
                 }
             });
@@ -78,7 +100,8 @@ function Admin_Panel() {
         user.email.toLowerCase().includes(search.toLowerCase()) || 
         user.role.role_name.toLowerCase().includes(search.toLowerCase())
     );
-    
+
+        
     const getRoleColor = (roleName) => {
         switch(roleName) {
             case 'user':
@@ -175,17 +198,22 @@ function Admin_Panel() {
                     </div>
                 </div>
             </div>
-            <AddUserModal 
-                isVisible={showModal} 
+
+            <AddUserModal
+                isVisible={showModal}
                 onClose={() => setShowModal(false)}
-                onAddUser={(newUser) => setUsers([...users, newUser])}
+                onAddUser={async () => {
+                    await refreshUser();          // ✅ ดึงรายการใหม่จาก backend ที่ส่ง role ครบแล้ว
+                    setShowModal(false);          // ปิด modal หลังรีเฟรชเสร็จ
+                }}
             />
+
             <EditUserRole
                 isVisible={showEditModal}
-                onClose={() => setShowEditModal(false)}
+                onClose={async () => { setShowEditModal(false); await refreshUser(); }}
                 user={selectedUser}
-                onUpdate={(updatedUser) => {
-                    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+                onUpdate={async () => {
+                    await refreshUser();    // ✅ ดึงรายการใหม่จาก backend (ซึ่งควร select role มาด้วย)
                 }}
             />
         </div>

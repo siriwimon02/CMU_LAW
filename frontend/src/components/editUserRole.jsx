@@ -28,17 +28,17 @@ const EditUserRole = ({ isVisible, onClose, user, onUpdate }) => {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/updateRole', {
+      const res = await fetch(`/petitionAdmin/updateRole/${user.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `${token}`
         },
-        body: JSON.stringify({ user_id: user.id, role_id: form.role_id }),
+        body: JSON.stringify({ role_id: form.role_id }),
       });
       if (!res.ok) throw new Error('Failed to update role');
-      const updatedUser = await res.json();
-      onUpdate(updatedUser.user); // update table
+
+      await onUpdate();   // parent ควรทำ refreshUser() ข้างใน
       onClose();
     } catch (err) {
       console.error(err);

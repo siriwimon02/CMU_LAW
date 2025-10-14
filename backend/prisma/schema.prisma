@@ -27,7 +27,6 @@ model User {
   role            RoleOfUser              @relation(fields: [rId], references: [id])
 
   documents           DocumentPetition[]
-  actionLogs          DocumentActionsLog[]
   statusChanges       DocumentStatusHistory[] @relation("ChangedBy")
   attachments         DocumentAttachment[]
   petitionEdits       DocumentPetitionHistory[]
@@ -90,7 +89,6 @@ model DocumentPetition {
   date_of_signing                   DateTime?
 
   attachments                       DocumentAttachment[]
-  actionLogs                        DocumentActionsLog[]
   statusHistory                     DocumentStatusHistory[]
   petitionEdits                     DocumentPetitionHistory[]
   documentPetitionHistoryTranfers   DocumentPetitionHistoryTranfers[]
@@ -149,28 +147,6 @@ model Destination {
   transferFroms DocumentPetitionHistoryTranfers[] @relation("TransferFrom")
   transferTos   DocumentPetitionHistoryTranfers[] @relation("TransferTo")
 }
-
-
-
-
-model DocumentActionsLog {
-  id        Int                     @id @default(autoincrement())
-
-  userId    Int
-  user      User                    @relation(fields: [userId], references: [id])
-
-  docId     Int
-  document  DocumentPetition        @relation(fields: [docId], references: [id])
-
-  action    String                  @db.VarChar(255)
-  time_act  DateTime                @default(now())
-  node_text String                  @db.Text
-
-  @@index([userId])
-  @@index([docId])
-  @@index([time_act])
-}
-
 
 
 model AttachmentType {

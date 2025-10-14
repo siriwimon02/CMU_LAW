@@ -152,15 +152,6 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
             });
             console.log("saved:", doc_attachment);
 
-            // const keep_action_log = await prisma.documentActionsLog.create({
-            //     data : {
-            //         user : { connect : { id : user.id } },
-            //         document : { connect : { id : doc } },
-            //         action : "อัปโหลดแนบเอกสารเพิ่มเติม สำหรับขอเอกสารคำร้อง",
-            //         node_text : `path file : ${paths} & file name : ${path.name}`
-            //     }
-            // });
-            // console.log(keep_action_log);
         }
     }
 
@@ -339,16 +330,6 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                 }
             });
             console.log(his_st)
-
-            // const keep_action_log = await prisma.documentActionsLog.create({
-            //     data : {
-            //         user : { connect : { id : user.id } },
-            //         document : { connect : { id : documentId } },
-            //         action : "แก้ไขเอกสาร",
-            //         node_text : ""
-            //     }
-            // });
-            // console.log(keep_action_log);
             
             // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
             console.log(latestHistory.statusId === find_st1.id)
@@ -386,16 +367,6 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                     }
                 });
 
-                // const keep_action_log = await prisma.documentActionsLog.create({
-                //     data : {
-                //         user : { connect : { id : user.id } },
-                //         document : { connect : { id : doc } },
-                //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
-                //         node_text : `${find_req.name}`
-                //     }
-                // });
-                // console.log(keep_action_log);
-
                 console.log("document นี้ต้องการ สำเนาบัตรประจำตัวอธิการบดี",update_doc_need)
             }else {
                 console.log("เอกสารนี้เคยต้องการบัตรประจำตัวอธิการบดีแล้ว");
@@ -422,17 +393,6 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                     }
                 });
 
-                // const keep_action_log = await prisma.documentActionsLog.create({
-                //     data : {
-                //         user : { connect : { id : user.id } },
-                //         document : { connect : { id : doc } },
-                //         action : "มีความประสงค์ต้องการ เอกสารเพิ่มเติม ประกอบคำร้อง",
-                //         node_text : `${find_req.name}`
-                //     }
-                // });
-                // console.log(keep_action_log);
-
-
                 console.log("document นี้ต้องการ ทะเบียนบ้านมหาวิทยาลัย",update_doc_need)
             }else {
                 console.log("เอกสารนี้เคยต้องการทะเบียนบ้านมหาวิทยาลัยแล้ว");
@@ -454,16 +414,6 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                 });
             }
 
-            // const keep_action_log = await prisma.documentActionsLog.create({
-            //     data : {
-            //         user : { connect : { id : user.id } },
-            //         document : { connect : { id : doc } },
-            //         action : "อัปโหลดเอกสารเพิ่มเติม สำหรับยืนขอเอกสารคำร้อง",
-            //         node_text : `path file : ${file.path} & file name : ${file.originalname}`
-            //     }
-            // });
-            // console.log(keep_action_log);
-            
             isUploaded = true;
         }
 

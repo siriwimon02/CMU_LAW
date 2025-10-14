@@ -187,16 +187,6 @@ router.put('/update_st_audit_by_Headaudit/:docId', async (req, res) => {
             }
         });
 
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc } },
-        //         action : "ตรวจสอบเอกสารคำร้อง โดยหัวหน้า",
-        //         node_text : ""
-        //     }
-        // });
-        // console.log(keep_action_log);
-
         res.json({ message: "Document status updated to the audit is already by HeadAudit", updatedDoc});
     
     } catch (err) {
@@ -275,17 +265,6 @@ router.put('/edit_ByheadAuditor/:docId', async (req, res) => {
                 note_text:   `ส่งกลับไปให้พนักงานตรวจสอบ และแก้ไข โดยหัวหน้า รายละเอียดเพิ่มเติมการแก้ไขเอกสาร: ${text_edit_suggesttion || "-"}`
             }
         });
-
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc.id } },
-        //         action : "ส่งเอกสารกลับไปแก้ไข ที่เจ้าหน้าที่",
-        //         node_text : `รายละเอียดการแก้ไข : ${text_edit_suggesttion}`
-        //     }
-        // });
-        // console.log(keep_action_log);
-
 
         const update_finish = await prisma.documentPetition.findUnique({
             where : { id : documentId }

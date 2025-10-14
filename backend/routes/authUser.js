@@ -15,7 +15,6 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   const { email, firstname, lastname, departmentName} = req.body;
-  console.log(departmentName);
 
   try {
     // หาหรือสร้าง department
@@ -29,6 +28,10 @@ router.post('/register', async (req, res) => {
           data: { department_name: departmentName },
       });
     }
+
+    const find_rUser = await prisma.roleOfUser.findUnique({
+        where : { role_name : 'user' }
+    });
     
     // หาว่ามี user อยู่แล้วหรือยัง
     const user = await prisma.user.upsert({
@@ -37,14 +40,14 @@ router.post('/register', async (req, res) => {
         firstname,
         lastname,
         department: { connect: { id: dept.id } },
-        role: { connect: { id: role_id } }, // ใช้ connect
+        role: { connect: { id: find_rUser.id } }, // ใช้ connect
       },
       create: {
         email,
         firstname,
         lastname,
         department: { connect: { id: dept.id } },
-        role: { connect: { id: role_id } }, // ใช้ connect
+        role: { connect: { id: find_rUser.id } }, // ใช้ connect
       },
     });
 

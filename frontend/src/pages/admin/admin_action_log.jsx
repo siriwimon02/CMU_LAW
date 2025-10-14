@@ -19,7 +19,7 @@ function Admin_Action_Log() {
     useEffect(() => {
         const fetchDocuments = async () => {
             try {
-                const res = await fetch("/api/documentAll", {
+                const res = await fetch("/petitionAdmin/api/documentAll", {
                     headers: {
                         "Authorization": `${token}`,
                     },

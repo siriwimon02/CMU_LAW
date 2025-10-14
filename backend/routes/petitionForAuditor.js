@@ -306,18 +306,6 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
             }
         });
 
-
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc.id } },
-        //         action : "ตรวจสอบเอกสารคำร้อง ขั้นต้น",
-        //         node_text : ""
-        //     }
-        // });
-        // console.log(keep_action_log);
-
-
         res.json({ message: "Document status updated to the first audit is already", updatedDoc});
     
     } catch (err) {
@@ -438,16 +426,6 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
             note_text:   `ส่งแก้ไขเอกสาร โดยพนังงานตรวจสอบ รายละเอียดเพิ่มเติมการแก้ไขเอกสาร : ${text_edit_suggesttion || "-"}`
           }
         });      
-        
-        // const keep_action_log = await prisma.documentActionsLog.create({
-        //     data : {
-        //         user : { connect : { id : user.id } },
-        //         document : { connect : { id : doc.id } },
-        //         action : "ส่งเอกสารกลับไปแก้ไข ที่ user",
-        //         node_text : `รายละเอียดการแก้ไข : ${text_edit_suggesttion}`
-        //     }
-        // });
-        // console.log(keep_action_log);
         
         const update_finish = await prisma.documentPetition.findUnique({
             where : { id : documentId }
@@ -624,17 +602,6 @@ router.put('/update_document_ByAuditor/:docId', data.none() ,async (req, res) =>
                     note_text : "เจ้าหน้าที่ ได้แก้ไขเอกสารนี้เพิ่มเติม"
                 }
             });
-
-            // const keep_action_log = await prisma.documentActionsLog.create({
-            //     data : {
-            //         user : { connect : { id : user.id } },
-            //         document : { connect : { id : documentId } },
-            //         action : "แก้ไขเอกสาร",
-            //         node_text : ""
-            //     }
-            // });
-            // console.log(keep_action_log);
-
             
             // เช็คว่ามีประวัติส่งกลับมาแก้ไขล่าสุดมั้ย
             if (latestHistory.statusId === findstatus4.id || latestHistory === findstatus5.id) {
@@ -1419,17 +1386,6 @@ router.post('/generate_pdf/:docId', async (req, res) => {
         attachmentType : { connect : { id : find_type.id } },
       }
     });
-
-
-    // const keep_action_log = await prisma.documentActionsLog.create({
-    //     data : {
-    //         user : { connect : { id : user.id } },
-    //         document : { connect : { id : doc.id } },
-    //         action : "สร้างไฟล์เอกสารคำร้องให้เป็น PDF และ Word",
-    //         node_text : ""
-    //     }
-    // });
-    // console.log(keep_action_log);
 
 
     res.json({ 

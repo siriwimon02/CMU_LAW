@@ -19,7 +19,7 @@ function DocumentDetails() {
   useEffect(() => {
     const fetchActionLog = async () => {
       try {
-        const res = await fetch(`/api/action_log/${docId}`, {
+        const res = await fetch(`/petitionAdmin/api/action_log/${docId}`, {
           headers: {
             Authorization: token,
           },

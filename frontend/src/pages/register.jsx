@@ -109,27 +109,6 @@ export default function Register() {
           className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
         />
 
-        <div>
-          <label htmlFor="role" className="block mb-1 text-gray-700 font-medium">
-            เลือก role ของคุณ
-          </label>
-          <select 
-            id="role" 
-            name="role_id" 
-            value={form.role_id} 
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-          >
-            <option value="">-- เลือก role --</option>
-            {roleOfUser.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.role_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <button 
