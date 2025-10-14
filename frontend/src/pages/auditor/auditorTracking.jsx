@@ -18,6 +18,8 @@ function Employee_Paper() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   // const [acceptingDocument, setAcceptingDocument] = useState(false); // ✅ ต้องมี
+  const [searchTerm, setSearchTerm] = useState("");
+  
 
   // data
   const [documentAll, setDocumentAll] = useState([]);
@@ -126,11 +128,11 @@ function Employee_Paper() {
 
   // แทนที่ฟังก์ชันตรวจสี
   const isBlueStatus = (txt = "") =>
-    txt.includes("ส่งกลับ") || txt.includes("โดยหัวหน้ากอง");
+    txt.includes("ส่งกลับให้ผู้ใช้แก้ไข") || txt.includes("ส่งกลับเพื่อแก้ไขโดยหัวหน้ากอง")
   const isGreenStatus = (txt = "") =>
-    txt.includes("ตรวจสอบขั้นต้นเสร็จสิ้น");
+    txt.includes("ตรวจสอบขั้นต้นเสร็จสิ้น") || txt.includes("อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง")
   const isOrangeStatus = (txt = "") =>
-    txt.includes("อยู่ระหว่าง");
+    txt.includes("อยู่ระหว่างการตรวจสอบขั้นต้น") || txt.includes("ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว") || txt.includes("ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง")
 
 
   // รวมศูนย์ normalize array
@@ -472,7 +474,7 @@ function Employee_Paper() {
 
   //   if (!docId) return alert("ไม่พบรหัสเอกสาร");
 
-  //   // ฟอร์มแก้ไขอย่างเร็ว (ถ้าจะสวย ค่อยเปลี่ยนเป็น modal ภายหลัง)
+  //   // ฟอร์มแก้ไร้องย่างเร็ว (ถ้าจะสวย ค่อยเปลี่ยนเป็น modal ภายหลัง)
   //   const title = window.prompt("เรื่อง (title):", doc?.title ?? "");
   //   if (title === null) return; // กดยกเลิก
 
@@ -551,20 +553,20 @@ function Employee_Paper() {
 
 
   return (
-    <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
+    <div className="min-h-screen font-kanit bg-[#F8F8F8]">
       <Navbar />
 
-      <main className="flex-1 bg-gray-100 p-4">
-        <div
-          style={{
-            width: "100%",
-            padding: 24,
-            border: "1px solid #ddd",
-            borderRadius: 12,
-            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-            background: "white",
-            fontFamily: "'Kanit', sans-serif",
-          }}
+      <main className="flex flex-col items-center justify-center mt-5 pb-10">
+        <div className="bg-white rounded-2xl shadow-2xl border border-[#F5F5F5] w-[90vw] min-h-screen justify-center items-center  p-5"
+          // style={{
+          //   width: "100%",
+          //   padding: 24,
+          //   border: "1px solid #ddd",
+          //   borderRadius: 12,
+          //   boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+          //   background: "white",
+          //   fontFamily: "'Kanit', sans-serif",
+          // }}
         >
           <div className="flex flex-col gap-3">
             <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0 }}>
@@ -581,37 +583,63 @@ function Employee_Paper() {
               </div>
             )}
 
-            {/* แถบเลือก dataset (Dropdown) */}
-            <div className="relative w-full px-6 mt-6">
-              <label htmlFor="tabSelect" className="sr-only">เลือกชุดข้อมูล</label>
-
-              <select
-                id="tabSelect"
-                value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value)}
-                className="w-full h-12 appearance-none pl-12 pr-10 rounded-lg border text-sm bg-white text-gray-800 border-gray-300 shadow-sm"
-              >
-                <option value="all">รวมทั้งหมด</option>
-                <option value="documentAll">อยู่ระหว่างการตรวจสอบขั้นต้น</option>
-                <option value="history_change_des">ส่งกลับให้ผู้ใช้แก้ไขเอกสาร</option>
-                <option value="history_accept">การตรวจสอบขั้นต้นเสร็จสิ้น</option>
-              </select>
-
-              {/* ไอคอนซ้าย */}
-              <span className="pointer-events-none absolute left-9 top-1/2 -translate-y-1/2" style={{ color: BRAND_PURPLE }}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M9.5 2A1.5 1.5 0 0 0 8 3.5v1A1.5 1.5 0 0 0 9.5 6h5A1.5 1.5 0 0 0 16 4.5v-1A1.5 1.5 0 0 0 14.5 2z"/>
-                  <path fillRule="evenodd" d="M6.5 4.037c-1.258.07-2.052.27-2.621.84C3 5.756 3 7.17 3 9.998v6c0 2.829 0 4.243.879 5.122c.878.878 2.293.878 5.121.878h6c2.828 0 4.243 0 5.121-.878c.879-.88.879-2.293.879-5.122v-6c0-2.828 0-4.242-.879-5.121c-.569-.57-1.363-.77-2.621-.84V4.5a3 3 0 0 1-3 3h-5a3 3 0 0 1-3-3zM7 9.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 13.25a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 16.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5z" clipRule="evenodd"/>
+            <div className="flex flex-col md:flex-row gap-3 mb-4 w-full">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="พิมพ์เพื่อค้นหาเลขที่เอกสาร"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full h-12 pl-12 pr-4 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#66009F]"
+                />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-6 h-6 absolute left-3 top-1/2 -translate-y-1/2 text-[#66009F]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+                  />
                 </svg>
-              </span>
+              </div>
 
-              {/* ลูกศรขวา */}
-              <svg
-                className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500"
-                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
-              >
-                <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.2l3.71-2.97a.75.75 0 1 1 .94 1.16l-4.24 3.39a.75.75 0 0 1-.94 0L5.21 8.39a.75.75 0 0 1 .02-1.18z"/>
-              </svg>
+              {/* แถบเลือก dataset (Dropdown) */}
+              <div className="relative flex-1">
+                <label htmlFor="tabSelect" className="sr-only">เลือกชุดข้อมูล</label>
+
+                <select
+                  id="tabSelect"
+                  value={activeTab}
+                  onChange={(e) => setActiveTab(e.target.value)}
+                  className="w-full h-12 appearance-none pl-12 pr-10 rounded-lg border text-sm bg-white text-gray-800 border-gray-300 shadow-sm"
+                >
+                  <option value="all">รวมทั้งหมด</option>
+                  <option value="documentAll">อยู่ระหว่างการตรวจสอบขั้นต้น</option>
+                  <option value="history_change_des">ส่งกลับให้ผู้ใช้แก้ไขเอกสาร</option>
+                  <option value="history_accept">การตรวจสอบขั้นต้นเสร็จสิ้น</option>
+                </select>
+
+                {/* ไอคอนซ้าย */}
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: BRAND_PURPLE }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M9.5 2A1.5 1.5 0 0 0 8 3.5v1A1.5 1.5 0 0 0 9.5 6h5A1.5 1.5 0 0 0 16 4.5v-1A1.5 1.5 0 0 0 14.5 2z"/>
+                    <path fillRule="evenodd" d="M6.5 4.037c-1.258.07-2.052.27-2.621.84C3 5.756 3 7.17 3 9.998v6c0 2.829 0 4.243.879 5.122c.878.878 2.293.878 5.121.878h6c2.828 0 4.243 0 5.121-.878c.879-.88.879-2.293.879-5.122v-6c0-2.828 0-4.242-.879-5.121c-.569-.57-1.363-.77-2.621-.84V4.5a3 3 0 0 1-3 3h-5a3 3 0 0 1-3-3zM7 9.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 13.25a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 16.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5z" clipRule="evenodd"/>
+                  </svg>
+                </span>
+
+                {/* ลูกศรขวา */}
+                <svg
+                  className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500"
+                  viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                >
+                  <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.2l3.71-2.97a.75.75 0 1 1 .94 1.16l-4.24 3.39a.75.75 0 0 1-.94 0L5.21 8.39a.75.75 0 0 1 .02-1.18z"/>
+                </svg>
+              </div>
             </div>
           </div>
 
@@ -620,7 +648,10 @@ function Employee_Paper() {
           {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
           {activeTab === "all" && (
             <div>
-              {(documentAll || []).map((doc, i) => {
+              {(documentAll || []).filter(doc => {
+                const id = String(doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
+                return id.includes(searchTerm.toLowerCase());
+              }).map((doc, i) => {
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
                 const isBlue = isBlueStatus(statusText);
@@ -640,7 +671,7 @@ function Employee_Paper() {
                 return (
                   <article
                     key={`${docId}-${i}`}
-                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    className="rounded-md bg-white shadow p-4 mt-4"
                     style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -665,13 +696,13 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำขอ:{" "}
+                            ผู้ที่ยื่นคำร้อง:{" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
                           <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำขอ:</span>
+                            <span>วันที่คำร้อง:</span>
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
                             </span>
@@ -773,7 +804,13 @@ function Employee_Paper() {
               })}
             
 
-              {(historyChangeDes||[]).map((doc, i) => {
+              {(historyChangeDes||[])
+                .filter(doc => (doc.status_name ?? doc.status ?? doc.nowstatus ?? "").includes("ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"))
+                .filter(doc => {
+                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
+                  return id.includes(searchTerm.toLowerCase());
+                })
+                .map((doc, i) => {
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
                 const isBlue = isBlueStatus(statusText);
@@ -789,7 +826,7 @@ function Employee_Paper() {
                 return (
                   <article
                     key={`${docId}-${i}`}
-                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    className="rounded-md bg-white shadow p-4 mt-4"
                     style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -816,13 +853,13 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำขอ:{" "}
+                            ผู้ที่ยื่นคำร้อง:{" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
                           <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำขอ:</span>
+                            <span>วันที่คำร้อง:</span>
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
                             </span>
@@ -884,7 +921,17 @@ function Employee_Paper() {
 
               })}
 
-              {(historyAccept||[]).map((doc, i) => {
+              {(historyAccept||[])
+                .filter(doc => {
+                const s = (doc.status_name ?? doc.status ?? doc.nowstatus ?? "");
+                return ["การตรวจสอบขั้นต้นเสร็จสิ้น", "อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง"]
+                  .some(x => s.includes(x));
+                })
+                .filter(doc => {
+                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
+                  return id.includes(searchTerm.toLowerCase());
+                })
+                .map((doc, i) => {
 
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
@@ -901,7 +948,7 @@ function Employee_Paper() {
                 return (
                   <article
                     key={`${docId}-${i}`}
-                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    className="rounded-md bg-white shadow p-4 mt-4"
                     style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -930,13 +977,13 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำขอ:{" "}
+                            ผู้ที่ยื่นคำร้อง:{" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
                           <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำขอ:</span>
+                            <span>วันที่คำร้อง:</span>
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(getCreatedAt(doc))}
                             </span>
@@ -1011,7 +1058,10 @@ function Employee_Paper() {
           {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
           {activeTab === "documentAll" && (
             <div>
-              {(documentAll || []).map((doc, i) => {
+              {(documentAll || []).filter(doc => {
+                const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
+                return id.includes(searchTerm.toLowerCase());
+              }).map((doc, i) => {
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
                 const isBlue = isBlueStatus(statusText);
@@ -1027,7 +1077,7 @@ function Employee_Paper() {
                 return (
                   <article
                     key={`${docId}-${i}`}
-                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    className="rounded-md bg-white shadow p-4 mt-4"
                     style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1054,13 +1104,13 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำขอ:{" "}
+                            ผู้ที่ยื่นคำร้อง:{" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
                           <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำขอ:</span>
+                            <span>วันที่คำร้อง:</span>
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
                             </span>
@@ -1164,7 +1214,13 @@ function Employee_Paper() {
           {/* ส่งกลับให้ผู้ใช้แก้ไขเอกสาร */}
           {activeTab === "history_change_des" && (
             <div>
-              {(historyChangeDes||[]).map((doc, i) => {
+              {(historyChangeDes||[])
+                .filter(doc => (doc.status_name ?? doc.status ?? doc.nowstatus ?? "").includes("ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"))
+                .filter(doc => {
+                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
+                  return id.includes(searchTerm.toLowerCase());
+                })
+                .map((doc, i) => {
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
                 const isBlue = isBlueStatus(statusText);
@@ -1180,7 +1236,7 @@ function Employee_Paper() {
                 return (
                   <article
                     key={`${docId}-${i}`}
-                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    className="rounded-md bg-white shadow p-4 mt-4"
                     style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1207,13 +1263,13 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำขอ:{" "}
-                            <span className="font-medium">{doc.owneremail ?? "—"} {doc.ownername}</span>
+                            ผู้ที่ยื่นคำร้อง:{" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
                           <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำขอ:</span>
+                            <span>วันที่คำร้อง:</span>
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
                             </span>
@@ -1280,7 +1336,17 @@ function Employee_Paper() {
           {/* ตรวจสอบขั้นต้นเสร็จสิ้น */}
           {activeTab === "history_accept" && (
             <div>
-              {(historyAccept||[]).map((doc, i) => {
+              {(historyAccept||[])
+                .filter(doc => {
+                  const s = (doc.status_name ?? doc.status ?? doc.nowstatus ?? "");
+                  return ["การตรวจสอบขั้นต้นเสร็จสิ้น", "อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง"]
+                    .some(x => s.includes(x));
+                })
+                .filter(doc => {
+                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
+                  return id.includes(searchTerm.toLowerCase());
+                })
+                .map((doc, i) => {
 
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
@@ -1297,7 +1363,7 @@ function Employee_Paper() {
                 return (
                   <article
                     key={`${docId}-${i}`}
-                    className="rounded-md bg-white shadow p-4 mx-6 mt-4"
+                    className="rounded-md bg-white shadow p-4 mt-4"
                     style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1324,13 +1390,13 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำขอ:{" "}
+                            ผู้ที่ยื่นคำร้อง:{" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
                           <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำขอ:</span>
+                            <span>วันที่คำร้อง:</span>
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(getCreatedAt(doc))}
                             </span>
@@ -1422,6 +1488,7 @@ function Employee_Paper() {
           const allowStatuses = [
             "อยู่ระหว่างการตรวจสอบขั้นต้น",
             "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
+            "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"
           ];
           const statusNow = (targetItem.status_name || "").trim();
           if (!allowStatuses.some(s => statusNow.includes(s))) {
@@ -1526,7 +1593,7 @@ function Employee_Paper() {
                     {detailData.id && (<p><span className="font-semibold">รหัสเอกสาร:</span> {detailData.id}</p>)}
                     {detailData.docId && (<p><span className="font-semibold">docId:</span> {detailData.docId}</p>)}
                     {detailData.title && (<p><span className="font-semibold">ชื่อเรื่อง:</span> {detailData.title}</p>)}
-                    {detailData.authorize_to && (<p><span className="font-semibold">ผู้ยื่นคำขอ:</span> {detailData.authorize_to}</p>)}
+                    {detailData.authorize_to && (<p><span className="font-semibold">ผู้ยื่นคำร้อง:</span> {detailData.authorize_to}</p>)}
                     {detailData.status_name && (<p><span className="font-semibold">สถานะ:</span> {detailData.status_name}</p>)}
                     {detailData.destination_name && (<p><span className="font-semibold">หน่วยงานปลายทาง:</span> {detailData.destination_name}</p>)}
                   </>

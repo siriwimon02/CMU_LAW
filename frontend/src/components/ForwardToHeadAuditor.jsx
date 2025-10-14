@@ -170,7 +170,13 @@ export default function ForwardToHeadAuditor({
           <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
             เลขที่คำขอ: {item?.request_no ?? item?.id ?? "-"}
           </p>
-          <p className="mt-2 text-lg sm:text-xl text-gray-800">
+          <p className="mt-2 text-lg sm:text-xl text-gray-800"style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            wordBreak: "break-word" // หรือ "break-all"
+          }}>
             ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
           </p>
 

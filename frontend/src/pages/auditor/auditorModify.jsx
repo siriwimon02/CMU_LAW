@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/docIcon";
 // import BackB from "../../components/backToDashboardButton";
 
-const ALLOW_STATUS = ["อยู่ระหว่างการตรวจสอบขั้นต้น", "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"];
+const ALLOW_STATUS = ["อยู่ระหว่างการตรวจสอบขั้นต้น", "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง", "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"];
 
 function AuditorModify() {
   const navigate = useNavigate();
