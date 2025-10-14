@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import ForwardToAuditorButton from "../../components/ForwardToAuditorButton";
 import ForwardToDepartmentButton from "../../components/ForwardToDepartmentButton";
-import TrackingHeader from "../../components/trackingHeader";
+import Navbar from '../../components/navbar'
 
 function SpvAuditor() {
   const authHeader = (localStorage.getItem("token") || "")
@@ -593,7 +593,7 @@ function SpvAuditor() {
 
   return (
     <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
-      <TrackingHeader />
+      <Navbar />
 
       {userInfo && (
         <div className="bg-white shadow rounded-lg p-4 m-6">

@@ -64,6 +64,7 @@ function DocumentDetails() {
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+        second: "2-digit",
       });
     } catch (e) {
       return dateString;
@@ -88,7 +89,7 @@ function DocumentDetails() {
     <div className="min-h-screen font-kanit bg-[#F8F8F8] pb-10">
       <Navbar />
       <div className="flex items-center justify-center mt-5">
-        <div className="bg-white rounded-2xl shadow-md p-6 w-[90vw] min-h-[75vh] flex flex-col">
+        <div className="bg-white rounded-2xl shadow-md p-6 w-[90vw] min-h-[100vh] flex flex-col">
           <h1 className="ml-5 text-2xl font-bold mb-5">ตรวจสอบประวัติเอกสาร</h1>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
             <div className="rounded-2xl bg-[#F6F8FF] p-5 border-l-[5px] border-[#66009F] shadow-sm">
