@@ -344,7 +344,13 @@ function FinalAuditCheck() {
                             >
                             {pendingDoc && (
                                 <div className="text-gray-700 space-y-2">
-                                <div><span className="font-semibold">เรื่อง:</span> {pendingDoc.title}</div>
+                                <div style={{
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                    wordBreak: "break-word" 
+                                }}><span className="font-semibold">เรื่อง:</span> {pendingDoc.title}</div>
                                 <div className="text-gray-600">
                                     <span className="font-medium font-semibold">ผู้ยื่นคำร้อง:</span> {pendingDoc.ownerEmail}
                                 </div>
@@ -374,7 +380,13 @@ function FinalAuditCheck() {
                                 >
                                 {pendingDoc && (
                                     <div className="text-gray-700 space-y-2">
-                                    <div><span className="font-semibold">เรื่อง:</span> {pendingDoc.title}</div>
+                                    <div style={{
+                                        display: "-webkit-box",
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: "vertical",
+                                        overflow: "hidden",
+                                        wordBreak: "break-word" 
+                                    }}><span className="font-semibold">เรื่อง:</span> {pendingDoc.title}</div>
                                     <div className="text-gray-600">
                                         <span className="font-semibold">ผู้ยื่นคำร้อง:</span> {pendingDoc.ownerEmail}
                                     </div>

@@ -186,7 +186,13 @@ export default function ForwardToDepartmentButton({
           <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังผู้ตรวจสอบ</h2>
 
           {/* เดิม: เลขที่คำขอ → ใหม่: เรื่อง */}
-          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
+          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900" style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            wordBreak: "break-word" 
+          }}>
             เรื่อง: {getTitle(item)}
           </p>
 

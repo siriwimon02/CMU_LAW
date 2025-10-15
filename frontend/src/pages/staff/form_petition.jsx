@@ -565,7 +565,11 @@ function FormPetition() {
                   </h2>
                   <div style={{ color: '#333', marginTop: 8, textAlign: 'left' }}>
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 16 }}>เรื่อง {title || '…'}</div>
+                      <div style={{ fontSize: 16, display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        wordBreak: "break-word" }}>เรื่อง {title || '…'}</div>
                     </div>
                     <div style={{ fontSize: 16 }}>
                       ส่งไปยัง&nbsp;

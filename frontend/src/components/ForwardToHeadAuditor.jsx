@@ -187,13 +187,23 @@ export default function ForwardToHeadAuditor({
         <div className="flex min-h-[356px] flex-col">
           <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังหัวหน้ากอง</h2>
 
-          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
+          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900" style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            wordBreak: "break-word" 
+          }}>
             เรื่อง: {getTitle(item)}
           </p>
-
-          {/* เดิม: ผู้ยื่นคำขอ → ใหม่: ผู้ยื่นคำร้อง (ชื่อและอีเมล) */}
-          <p className="mt-2 text-lg sm:text-xl text-gray-800">
-            ผู้ยื่นคำร้อง: {formatUser(item)}
+          <p className="mt-2 text-lg sm:text-xl text-gray-800"style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            wordBreak: "break-word" 
+          }}>
+            ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
           </p>
 
           <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกหัวหน้ากอง (ดูรายชื่อพนักงานที่ส่งไป)</label>
