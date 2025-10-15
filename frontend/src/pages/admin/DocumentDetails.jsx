@@ -119,7 +119,7 @@ function DocumentDetails() {
           <h1 className="text-lg font-bold mt-5 text-[#66009F]">ประวัติการดำเนินการเอกสาร</h1>
           
           <div className="m-5 overflow-hidden">
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className="max-h-[35vw] overflow-y-auto">
               <table className="min-w-full border-collapse">
                 <thead className="bg-[#F1EEFF] text-[#66009F] sticky top-0 z-10">
                   <tr>
