@@ -86,6 +86,26 @@ export default function ForwardToHeadAuditor({
       .sort((a, b) => a.label.localeCompare(b.label, "th"));
   }, [auditors]);
 
+  const getTitle = (row = {}) =>
+    row.title ?? row.doc_title ?? row.document_title ?? "-";
+
+  const formatUser = (row = {}) => {
+    const email =
+      row.owneremail ??
+      row.authorize_to ??
+      row.owner_email ??
+      row.email ??
+      "";
+    const name =
+      [row.firstname, row.lastname].filter(Boolean).join(" ") ||
+      row.ownername ||
+      row.authorize_name ||
+      row.requester_name ||
+      "";
+    if (name && email) return `${name} · ${email}`;
+    return name || email || "-";
+  };
+  
   const handleOpen = () => {
     if (isControlled) return;
     setInternalOpen(true);
@@ -168,16 +188,12 @@ export default function ForwardToHeadAuditor({
           <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังหัวหน้ากอง</h2>
 
           <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
-            เลขที่คำขอ: {item?.request_no ?? item?.id ?? "-"}
+            เรื่อง: {getTitle(item)}
           </p>
-          <p className="mt-2 text-lg sm:text-xl text-gray-800"style={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            wordBreak: "break-word" // หรือ "break-all"
-          }}>
-            ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
+
+          {/* เดิม: ผู้ยื่นคำขอ → ใหม่: ผู้ยื่นคำร้อง (ชื่อและอีเมล) */}
+          <p className="mt-2 text-lg sm:text-xl text-gray-800">
+            ผู้ยื่นคำร้อง: {formatUser(item)}
           </p>
 
           <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกหัวหน้ากอง (ดูรายชื่อพนักงานที่ส่งไป)</label>

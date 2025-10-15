@@ -535,10 +535,11 @@ function Employee_Paper() {
                     return <span style={{ color: "#E48500" }}>{statusText}</span>;
                   } else if (
                     statusText === "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน" ||
-                    statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"
+                    statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ" ||
+                    statusText === "ส่งคืนแก้ไขเอกสาร"
                   ) {
                     return <span style={{ color: "#CD0000" }}>{statusText}</span>;
-                  } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว") {
+                  } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว" || statusText ==="ตรวจสอบขั้นต้นเสร็จสิ้น") {
                     return <span style={{ color: "#05A967" }}>{statusText}</span>;
                   }
                   // default
@@ -594,7 +595,6 @@ function Employee_Paper() {
                         </p>
 
                         <p className="font-medium">
-                          <span className="text-black">สถานะ</span>{" "}
                           {checkstatus()}
                         </p>
                       </div>
@@ -701,9 +701,6 @@ function Employee_Paper() {
                           <span>{doc.title ?? "—"}</span>
                         </p>
 
-                        <p className="font-medium">
-                          <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
-                        </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
@@ -734,9 +731,9 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        <p className="text-gray-500">
-                          <span>สถานะปัจจุบัน : </span>{" "}
-                          <span>{doc.nowstatus}</span>
+                        
+                        <p className="font-medium">
+                          <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
                         </p>
                       </div>
 
@@ -802,9 +799,6 @@ function Employee_Paper() {
                           <span>{doc.doc_title ?? "—"}</span>
                         </p>
 
-                        <p className="font-medium">
-                          <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
-                        </p>
 
 
                         <p className="flex flex-wrap items-center">
@@ -837,11 +831,11 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        <p className="text-gray-500">
-                          <span>สถานะปัจจุบัน : </span>{" "}
-                          <span>{doc.nowstatus}</span>
-                        </p>
+                        
 
+                        <p className="font-medium">
+                          <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
+                        </p>
                       </div>
 
                       {/* ปุ่มการทำงาน */}
@@ -916,12 +910,14 @@ function Employee_Paper() {
                   return <span style={{ color: "#E48500" }}>{statusText}</span>;
                 } else if (
                   statusText === "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน" ||
-                  statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"
+                  statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ" ||
+                  statusText === "ส่งคืนแก้ไขเอกสาร"
                 ) {
                   return <span style={{ color: "#CD0000" }}>{statusText}</span>;
-                } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว") {
+                } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว" || statusText === "ตรวจสอบขั้นต้นเสร็จสิ้น") {
                   return <span style={{ color: "#05A967" }}>{statusText}</span>;
                 }
+
                 // default
                 return <span>{statusText || "—"}</span>;
               };
@@ -969,11 +965,11 @@ function Employee_Paper() {
                             </span>
                           </span>
                         </p>
-
                         <p className="font-medium">
-                          <span className="text-black">สถานะ</span>{" "}
+                          
                           { checkstatus() }
                         </p>
+
                       </div>
 
                       {/* ปุ่มการทำงาน */}
@@ -1091,9 +1087,6 @@ function Employee_Paper() {
                           <span>{doc.title ?? "—"}</span>
                         </p>
 
-                        <p className="font-medium">
-                          <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
-                        </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
@@ -1125,10 +1118,10 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        <p className="text-gray-500">
-                          <span>สถานะปัจจุบัน : </span>{" "}
-                          <span>{doc.nowstatus}</span>
+                        <p className="font-medium">
+                          <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
                         </p>
+                        
                       </div>
 
                       {/* ปุ่มการทำงาน */}
@@ -1210,9 +1203,6 @@ function Employee_Paper() {
                           <span>{doc.doc_title ?? "—"}</span>
                         </p>
 
-                        <p className="font-medium">
-                          <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
-                        </p>
 
 
                         <p className="flex flex-wrap items-center">
@@ -1245,10 +1235,10 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        <p className="text-gray-500">
-                          <span>สถานะปัจจุบัน : </span>{" "}
-                          <span>{doc.nowstatus}</span>
+                        <p className="font-medium">
+                          <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
                         </p>
+                        
 
 
                       </div>

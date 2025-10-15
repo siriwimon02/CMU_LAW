@@ -511,7 +511,7 @@ function SpvAuditor() {
 
     if (filter === FILTER_TO_DEPT) {
       return (
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4 ">
           {list.map((h) =>
             renderRow(
               {
@@ -642,7 +642,7 @@ function SpvAuditor() {
       </div>
 
       {/* 🔍 ช่องค้นหาเอกสาร (อยู่ใต้ปุ่ม 3 ปุ่ม) — จำกัดความกว้าง */}
-      <div className="w-full px-6 mt-4">
+      <div className="w-full px-6 mt-4 ">
         <div className="relative w-full max-w-[570px]">
           <input
             type="text"
@@ -671,7 +671,7 @@ function SpvAuditor() {
 
 
       {/* รายการเอกสาร */}
-      <div className="mx-6">{renderDocuments(filteredItems)}</div>
+      <div className="mx-6 mb-4">{renderDocuments(filteredItems)}</div>
 
       {/* ป๊อปอัป: ส่งคำขอไปยังหน่วยงานอื่น */}
       <ForwardToAuditorButton

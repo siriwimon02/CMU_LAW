@@ -11,16 +11,15 @@ import FormPetition from '../pages/staff/form_petition';
 import Tracking from '../pages/staff/tracking';
 import Modify from "../pages/staff/modify";
 import DetailForUser from '../pages/staff/detailForUser';
-// อธิการ
-import TrackingForChancellor from "../pages/Chancellor/tracking"
+
 // admin
 import Admin_Panel from '../pages/admin/admin_panel';
 import Admin_Action_Log from '../pages/admin/admin_action_log';
 import DocumentDetails from "../pages/admin/DocumentDetails";
 
-// ผู้อำนวยการคัดกรองเอกสาร (EYE)
+// ผู้อำนวยการคัดกรองเอกสาร 
 import SuperAuditorTracking from "../pages/superAuditor/superAuditorTracking";
-// auditor (NOT)
+// auditor 
 import AuditorTracking from '../pages/auditor/auditorTracking';
 // ผู้อำนวยการคัดกรองเอกสาร
 
@@ -29,7 +28,7 @@ import SpvFinalAudited from '../pages/superAuditor/spv_finalaudited';
 // auditor
 import AuditorModify from "../pages/auditor/auditorModify";
 
-// head auditor (BEL)
+// head auditor 
 import HeadAuditorTracking from '../pages/headAuditor/headAuditorTracking';
 import UploadDocumentApproved from '../pages/auditor/auditorApprove';
 import RequireAuth from '../components/RequireAuth';
@@ -74,8 +73,6 @@ export default function AppRoutes() {
         <Route path="/admin_action_log" element={<RequireAuth roles={['admin']}> <Admin_Action_Log/> </RequireAuth>} />
         <Route path="/document/:docId" element={<RequireAuth roles={['admin']}> <DocumentDetails/> </RequireAuth>} />
         
-        {/* อธิการบดี */}
-        <Route path="/chancellorTracking" element={<RequireAuth> <TrackingForChancellor/> </RequireAuth>}/>
         
       </Routes>
     </Router>
