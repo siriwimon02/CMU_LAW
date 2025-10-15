@@ -88,7 +88,7 @@ function Admin_Action_Log() {
             <Navbar />
             <div className="flex items-center justify-center mt-5">
                 <div className="bg-white rounded-2xl shadow-md p-6 w-[75vw] h-[100vh] flex flex-col shadow-[30px]">
-                    <h1 className="ml-5 text-2xl font-bold">ประวัติเอกสาร</h1>
+                    <h1 className="ml-5 text-[#66009F] text-2xl font-bold">ประวัติเอกสาร</h1>
                     <div className="relative w-full m-5 mb-3 flex items-center gap-2">
                         <div className="flex-1 relative mr-10">
                             <input
@@ -119,7 +119,7 @@ function Admin_Action_Log() {
                                                 {doc.title}
                                             </p>
                                             {/* ชื่อเอกสาร */}
-                                            <p className="text-sm text-gray-600 font-bold truncate">
+                                            <p className="text-sm font-bold truncate">
                                                 <span>เลขที่คำขอ:</span> {doc.doc_id}
                                             </p>
                                             {/* ผู้ยื่นคำขอ */}
@@ -131,7 +131,7 @@ function Admin_Action_Log() {
                                                 <span>วันที่ยื่นคำขอ:</span> {formatDate(doc.createdAt)}
                                             </p>
                                             {/* หน่วยงานปลายทาง */}
-                                            <p className={`text-sm truncate`}>
+                                            <p className={`text-sm text-gray-600 truncate`}>
                                                 <span>หน่วยงานปลายทาง: </span> 
                                                 <span className={`${getRoleColor(doc.destination_name)}`}>
                                                     {doc.destination_name}

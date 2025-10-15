@@ -70,30 +70,30 @@ function Admin_Panel() {
     }, [token]);
 
 
+    // const handleDeleteUser = async (userId) => {
+    //     if (!window.confirm('คุณต้องการลบผู้ใช้นี้?')) {
+    //         return;
+    //     }
 
-    const handleDeleteUser = async (userId) => {
-        if (!window.confirm('คุณต้องการลบผู้ใช้นี้?')) {
-            return;
-        }
+    //     try {
+    //         const res = await fetch(`/petitionAdmin/delete_user/${userId}`, {
+    //             method: 'DELETE',
+    //             headers: {
+    //                 "Authorization": token
+    //             }
+    //         });
 
-        try {
-            const res = await fetch(`/petitionAdmin/delete_user/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    "Authorization": token
-                }
-            });
+    //         if (!res.ok) throw new Error('Failed to delete user');
 
-            if (!res.ok) throw new Error('Failed to delete user');
+    //         setUsers(users.filter(user => user.id !== userId));
+    //         alert('ลบผู้ใช้สำเร็จ');
+    //     } catch (err) {
+    //         console.error('Error deleting user:', err);
+    //         alert('ลบผู้ใช้ไม่สำเร็จ');
+    //     }
+    // };
 
-            setUsers(users.filter(user => user.id !== userId));
-            alert('ลบผู้ใช้สำเร็จ');
-        } catch (err) {
-            console.error('Error deleting user:', err);
-            alert('ลบผู้ใช้ไม่สำเร็จ');
-        }
-    };
-
+    
     const filteredUsers = users.filter(
         (user) =>
         user.firstname.toLowerCase().includes(search.toLowerCase()) ||
@@ -105,7 +105,7 @@ function Admin_Panel() {
     const getRoleColor = (roleName) => {
         switch(roleName) {
             case 'user':
-                return 'bg-[#D9D9D9] text-[#000000]'; // เทา
+                return 'bg-[#E8FBFF] text-[#275CA1]'; // ฟ้า
             case 'auditor':
                 return 'bg-[#FFFBEB] text-[#CA8A04]'; // เหลือง
             case 'spv_auditor':
@@ -121,7 +121,7 @@ function Admin_Panel() {
         <div className='min-h-screen font-kanit bg-[#F8F8F8] pb-10'>
             <Navbar />
             <div className="flex items-center justify-center mt-5">
-                <div className="bg-white rounded-2xl shadow-md p-6 w-[75vw] h-[75vh] flex flex-col">
+                <div className="bg-white rounded-2xl shadow-md p-6 w-[90vw] h-[75vh] flex flex-col">
                     <h1 className="ml-5 text-xl font-bold">การจัดการสิทธิ์ผู้ใช้งาน</h1>
                     <div className="relative w-full m-5 mb-3 flex items-center gap-2">
                         <div className="flex-1 relative">
@@ -130,7 +130,7 @@ function Admin_Panel() {
                                 placeholder="ค้นหาด้วยชื่ออีเมลหรือ สิทธิ์"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 pl-10 border border-gray-300 placeholder-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                             <span className="absolute left-3 top-2.5 text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
@@ -149,9 +149,10 @@ function Admin_Panel() {
                             </button>
                         </div>
                     </div>
-                    <div className="overflow-y-auto flex-1 border rounded-lg m-5">
+
+                    <div className="overflow-y-auto flex-1 m-5">
                     <table className="min-w-full border-collapse">
-                        <thead className="bg-gray-100 sticky top-0">
+                        <thead className="bg-[#F1EEFF] sticky top-0">
                         <tr >
                             <th className="px-4 py-2 text-center text-gray-700">ชื่อผู้ใช้</th>
                             <th className="px-4 py-2 text-center text-gray-700">อีเมล</th>
@@ -161,7 +162,7 @@ function Admin_Panel() {
                         </thead>
                         <tbody>
                         {filteredUsers.map((user, i) => (
-                            <tr key={i} className="border-t text-center">
+                            <tr key={i} className="hover:bg-gray-50 border-gray-300 border-t text-center">
                             <td className="px-6 py-2">{user.firstname}</td>
                             <td className="px-6 py-2">{user.email}</td>
                             <td className="px-6 py-2">
@@ -175,7 +176,7 @@ function Admin_Panel() {
                                         setSelectedUser(user);
                                         setShowEditModal(true);
                                     }}
-                                    className="flex items-center text-black bg-white border border-[#A6A6A6] shadow-md rounded-[5px] px-4 py-1 text-sm font-medium hover:scale-105 border border-[#B9B9B9] ease-out">
+                                    className="flex items-center gap-1 px-4 py-2 text-sm text-gray-700 bg-gray-50 shadow-sm rounded-lg hover:text-white hover:bg-[#66009F] transition-colors duration-300">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4 mr-1">
                                             <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
                                             <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
@@ -183,12 +184,12 @@ function Admin_Panel() {
                                         แก้ไขสิทธิ์
                                     </button>
 
-                                    <button onClick={() => handleDeleteUser(user.id)}
+                                    {/* <button onClick={() => handleDeleteUser(user.id)}
                                     className="text-[#66009F] hover:text-red-500 hover:scale-105 transition-colors duration-300">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
                                             <path fillRule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clipRule="evenodd" />
                                         </svg>
-                                    </button>
+                                    </button> */}
                                 </div>
                             </td>
                             </tr>
