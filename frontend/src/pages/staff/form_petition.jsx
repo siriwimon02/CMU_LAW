@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+// import { Navigate } from 'react-router-dom';
 import Icon from "../../components/docIcon"
 import Navbar from '../../components/navbar'
+import { Navigate, useNavigate } from 'react-router-dom';
+
+
 // import { Icon } from '@iconify/react';
 
 function FormPetition() {
@@ -13,6 +16,7 @@ function FormPetition() {
     return <Navigate to="/login" replace />;
   }
 
+  const navigate = useNavigate();
 
   const [destinations, setDestinations] = useState([]);
   const [destinationId, setDestination] = useState('');
@@ -47,7 +51,6 @@ function FormPetition() {
   }, []);
   console.log(destinations);
 
-
   // เพิ่ม state & memo ด้านบนใกล้ ๆ state อื่น ๆ
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [modalStep, setModalStep] = useState('confirm'); // 'confirm' | 'success'
@@ -69,15 +72,26 @@ function FormPetition() {
     );
   }, [destinationId, title, authorize_to, position, affiliation, authorize_text, agree]);
 
+  // useEffect(() => {
+  //   if (confirmOpen && modalStep === 'success') {
+  //     const t = setTimeout(() => {
+  //       window.location.href = 'http://localhost:5173/tracking';
+  //       // หรือถ้าใช้ react-router: const nav = useNavigate(); แล้ว nav('/tracking', { replace: true })
+  //     }, 1000);
+  //     return () => clearTimeout(t);
+  //   }
+  // }, [confirmOpen, modalStep]);
+
   useEffect(() => {
     if (confirmOpen && modalStep === 'success') {
-      const t = setTimeout(() => {
-        window.location.href = 'http://localhost:5173/tracking';
-        // หรือถ้าใช้ react-router: const nav = useNavigate(); แล้ว nav('/tracking', { replace: true })
+      const timer = setTimeout(() => {
+        setConfirmOpen(false);
+        navigate('/tracking', { replace: true });
       }, 1000);
-      return () => clearTimeout(t);
+
+      return () => clearTimeout(timer); // ล้าง timer เมื่อ component unmount
     }
-  }, [confirmOpen, modalStep]);
+  }, [confirmOpen, modalStep, navigate]);
 
 
   const resetForm = () => {
