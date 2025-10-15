@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar from '../../components/navbar'
 import { Navigate, useNavigate } from "react-router-dom"; // ✅ import useNavigate
-
+import { useMemo } from "react";
 
 function FinalAuditCheck() {
     // ===== Auth token =====
@@ -12,6 +12,7 @@ function FinalAuditCheck() {
     const [historyEdit, setHistoryEdit] = useState([]);
     const [historyFinalAudited, setHistoryFinalAudited] = useState([]);
     const [filter, setFilter] = useState("เอกสารที่รอตรวจสอบ");
+    const [query, setQuery]   = useState('');
 
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate(); // ✅ ใช้ navigate
@@ -66,7 +67,7 @@ function FinalAuditCheck() {
     }, []);
 
     //console.log(historyFinalAudited);
-    console.log(documentAll)
+    //console.log(documentAll)
 
     const refreshDocuments = async () => {
         try {
@@ -134,11 +135,60 @@ function FinalAuditCheck() {
     }
 
 
+    //-------------ค้นหาเลขที่คำขอ--------------------//
+
+    // const filteredDocs = documentAll.filter(
+    //     (doc) => 
+    //         doc.doc_id.toLowerCase().includes(query.toLowerCase())
+    // );
+    // ตัวช่วย normalize: ตัดเว้นวรรค/ขีด และทำให้เป็น lower-case
+    const normalize = (s) => (s || '')
+    .toString()
+    .toLowerCase()
+    .replace(/[\s-]/g, ''); // ลบ space และ '-'
+
+    const filteredDocs = useMemo(() => {
+        const list = Array.isArray(documentAll) ? documentAll : [];
+        const nq = normalize(query); // คำค้นที่ normalize แล้ว
+
+        return list
+            // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+            // .filter(d => d.status_name === filter)
+            .filter(d => normalize(d.doc_id).includes(nq))  // << ค้นหาแบบบางส่วน
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }, [documentAll, /* filter, */ query]);
+
+    const filteredHisFinal = useMemo(() => {
+        const list = Array.isArray(historyFinalAudited) ? historyFinalAudited : [];
+        const nq = normalize(query); // คำค้นที่ normalize แล้ว
+
+        return list
+            // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+            // .filter(d => d.status_name === filter)
+            .filter(d => normalize(d.idformal).includes(nq))  // << ค้นหาแบบบางส่วน
+            .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+    }, [historyFinalAudited, /* filter, */ query]);
+
+    const filteredHisEdit = useMemo(() => {
+        const list = Array.isArray(historyEdit) ? historyEdit : [];
+        const nq = normalize(query); // คำค้นที่ normalize แล้ว
+
+        return list
+            // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+            // .filter(d => d.status_name === filter)
+            .filter(d => normalize(d.idformal).includes(nq))  // << ค้นหาแบบบางส่วน
+            .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+    }, [historyEdit, /* filter, */ query]);
+
+    
+
+
     // ✅ render documents ตาม filter
     function renderDocuments() {
         //console.log(documentAll, historyFinalAudited, historyEdit)
         if (filter === "เอกสารที่รอตรวจสอบ") {
             const list = Array.isArray(documentAll) ? documentAll : [];
+
             if (list.length === 0) {
                 return (
                     <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
@@ -146,9 +196,17 @@ function FinalAuditCheck() {
                     </div>
                 );
             }
+
+            if (filteredDocs.length === 0) {
+                return (
+                    <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
+                        <div className="mb-2 text-lg font-semibold">ไม่พบเอกสาร</div>
+                    </div>
+                );
+            }
             return (
                     <div className="space-y-4 mt-4">
-                        {documentAll.map((doc) => (
+                        {filteredDocs.map((doc) => (
                                 <div
                                     key={doc.id}
                                     className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center"
@@ -209,40 +267,40 @@ function FinalAuditCheck() {
                                             ดูรายละเอียด
                                         </button>
 
-                                        <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                        <button className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
                                         onClick={() => ClickForViewPet(doc.id)}>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            className="w-5 h-5"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                            fill="currentColor"
-                                            d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
-                                            />
-                                        </svg>
-                                            ดูเอกสาร
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                className="w-5 h-5"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                fill="currentColor"
+                                                d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
+                                                />
+                                            </svg>
+                                                ดูเอกสาร
                                         </button>
 
-                                        <button className="bg-green-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700"
+                                        <button className="bg-[#05A967] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700"
                                             onClick={() => openConfirm({
                                             id: doc.id,
                                             title: doc.title,
                                             ownerEmail: doc.owneremail})}>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="currentColor"
-                                            className="w-5 h-5"
-                                        >
-                                            <path
-                                            fillRule="evenodd"
-                                            d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
-                                            clipRule="evenodd"
-                                            />
-                                        </svg>
-                                            ตรวจสอบ
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="currentColor"
+                                                className="w-5 h-5"
+                                            >
+                                                <path
+                                                fillRule="evenodd"
+                                                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
+                                                clipRule="evenodd"
+                                                />
+                                            </svg>
+                                                ตรวจสอบ
                                         </button>
 
                                         <button className="bg-[#0073D9] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-[#0073D9]"
@@ -257,7 +315,7 @@ function FinalAuditCheck() {
                                             viewBox="0 0 24 24"
                                             strokeWidth={1.5}
                                             stroke="currentColor"
-                                            className="w-5 h-5"
+                                            className="w-5 h-5 rotate-315"
                                         >
                                             <path
                                             strokeLinecap="round"
@@ -300,7 +358,7 @@ function FinalAuditCheck() {
                             <ResultModal
                                 open={resultOpen}
                                 text="ตรวจสอบเรียบร้อยแล้ว"
-                                duration={500}             
+                                duration={1000}             
                                 onClose={() => setResultOpen(false)}
                             />
 
@@ -347,9 +405,18 @@ function FinalAuditCheck() {
                     </div>
                 );
             }
+
+            if (filteredHisFinal.length === 0) {
+                return (
+                    <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
+                        <div className="mb-2 text-lg font-semibold">ไม่พบเอกสาร</div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="space-y-4 mt-4">
-                {historyFinalAudited.map((item) => (
+                {filteredHisFinal.map((item) => (
                     <div key={`final-${item.historyId}`} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">  
                         <div className="flex-1 min-w-0 max-w-[800px]">
                             {/* ข้อมูลฝั่งซ้าย */}
@@ -381,7 +448,7 @@ function FinalAuditCheck() {
                             </p>
 
                             <p>
-                                หัวหน้าตรวจสอบ :{" "}
+                                หัวหน้าที่ตรวจสอบ :{" "}
                                 <span className="font-medium">
                                 {item.headauditByname} ({item.headauditByemail})
                                 </span>
@@ -425,7 +492,7 @@ function FinalAuditCheck() {
                             </button>
 
                             <button
-                                className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
                                 onClick={() => ClickForViewPet(item.docId)}>
                                 <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -460,9 +527,17 @@ function FinalAuditCheck() {
                 );
             }
 
+            if (filteredHisEdit.length === 0) {
+                return (
+                    <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
+                        <div className="mb-2 text-lg font-semibold">ไม่พบเอกสาร</div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="space-y-4 mt-4">
-                {list.map((edit) => (
+                {filteredHisEdit.map((edit) => (
                     <div key={edit.historyId} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
                         <div className="flex-1 min-w-0 max-w-[800px]">
                             {/* ซ้าย */}
@@ -526,7 +601,7 @@ function FinalAuditCheck() {
                             </button>
 
                             <button
-                                className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
                                 onClick={() => ClickForViewPet(edit.docId)} // หรือส่ง edit.docId ก็ได้ตามที่ฟังก์ชันต้องการ
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
@@ -766,8 +841,8 @@ function FinalAuditCheck() {
 
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-            alert(data.message || `ส่งกลับไม่สำเร็จ (HTTP ${res.status})`);
-            return;
+                alert(data.message || `ส่งกลับไม่สำเร็จ (HTTP ${res.status})`);
+                return;
             }
 
             // ปิดโมดัล + รีเฟรช
@@ -903,16 +978,60 @@ function FinalAuditCheck() {
         <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
         <Navbar />
 
-        <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="w-fit border-2 border-purple-500 text-gray-700 rounded-lg px-5 py-3 
-                        focus:outline-none focus:ring-purple-500 mt-4 ml-4"
-        >
-            <option value="เอกสารที่รอตรวจสอบ">เอกสารที่รอตรวจสอบ</option>
-            <option value="เอกสารที่ตรวจสอบเรียบร้อย">เอกสารที่ตรวจสอบเรียบร้อย</option>
-            <option value="เอกสารที่ส่งกลับไปแก้ไข">เอกสารที่ส่งกลับไปแก้ไข</option>
-        </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mx-4">
+            <div className="relative w-full">
+                {/* ไอคอนซ้าย */}
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#66009F]">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M9.5 2A1.5 1.5 0 0 0 8 3.5v1A1.5 1.5 0 0 0 9.5 6h5A1.5 1.5 0 0 0 16 4.5v-1A1.5 1.5 0 0 0 14.5 2z"/>
+                    <path fillRule="evenodd" d="M6.5 4.037c-1.258.07-2.052.27-2.621.84C3 5.756 3 7.17 3 9.998v6c0 2.829 0 4.243.879 5.122c.878.878 2.293.878 5.121.878h6c2.828 0 4.243 0 5.121-.878c.879-.88.879-2.293.879-5.122v-6c0-2.828 0-4.242-.879-5.121c-.569-.57-1.363-.77-2.621-.84V4.5a3 3 0 0 1-3 3h-5a3 3 0 0 1-3-3zM7 9.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 13.25a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5zM7 16.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5zm3.5 0a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5z" clipRule="evenodd"/>
+                    </svg>
+                </span>
+
+                {/* select */}
+                <select
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    className="appearance-none border-2 border-purple-500 text-gray-700 rounded-lg
+                            px-5 py-3 pl-12 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                    aria-label="ตัวกรองสถานะเอกสาร"
+                >
+                    <option value="เอกสารที่รอตรวจสอบ">เอกสารที่รอตรวจสอบ</option>
+                    <option value="เอกสารที่ตรวจสอบเรียบร้อย">เอกสารที่ตรวจสอบเรียบร้อย</option>
+                    <option value="เอกสารที่ส่งกลับไปแก้ไข">เอกสารที่ส่งกลับไปแก้ไข</option>
+                </select>
+
+            </div>
+
+            <div className="relative w-full">
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="ค้นหาเลขที่คำขอ"
+                    className="w-fit border-2 border-purple-500 text-gray-700 rounded-lg px-12 py-3 
+                                focus:outline-none focus:ring-purple-500 bg-white w-full"
+                />
+                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#66009F]">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6 absolute left-2 top-1/2 -translate-y-1/2 text-[#66009F]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+                        />
+                    </svg>                
+                </span>
+            </div>            
+        </div>
+
+
 
         <div className="p-4 grid gap-4">{renderDocuments()}</div>
         </div>

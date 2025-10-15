@@ -43,7 +43,7 @@ router.post('/', upload.array("attachments", 5), async (req, res) => {
     }
 
     const find_status = await prisma.status.findUnique({
-        where : { status : "รอรับเข้ากอง" }
+        where : { status : "รอรับเรื่อง" }
     })
 
     const { title, authorize_to, position, affiliation, authorize_text } = req.body;
@@ -187,7 +187,7 @@ router.get('/', async (req, res) => {
     console.log(req.user.id);
 
     const find_status2 = await prisma.status.findUnique({
-        where: { status: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+        where: { status: "ส่งคืนแก้ไขเอกสาร" }
     });
 
     const petition_doc = await prisma.documentPetition.findMany({
@@ -274,8 +274,8 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
         const needPresidentCard = req.body.needPresidentCard === "true";
         const needUniversityHouse = req.body.needUniversityHouse === "true";
 
-        const find_st1 = await prisma.status.findUnique({ where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" } });
-        const find_st2 = await prisma.status.findUnique({ where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" } });
+        const find_st1 = await prisma.status.findUnique({ where : { status : "ส่งคืนแก้ไขเอกสาร" } });
+        const find_st2 = await prisma.status.findUnique({ where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว" } });
 
         let existingDoc = await prisma.documentPetition.findFirst({
             where: { id: documentId },
@@ -413,10 +413,8 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
                     }
                 });
             }
-
             isUploaded = true;
         }
-
 
         if (!isUpdated && !isUploaded) {
             return res.status(400).json({message: "Did not updated or upload anything else" });
@@ -436,15 +434,6 @@ router.put('/edit/:docId', upload.array("attachments", 5), async (req, res) => {
         res.status(500).json({ error: "Failed to update document" });
     }
 });
-
-
-
-
-
-
-
-
-
 
 
 export default router;

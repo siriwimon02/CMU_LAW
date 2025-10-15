@@ -12,6 +12,7 @@ function UploadDocumentApproved () {
     const [historyRejectDoc, setHistoryRejectDoc] = useState([]);
 
     const [filter, setFilter] = useState("รอการพิจารณา");
+    const [query, setQuery]   = useState('');
 
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -132,6 +133,43 @@ function UploadDocumentApproved () {
 
     }
 
+    const normalize = (s) => (s || '')
+    .toString()
+    .toLowerCase()
+    .replace(/[\s-]/g, ''); // ลบ space และ '-'
+
+    const filteredDocs = useMemo(() => {
+        const list = Array.isArray(documentAll) ? documentAll : [];
+        const nq = normalize(query); // คำค้นที่ normalize แล้ว
+
+        return list
+            // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+            // .filter(d => d.status_name === filter)
+            .filter(d => normalize(d.doc_id).includes(nq))  // << ค้นหาแบบบางส่วน
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }, [documentAll, /* filter, */ query]);
+
+    const filteredHisApprove = useMemo(() => {
+        const list = Array.isArray(historyApprove) ? historyApprove : [];
+        const nq = normalize(query); // คำค้นที่ normalize แล้ว
+
+        return list
+            // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+            // .filter(d => d.status_name === filter)
+            .filter(d => normalize(d.document.id_doc).includes(nq))  // << ค้นหาแบบบางส่วน
+            .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+    }, [historyApprove, /* filter, */ query]);
+
+    const filteredReject = useMemo(() => {
+        const list = Array.isArray(historyRejectDoc) ? historyRejectDoc : [];
+        const nq = normalize(query); // คำค้นที่ normalize แล้ว
+
+        return list
+            // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+            // .filter(d => d.status_name === filter)
+            .filter(d => normalize(d.document.id_doc).includes(nq))  // << ค้นหาแบบบางส่วน
+            .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+    }, [historyRejectDoc, /* filter, */ query]);
 
 
 
@@ -140,6 +178,13 @@ function UploadDocumentApproved () {
 //--------------------------------เอกสาร ที่ show ขึ้น---------------------------------------//
     function renderDocuments () {
         if (filter === "รอการพิจารณา") {
+            if (filteredDocs.length === 0) {
+                return (
+                    <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
+                        <div className="mb-2 text-lg font-semibold">ไม่พบเอกสาร</div>
+                    </div>
+                );
+            }
             return (
                 <div className="space-y-4 mt-4">
                     {documentAll.length === 0 ? (
@@ -147,7 +192,7 @@ function UploadDocumentApproved () {
                         ยังไม่มีเอกสารที่รอการพิจารณา
                         </p>
                     ) : (
-                        documentAll.map((doc) => {
+                        filteredDocs.map((doc) => {
                             const hasGenerated = !!doc.attachmentsByType?.GenerateDocument?.length;
                             return (
                                 <div key={doc.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -302,6 +347,13 @@ function UploadDocumentApproved () {
 
 
         if (filter === "ผ่านการอนุมัติ"){
+            if (filteredHisApprove.length === 0) {
+                return (
+                    <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
+                        <div className="mb-2 text-lg font-semibold">ไม่พบเอกสาร</div>
+                    </div>
+                );
+            }
             return (
                 <div className="space-y-4 mt-4">
                     {historyApprove.length === 0 ? (
@@ -309,7 +361,7 @@ function UploadDocumentApproved () {
                             ยังไม่มีเอกสารที่ผ่านการอนุมัติคำร้อง
                         </p>
                     ) : (
-                        historyApprove.map((h) => (
+                        filteredHisApprove.map((h) => (
                             <div key={h.document.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
                                 <div className="flex-1 min-w-0 max-w-[800px]">
                                     <h3 className="font-bold text-xl text-gray-800 mb-2 break-words line-clamp-2">{h.document.title}</h3>
@@ -394,6 +446,13 @@ function UploadDocumentApproved () {
         }
 
         if (filter === "ไม่ผ่านการอนุมัติ"){
+            if (filteredReject.length === 0) {
+                return (
+                    <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-gray-600">
+                        <div className="mb-2 text-lg font-semibold">ไม่พบเอกสาร</div>
+                    </div>
+                );
+            }
             return (
                 <div className="space-y-4 mt-4">
                     {historyRejectDoc.length === 0 ? (
@@ -401,7 +460,7 @@ function UploadDocumentApproved () {
                             ยังไม่มีเอกสารที่ถูกปฏิเสธคำร้อง
                         </p>
                     ) : (
-                        historyRejectDoc.map((h) => (
+                        filteredReject.map((h) => (
                             <div key={h.document.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
                                 <div className="flex-1 min-w-0 max-w-[800px]">
                                     <h3 className="font-bold text-xl text-gray-800 mb-2 break-words line-clamp-2">{h.document.title}</h3>
@@ -681,7 +740,7 @@ function UploadDocumentApproved () {
                         : "bg-white border-gray-300 hover:shadow-lg"}`}
                     onClick={() => setFilter("รอการพิจารณา")}>
     
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-6 text-purple-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="size-6 text-[#66009F]">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                     </svg>
                     <span className="font-bold text-black">เอกสารรอการพิจารณา</span>
@@ -693,7 +752,7 @@ function UploadDocumentApproved () {
                         ? "bg-purple-50 border-purple-500 shadow-lg" 
                         : "bg-white border-gray-300 hover:shadow-lg"}`}
                     onClick={() => setFilter("ผ่านการอนุมัติ")}>
-                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-purple-600 text-white">
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-[#66009F] text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75" />
                     </svg>
@@ -707,7 +766,7 @@ function UploadDocumentApproved () {
                         ? "bg-purple-50 border-purple-500 shadow-lg" 
                         : "bg-white border-gray-300 hover:shadow-lg"}`}
                     onClick={() => setFilter("ไม่ผ่านการอนุมัติ")}>
-                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-purple-600 text-white">
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-[#66009F] text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -715,6 +774,33 @@ function UploadDocumentApproved () {
                     <span className="font-bold text-black">เอกสารไม่ผ่านการอนุมัติ</span>
                 </button>
 
+
+                <div className="relative inline-block">
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="พิมพ์เพื่อค้นหาเลขที่เอกสาร"
+                        className="w-190 border-2 border-purple-500 text-gray-700 rounded-lg px-12 py-3 
+                                    focus:outline-none focus:ring-purple-500 bg-white"
+                    />
+                    <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#66009F]">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-6 h-6 absolute left-2 top-1/2 -translate-y-1/2 text-[#66009F]"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+                            />
+                        </svg>                
+                    </span>
+                </div>
              </div>
 
             <div className="p-4 grid gap-4">{renderDocuments()}</div>

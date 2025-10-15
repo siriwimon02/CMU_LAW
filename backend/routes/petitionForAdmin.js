@@ -276,7 +276,7 @@ router.get('/api/action_log/:docId', async (req, res) => {
     }
 
     const findstatus1 = await prisma.status.findUnique({
-        where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
+        where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว" }
     });
 
     const findstatus2 = await prisma.status.findUnique({

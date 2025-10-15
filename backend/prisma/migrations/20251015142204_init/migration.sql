@@ -84,18 +84,6 @@ CREATE TABLE "public"."Destination" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."DocumentActionsLog" (
-    "id" SERIAL NOT NULL,
-    "userId" INTEGER NOT NULL,
-    "docId" INTEGER NOT NULL,
-    "action" VARCHAR(255) NOT NULL,
-    "time_act" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "node_text" TEXT NOT NULL,
-
-    CONSTRAINT "DocumentActionsLog_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "public"."AttachmentType" (
     "id" SERIAL NOT NULL,
     "type_name" VARCHAR(255) NOT NULL,
@@ -201,15 +189,6 @@ CREATE UNIQUE INDEX "Status_status_key" ON "public"."Status"("status");
 CREATE UNIQUE INDEX "Destination_des_name_key" ON "public"."Destination"("des_name");
 
 -- CreateIndex
-CREATE INDEX "DocumentActionsLog_userId_idx" ON "public"."DocumentActionsLog"("userId");
-
--- CreateIndex
-CREATE INDEX "DocumentActionsLog_docId_idx" ON "public"."DocumentActionsLog"("docId");
-
--- CreateIndex
-CREATE INDEX "DocumentActionsLog_time_act_idx" ON "public"."DocumentActionsLog"("time_act");
-
--- CreateIndex
 CREATE UNIQUE INDEX "AttachmentType_type_name_key" ON "public"."AttachmentType"("type_name");
 
 -- CreateIndex
@@ -286,12 +265,6 @@ ALTER TABLE "public"."DocumentNeed" ADD CONSTRAINT "DocumentNeed_documentId_fkey
 
 -- AddForeignKey
 ALTER TABLE "public"."DocumentNeed" ADD CONSTRAINT "DocumentNeed_requiredDocumentId_fkey" FOREIGN KEY ("requiredDocumentId") REFERENCES "public"."RequiredDocument"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."DocumentActionsLog" ADD CONSTRAINT "DocumentActionsLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."DocumentActionsLog" ADD CONSTRAINT "DocumentActionsLog_docId_fkey" FOREIGN KEY ("docId") REFERENCES "public"."DocumentPetition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."DocumentAttachment" ADD CONSTRAINT "DocumentAttachment_docId_fkey" FOREIGN KEY ("docId") REFERENCES "public"."DocumentPetition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

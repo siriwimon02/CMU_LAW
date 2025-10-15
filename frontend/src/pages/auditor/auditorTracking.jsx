@@ -284,99 +284,6 @@ function Employee_Paper() {
   }, [activeTab, fetchUrl, authHeader, reloadKey, navigate]);
 
 
-  // const currentItems = useMemo(() => {
-  //   if (activeTab !== "all") {
-  //     return activeTab === "documentAll"
-  //       ? documentAll
-  //       : activeTab === "history_change_des"
-  //       ? historyChangeDes
-  //       : historyAccept;
-  //   }
-  //   const tag = (x, bucket) => ({ ...x, __bucket: bucket });
-  //   return [
-  //     ...documentAll.map((x) => tag(x, "ที่รอตรวจขั้นต้น")),
-  //     ...historyChangeDes.map((x) => tag(x, "ประวัติส่งกลับแก้ไข")),
-  //     ...historyAccept.map((x) => tag(x, "ประวัติตรวจเสร็จสิ้น")),
-  //   ];
-  // }, [activeTab, documentAll, historyChangeDes, historyAccept]);
-
-
-
-  // ===== Detail modal =====
-  // const openDetail = async (doc) => {
-  //   try {
-  //     const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-  //     if (!docId) return alert("ไม่พบรหัสเอกสาร");
-  //     setDetailOpen(true);
-  //     setDetailLoading(true);
-  //     setDetailData(null);
-
-  //     const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
-  //       headers: { Authorization: authHeader },
-  //     });
-  //     if (res.status === 401) {
-  //       navigate("/login", { replace: true });
-  //       return;
-  //     }
-  //     const data = res.ok ? await res.json() : null;
-  //     setDetailData((data?.setdoc || data) || { error: true, message: "ไม่พบข้อมูลเอกสาร" });
-  //   } catch (e) {
-  //     setDetailData({ error: true, message: "โหลดรายละเอียดไม่สำเร็จ" });
-  //   } finally {
-  //     setDetailLoading(false);
-  //   }
-  // };
-  // const closeDetail = () => {
-  //   setDetailOpen(false);
-  //   setDetailData(null);
-  //   setDetailLoading(false);
-  // };
-
-  // ===== alert fallback =====
-  // const viewDetail = async (doc) => {
-  //   try {
-  //     const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-  //     if (!docId) return alert("ไม่พบรหัสเอกสาร");
-  //     const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
-  //       headers: { Authorization: authHeader },
-  //     });
-  //     if (res.status === 401) return navigate("/login", { replace: true });
-  //     if (!res.ok) return alert("โหลดรายละเอียดไม่สำเร็จ");
-  //     const json = await res.json();
-  //     const d = json?.setdoc || json;
-  //     alert(
-  //       [
-  //         `เรื่อง: ${d.title || "-"}`,
-  //         `ผู้ยื่น: ${d.authorize_to || "-"}`,
-  //         `สถานะ: ${d.status_name || "-"}`,
-  //         `ปลายทาง: ${d.destination_name || "-"}`,
-  //         `สร้างเมื่อ: ${formatThaiDateTime(d.createdAt)}`,
-  //       ].join("\n")
-  //     );
-  //   } catch (e) {
-  //     alert("เกิดข้อผิดพลาดในการโหลดรายละเอียด");
-  //   }
-  // };
-
-  // ดูเอกสารแนบ/ข้อมูลเอกสารแบบย่อ
-  // const viewDocs = async (doc) => {
-  //   try {
-  //     const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-  //     if (!docId) return alert("ไม่พบรหัสเอกสาร");
-  //     const res = await fetch(`http://localhost:3001/petitionAudit/document/${docId}`, {
-  //       headers: { Authorization: authHeader },
-  //     });
-  //     if (res.status === 401) return navigate("/login", { replace: true });
-  //     if (!res.ok) return alert("ไม่สามารถดึงเอกสารได้");
-  //     const json = await res.json();
-  //     const d = json?.setdoc || json;
-  //     const files = (d.attachments || d.files || []).map((f) => `• ${f?.originalname || f?.name || f}`);
-  //     alert([`ไฟล์แนบ (${files.length}):`, ...(files.length ? files : ["— ไม่มีไฟล์แนบ —"])].join("\n"));
-  //   } catch (e) {
-  //     alert("เกิดข้อผิดพลาดในการดึงเอกสาร");
-  //   }
-  // };
-
   // แทนที่ฟังก์ชันเดิมสองอันนี้
   const ClickForMoreDetail = (doc) => {
     const id = getDocIdNumeric(doc);
@@ -389,34 +296,6 @@ function Employee_Paper() {
     navigate(`/view/${id}`);
   };
 
-
-  // const approveDoc = async (doc) => {
-  //   const docId = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id;
-  //   if (!docId) return alert("ไม่พบรหัสเอกสาร");
-  //   const text = window.prompt("บันทึกข้อเสนอแนะ (ไม่บังคับ)", "");
-  //   try {
-  //     const res = await fetch(`http://localhost:3001/petitionAudit/update_st_audit_by_audit/${docId}`, {
-  //       method: "PUT",
-  //       headers: { Authorization: authHeader, "Content-Type": "application/json" },
-  //       body: JSON.stringify({ text_suggesttion: text || "" }),
-  //     });
-  //     if (res.status === 401) return navigate("/login", { replace: true });
-  //     if (!res.ok) return alert(`ตรวจสอบไม่สำเร็จ (${res.status})`);
-
-  //     // ✅ คงการ์ดไว้ในลิสต์ แต่ปรับสถานะใหม่แทนการ reload
-  //     setDocumentAll(prev =>
-  //       prev.map(d =>
-  //         (d.id ?? d.docId ?? d.documentId ?? d.doc_id) === docId
-  //           ? { ...d, status_name: "ตรวจสอบขั้นต้นเสร็จสิ้น", updated_at: new Date().toISOString() }
-  //           : d
-  //       )
-  //     );
-  //     alert("อัปเดตสถานะ: ตรวจสอบเสร็จสิ้น");
-  //     // ❌ ลบ setReloadKey
-  //   } catch (e) {
-  //     alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
-  //   }
-  // };
 
 
   const submitSendBack = async ({ item, note }) => {
@@ -440,7 +319,7 @@ function Employee_Paper() {
           (d.id ?? d.docId ?? d.documentId ?? d.doc_id) === docId
             ? {
                 ...d,
-                status_name: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร",
+                status_name: "ส่งคืนแก้ไขเอกสาร",
                 updated_at: new Date().toISOString(),
                 note_text: (note || "").trim() || "-",
               }
@@ -460,87 +339,6 @@ function Employee_Paper() {
     }
   };
 
-  // const sendBack = (doc) => {
-  //   if (!doc) return;
-  //   setSendBackTarget(doc);
-  //   setSendBackOpen(true);
-  // };
-
-  // const attachFiles = async (doc) => {
-  //   // ใช้ helper เดิมถ้ามี; ถ้าไม่มีใช้บรรทัด fallback นี้
-  //   const docId = (typeof getDocIdNumeric === "function")
-  //     ? getDocIdNumeric(doc)
-  //     : (doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id ?? 0);
-
-  //   if (!docId) return alert("ไม่พบรหัสเอกสาร");
-
-  //   // ฟอร์มแก้ไร้องย่างเร็ว (ถ้าจะสวย ค่อยเปลี่ยนเป็น modal ภายหลัง)
-  //   const title = window.prompt("เรื่อง (title):", doc?.title ?? "");
-  //   if (title === null) return; // กดยกเลิก
-
-  //   const authorizeTo = window.prompt("ผู้รับมอบอำนาจ (authorizeTo):", doc?.authorize_to ?? "");
-  //   if (authorizeTo === null) return;
-
-  //   const position = window.prompt("ตำแหน่ง (position):", doc?.position ?? "");
-  //   if (position === null) return;
-
-  //   const affiliation = window.prompt("สังกัด/หน่วยงาน (affiliation):", doc?.affiliation ?? "");
-  //   if (affiliation === null) return;
-
-  //   const authorizeText = window.prompt("รายละเอียด (authorizeText):", doc?.authorize_text ?? "");
-  //   if (authorizeText === null) return;
-
-  //   // ส่งเฉพาะ "ฟิลด์" เท่านั้น (multer().none() รองรับ form-data ที่มีแต่ฟิลด์)
-  //   const fd = new FormData();
-  //   fd.append("title", (title || "").trim());
-  //   fd.append("authorizeTo", (authorizeTo || "").trim());
-  //   fd.append("position", (position || "").trim());
-  //   fd.append("affiliation", (affiliation || "").trim());
-  //   fd.append("authorizeText", (authorizeText || "").trim());
-
-  //   try {
-  //     const res = await fetch(`http://localhost:3001/petitionAudit/update_document_ByAuditor/${docId}`, {
-  //       method: "PUT",
-  //       headers: { Authorization: authHeader },
-  //       body: fd,
-  //     });
-
-
-  //     if (res.status === 401) return navigate("/login", { replace: true });
-  //     if (!res.ok) {
-  //       const t = await res.text().catch(() => "");
-  //       return alert(`แก้ไขเอกสารไม่สำเร็จ (${res.status})\n${t}`);
-  //     }
-
-  //     // อัปเดตการ์ดให้ "คงอยู่" และสะท้อนค่าที่แก้ไขแล้ว
-  //     const applyPatch = (arr) =>
-  //       (Array.isArray(arr) ? arr : []).map((d) => {
-  //         const idA =
-  //           d?.id ?? d?.docId ?? d?.documentId ?? d?.doc_id ?? d?.request_no;
-  //         if (String(idA) !== String(docId)) return d;
-  //         return {
-  //           ...d,
-  //           title,
-  //           authorize_to: authorizeTo,
-  //           position,
-  //           affiliation,
-  //           authorize_text: authorizeText,
-  //           status_name: "เจ้าหน้าที่แก้ไขเอกสารแล้ว",
-  //           updated_at: new Date().toISOString(),
-  //         };
-  //       });
-
-  //     // อัปเดตทุกลิสต์ที่อาจมีเอกสารนี้อยู่
-  //     setDocumentAll((prev) => applyPatch(prev));
-  //     setHistoryChangeDes?.((prev) => applyPatch(prev));
-  //     setHistoryAccept?.((prev) => applyPatch(prev));
-
-  //     alert("บันทึกการแก้ไขเรียบร้อย");
-  //   } catch (e) {
-  //     console.error(e);
-  //     alert("เกิดข้อผิดพลาดในการแก้ไขเอกสาร");
-  //   }
-  // };
 
   const ClickForModify = (doc) => {
     const id = doc?.id ?? doc?.docId ?? doc?.documentId ?? doc?.doc_id ?? doc?.request_no;
@@ -549,7 +347,75 @@ function Employee_Paper() {
   };
 
 
-  console.log(documentAll);
+
+
+  // console.log("documentAll",documentAll);
+  // console.log("history edit",historyChangeDes);
+  // console.log("historyAccept",historyAccept);
+
+  const normalize = (s) => (s || '')
+  .toString()
+  .toLowerCase()
+  .replace(/[\s-]/g, ''); // ลบ space และ '-'
+
+  const filteredDocs = useMemo(() => {
+      const list = Array.isArray(documentAll) ? documentAll : [];
+      const nq = normalize(searchTerm); // คำค้นที่ normalize แล้ว
+
+      return list
+          // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+          // .filter(d => d.status_name === filter)
+          .filter(d => normalize(d.doc_id).includes(nq))  // << ค้นหาแบบบางส่วน
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [documentAll, /* filter, */ searchTerm]);  
+
+  const filteredSendEdit = useMemo(() => {
+      const list = Array.isArray(historyChangeDes) ? historyChangeDes : [];
+      const nq = normalize(searchTerm); // คำค้นที่ normalize แล้ว
+
+      return list
+          // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+          // .filter(d => d.status_name === filter)
+          .filter(d => normalize(d.idformal).includes(nq))  // << ค้นหาแบบบางส่วน
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [documentAll, /* filter, */ searchTerm]);  
+
+  const filteredAccept = useMemo(() => {
+      const list = Array.isArray(historyAccept) ? historyAccept : [];
+      const nq = normalize(searchTerm); // คำค้นที่ normalize แล้ว
+
+      return list
+          // ถ้าต้องกรองตามสถานะด้วย ก็ใส่ก่อน เช่น:
+          // .filter(d => d.status_name === filter)
+          .filter(d => normalize(d.idformal).includes(nq))  // << ค้นหาแบบบางส่วน
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [documentAll, /* filter, */ searchTerm]);  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   return (
@@ -644,28 +510,46 @@ function Employee_Paper() {
           </div>
 
 
+
+
+
+
+
+
+
+
+
+
           {/* รายการเอกสาร */}
           {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
           {activeTab === "all" && (
             <div>
-              {(documentAll || []).filter(doc => {
-                const id = String(doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
-                return id.includes(searchTerm.toLowerCase());
-              }).map((doc, i) => {
+              {(filteredDocs || []).map((doc, i) => {
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
                 const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
-                const isBlue = isBlueStatus(statusText);
-                const isGreen = isGreenStatus(statusText);
-                const isOrange = isOrangeStatus(statusText);
+
+                const checkstatus = () => {
+                  const statusText = doc.status_name ?? "";
+
+                  if (statusText === "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่") {
+                    return <span style={{ color: "#E48500" }}>{statusText}</span>;
+                  } else if (
+                    statusText === "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน" ||
+                    statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"
+                  ) {
+                    return <span style={{ color: "#CD0000" }}>{statusText}</span>;
+                  } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว") {
+                    return <span style={{ color: "#05A967" }}>{statusText}</span>;
+                  }
+                  // default
+                  return <span>{statusText || "—"}</span>;
+                };
+
 
                 const isFinalized =
-                  statusText.includes("ตรวจสอบขั้นต้นเสร็จสิ้น") ||
-                  statusText.includes("ส่งกลับให้ผู้ใช้แก้ไขเอกสาร");
+                  statusText.includes("เจ้าหน้าที่ตรวจสอบแล้ว") ||
+                  statusText.includes("แก้ไขเอกสารเรียบร้อยแล้ว");
 
-                // ทำ id สำหรับ key และการนำทาง
-                // const docId =
-                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
-                
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
                 return (
@@ -711,19 +595,7 @@ function Employee_Paper() {
 
                         <p className="font-medium">
                           <span className="text-black">สถานะ</span>{" "}
-                          <span
-                            style={
-                              isBlue
-                                ? { color: "#CD0000" }
-                                : isGreen
-                                ? { color: "#05A967" }
-                                : isOrange
-                                ? { color: "#E48500" }
-                                : { color: "#666666" }
-                            }
-                          >
-                            {statusText || "—"}
-                          </span>
+                          {checkstatus()}
                         </p>
                       </div>
 
@@ -804,22 +676,7 @@ function Employee_Paper() {
               })}
             
 
-              {(historyChangeDes||[])
-                .filter(doc => (doc.status_name ?? doc.status ?? doc.nowstatus ?? "").includes("ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"))
-                .filter(doc => {
-                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
-                  return id.includes(searchTerm.toLowerCase());
-                })
-                .map((doc, i) => {
-                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
-                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
-                const isBlue = isBlueStatus(statusText);
-                const isGreen = isGreenStatus(statusText);
-                const isOrange = isOrangeStatus(statusText);
-
-                // ทำ id สำหรับ key และการนำทาง
-                // const docId =
-                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+              {(filteredSendEdit||[]).map((doc, i) => {
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
@@ -844,6 +701,10 @@ function Employee_Paper() {
                           <span>{doc.title ?? "—"}</span>
                         </p>
 
+                        <p className="font-medium">
+                          <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
+                        </p>
+
                         <p className="flex flex-wrap items-center">
                           <span>
                             เลขที่คำขอ:{" "}
@@ -854,7 +715,7 @@ function Employee_Paper() {
                         <p className="flex flex-wrap items-center">
                           <span>
                             ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
@@ -866,21 +727,16 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        <p className="font-medium">
-                          <span className="text-black">สถานะ</span>{" "}
-                          <span
-                            style={
-                              isBlue
-                                ? { color: "#CD0000" }
-                                : isGreen
-                                ? { color: "#05A967" }
-                                : isOrange
-                                ? { color: "#E48500" }
-                                : { color: "#666666" }
-                            }
-                          >
-                            {statusText || "—"}
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้าที่ตรวจสอบ:{" "}
+                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
                           </span>
+                        </p>
+
+                        <p className="text-gray-500">
+                          <span>สถานะปัจจุบัน : </span>{" "}
+                          <span>{doc.nowstatus}</span>
                         </p>
                       </div>
 
@@ -921,27 +777,7 @@ function Employee_Paper() {
 
               })}
 
-              {(historyAccept||[])
-                .filter(doc => {
-                const s = (doc.status_name ?? doc.status ?? doc.nowstatus ?? "");
-                return ["การตรวจสอบขั้นต้นเสร็จสิ้น", "อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง"]
-                  .some(x => s.includes(x));
-                })
-                .filter(doc => {
-                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
-                  return id.includes(searchTerm.toLowerCase());
-                })
-                .map((doc, i) => {
-
-                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
-                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
-                const isBlue = isBlueStatus(statusText);
-                const isGreen = isGreenStatus(statusText);
-                const isOrange = isOrangeStatus(statusText);
-
-                // ทำ id สำหรับ key และการนำทาง
-                // const docId =
-                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+              {(filteredAccept||[]).map((doc, i) => {
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
@@ -966,6 +802,11 @@ function Employee_Paper() {
                           <span>{doc.doc_title ?? "—"}</span>
                         </p>
 
+                        <p className="font-medium">
+                          <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
+                        </p>
+
+
                         <p className="flex flex-wrap items-center">
                           <span>
                             เลขที่คำขอ:{" "}
@@ -973,12 +814,11 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        
 
                         <p className="flex flex-wrap items-center">
                           <span>
                             ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
@@ -992,27 +832,16 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            หัวหน้ากองผู้ตรวจสอบเอกสาร:{" "}
-                            <span className="font-medium">{doc.headauditByemail ?? "—"}</span>
+                            หัวหน้าที่ตรวจสอบ:{" "}
+                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
                           </span>
                         </p>
 
-                        <p className="font-medium">
-                          <span className="text-black">สถานะ</span>{" "}
-                          <span
-                            style={
-                              isBlue
-                                ? { color: "#CD0000" }
-                                : isGreen
-                                ? { color: "#05A967" }
-                                : isOrange
-                                ? { color: "#E48500" }
-                                : { color: "#666666" }
-                            }
-                          >
-                            {statusText || "—"}
-                          </span>
+                        <p className="text-gray-500">
+                          <span>สถานะปัจจุบัน : </span>{" "}
+                          <span>{doc.nowstatus}</span>
                         </p>
+
                       </div>
 
                       {/* ปุ่มการทำงาน */}
@@ -1055,25 +884,49 @@ function Employee_Paper() {
 
           )}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
           {activeTab === "documentAll" && (
             <div>
-              {(documentAll || []).filter(doc => {
-                const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
-                return id.includes(searchTerm.toLowerCase());
-              }).map((doc, i) => {
+              {(filteredDocs || []).map((doc, i) => {
                 // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
-                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
-                const isBlue = isBlueStatus(statusText);
-                const isGreen = isGreenStatus(statusText);
-                const isOrange = isOrangeStatus(statusText);
 
-                // ทำ id สำหรับ key และการนำทาง
-                // const docId =
-                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
-                
+              const checkstatus = () => {
+                const statusText = doc.status_name ?? "";
+
+                if (statusText === "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่") {
+                  return <span style={{ color: "#E48500" }}>{statusText}</span>;
+                } else if (
+                  statusText === "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน" ||
+                  statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"
+                ) {
+                  return <span style={{ color: "#CD0000" }}>{statusText}</span>;
+                } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว") {
+                  return <span style={{ color: "#05A967" }}>{statusText}</span>;
+                }
+                // default
+                return <span>{statusText || "—"}</span>;
+              };
+
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
-
                 return (
                   <article
                     key={`${docId}-${i}`}
@@ -1119,19 +972,7 @@ function Employee_Paper() {
 
                         <p className="font-medium">
                           <span className="text-black">สถานะ</span>{" "}
-                          <span
-                            style={
-                              isBlue
-                                ? { color: "#CD0000" }
-                                : isGreen
-                                ? { color: "#05A967" }
-                                : isOrange
-                                ? { color: "#E48500" }
-                                : { color: "#666666" }
-                            }
-                          >
-                            {statusText || "—"}
-                          </span>
+                          { checkstatus() }
                         </p>
                       </div>
 
@@ -1211,25 +1052,21 @@ function Employee_Paper() {
           )}
 
 
+
+
+
+
+
+
+
+
+
+
+
           {/* ส่งกลับให้ผู้ใช้แก้ไขเอกสาร */}
           {activeTab === "history_change_des" && (
             <div>
-              {(historyChangeDes||[])
-                .filter(doc => (doc.status_name ?? doc.status ?? doc.nowstatus ?? "").includes("ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"))
-                .filter(doc => {
-                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
-                  return id.includes(searchTerm.toLowerCase());
-                })
-                .map((doc, i) => {
-                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
-                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
-                const isBlue = isBlueStatus(statusText);
-                const isGreen = isGreenStatus(statusText);
-                const isOrange = isOrangeStatus(statusText);
-
-                // ทำ id สำหรับ key และการนำทาง
-                // const docId =
-                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+              {(filteredSendEdit||[]).map((doc, i) => {
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
@@ -1254,6 +1091,10 @@ function Employee_Paper() {
                           <span>{doc.title ?? "—"}</span>
                         </p>
 
+                        <p className="font-medium">
+                          <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
+                        </p>
+
                         <p className="flex flex-wrap items-center">
                           <span>
                             เลขที่คำขอ:{" "}
@@ -1264,7 +1105,7 @@ function Employee_Paper() {
                         <p className="flex flex-wrap items-center">
                           <span>
                             ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
@@ -1276,21 +1117,17 @@ function Employee_Paper() {
                           </span>
                         </p>
 
-                        <p className="font-medium">
-                          <span className="text-black">สถานะ</span>{" "}
-                          <span
-                            style={
-                              isBlue
-                                ? { color: "#CD0000" }
-                                : isGreen
-                                ? { color: "#05A967" }
-                                : isOrange
-                                ? { color: "#E48500" }
-                                : { color: "#666666" }
-                            }
-                          >
-                            {statusText || "—"}
+                        
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้าที่ตรวจสอบ:{" "}
+                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
                           </span>
+                        </p>
+
+                        <p className="text-gray-500">
+                          <span>สถานะปัจจุบัน : </span>{" "}
+                          <span>{doc.nowstatus}</span>
                         </p>
                       </div>
 
@@ -1333,30 +1170,22 @@ function Employee_Paper() {
             </div>
           )}
 
+
+
+
+
+
+
+
+
+
+
+
+
           {/* ตรวจสอบขั้นต้นเสร็จสิ้น */}
           {activeTab === "history_accept" && (
             <div>
-              {(historyAccept||[])
-                .filter(doc => {
-                  const s = (doc.status_name ?? doc.status ?? doc.nowstatus ?? "");
-                  return ["การตรวจสอบขั้นต้นเสร็จสิ้น", "อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง"]
-                    .some(x => s.includes(x));
-                })
-                .filter(doc => {
-                  const id = String(doc.idformal ?? doc.doc_id ?? doc.id_doc ?? doc.id ?? "").toLowerCase();
-                  return id.includes(searchTerm.toLowerCase());
-                })
-                .map((doc, i) => {
-
-                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
-                const statusText = doc.status_name ?? doc.status ?? doc.nowstatus ?? "";
-                const isBlue = isBlueStatus(statusText);
-                const isGreen = isGreenStatus(statusText);
-                const isOrange = isOrangeStatus(statusText);
-
-                // ทำ id สำหรับ key และการนำทาง
-                // const docId =
-                //   doc.id ?? doc.docId ?? doc.documentId ?? doc.id_doc ?? doc.doc_id ?? i;
+              {(filteredAccept||[]).map((doc, i) => {
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
@@ -1381,6 +1210,11 @@ function Employee_Paper() {
                           <span>{doc.doc_title ?? "—"}</span>
                         </p>
 
+                        <p className="font-medium">
+                          <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
+                        </p>
+
+
                         <p className="flex flex-wrap items-center">
                           <span>
                             เลขที่คำขอ:{" "}
@@ -1391,7 +1225,7 @@ function Employee_Paper() {
                         <p className="flex flex-wrap items-center">
                           <span>
                             ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
+                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
                           </span>
 
                           {/* กลุ่มวันที่ */}
@@ -1403,29 +1237,20 @@ function Employee_Paper() {
                           </span>
                         </p>
 
+
                         <p className="flex flex-wrap items-center">
                           <span>
-                            หัวหน้ากองผู้ตรวจสอบเอกสาร:{" "}
-                            <span className="font-medium">{doc.headauditByemail ?? "—"}</span>
+                            หัวหน้าที่ตรวจสอบ:{" "}
+                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
                           </span>
                         </p>
 
-                        <p className="font-medium">
-                          <span className="text-black">สถานะ</span>{" "}
-                          <span
-                            style={
-                              isBlue
-                                ? { color: "#CD0000" }
-                                : isGreen
-                                ? { color: "#05A967" }
-                                : isOrange
-                                ? { color: "#E48500" }
-                                : { color: "#666666" }
-                            }
-                          >
-                            {statusText || "—"}
-                          </span>
+                        <p className="text-gray-500">
+                          <span>สถานะปัจจุบัน : </span>{" "}
+                          <span>{doc.nowstatus}</span>
                         </p>
+
+
                       </div>
 
                       {/* ปุ่มการทำงาน */}
@@ -1470,7 +1295,7 @@ function Employee_Paper() {
          </div>
       </main> 
 
-      {/* ป๊อปอัป: ส่งต่อไปที่ผู้ตรวจสอบ (API จริง) */}
+      {/* ป๊อปอัป: ส่งต่อไปที่หัวหน้าตรวจสอบ (API จริง) */}
       <ForwardToHeadAuditor
         open={rejectOpen}
         view={deptView}
@@ -1486,10 +1311,10 @@ function Employee_Paper() {
           if (!targetItem || acceptingDocument) return;
 
           const allowStatuses = [
-            "อยู่ระหว่างการตรวจสอบขั้นต้น",
-            "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง",
-            "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"
+            "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่",
+            "แก้ไขเอกสารเรียบร้อยแล้ว"
           ];
+
           const statusNow = (targetItem.status_name || "").trim();
           if (!allowStatuses.some(s => statusNow.includes(s))) {
             alert("เอกสารนี้ไม่อยู่ในสถานะที่สามารถส่งต่อหัวหน้ากองได้");
@@ -1573,43 +1398,6 @@ function Employee_Paper() {
         onSubmit={submitSendBack}
       />
 
-      {/* ===== Modal ดูรายละเอียดเอกสาร ===== */}
-      {/* {detailOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">รายละเอียดเอกสาร</h3>
-              <button onClick={closeDetail} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-
-            {detailLoading ? (
-              <p className="text-gray-600">กำลังโหลดข้อมูล…</p>
-            ) : detailData?.error ? (
-              <p className="text-red-600">{detailData.message}</p>
-            ) : (
-              <div className="space-y-2 text-gray-800 max-h-[70vh] overflow-auto">
-                {detailData && (
-                  <>
-                    {detailData.id && (<p><span className="font-semibold">รหัสเอกสาร:</span> {detailData.id}</p>)}
-                    {detailData.docId && (<p><span className="font-semibold">docId:</span> {detailData.docId}</p>)}
-                    {detailData.title && (<p><span className="font-semibold">ชื่อเรื่อง:</span> {detailData.title}</p>)}
-                    {detailData.authorize_to && (<p><span className="font-semibold">ผู้ยื่นคำร้อง:</span> {detailData.authorize_to}</p>)}
-                    {detailData.status_name && (<p><span className="font-semibold">สถานะ:</span> {detailData.status_name}</p>)}
-                    {detailData.destination_name && (<p><span className="font-semibold">หน่วยงานปลายทาง:</span> {detailData.destination_name}</p>)}
-                  </>
-                )}
-                <pre className="text-xs bg-gray-50 p-3 rounded-md border overflow-auto">
-                  {JSON.stringify(detailData, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={closeDetail} className="px-4 py-2 rounded-lg border border-gray-300">ปิด</button>
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 }

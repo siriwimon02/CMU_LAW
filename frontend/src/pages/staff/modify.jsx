@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/docIcon";
 import BackB from "../../components/backButton";
 
-const ALLOW_STATUS = "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร"; // only this status can edit
+const ALLOW_STATUS = "ส่งคืนแก้ไขเอกสาร"; // only this status can edit
 
 function Modify() {
   const navigate = useNavigate();

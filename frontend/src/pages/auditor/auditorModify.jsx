@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/docIcon";
 // import BackB from "../../components/backToDashboardButton";
 
-const ALLOW_STATUS = ["อยู่ระหว่างการตรวจสอบขั้นต้น", "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง", "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"];
+const ALLOW_STATUS = ["อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่", "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน", "แก้ไขเอกสารเรียบร้อยแล้ว", "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"];
 
 function AuditorModify() {
   const navigate = useNavigate();
@@ -83,14 +83,13 @@ function AuditorModify() {
         const pos = doc.position ?? "";
         const aff = doc.affiliation ?? "";
         const aTxt = doc.authorize_text ?? "";
-        const des = doc.destination_name ?? "";
 
         setTitle(t);
         setAuthorizeTo(aTo);
         setPosition(pos);
         setAffiliation(aff);
         setAuthorizeText(aTxt);
-        setDestination(des);
+
 
         // remember initial values
         initialRef.current = {
@@ -100,18 +99,6 @@ function AuditorModify() {
           affiliation: aff,
           authorizeText: aTxt,
         };
-
-        // prefill flags from documentNeed[] using EXACT names your backend checks
-        if (Array.isArray(doc.documentNeed)) {
-          const hasPres = doc.documentNeed.some(
-            (d) => d.requiredDocument?.name === "บัตรประจำตัวอธิการบดี"
-          );
-          const hasHouse = doc.documentNeed.some(
-            (d) => d.requiredDocument?.name === "ทะเบียนบ้านมหาวิทยาลัย"
-          );
-          setNeedPresidentCard(hasPres);
-          setNeedUniversityHouse(hasHouse);
-        }
 
         setError("");
       } catch (e) {
@@ -166,13 +153,6 @@ function AuditorModify() {
       if (affiliation) form.append("affiliation", affiliation.trim());
       if (authorizeText) form.append("authorizeText", authorizeText.trim());
 
-      // IMPORTANT: booleans as strings
-      form.append("needPresidentCard", String(needPresidentCard));
-      form.append("needUniversityHouse", String(needUniversityHouse));
-
-      // DO NOT append destinationId here (backend route doesn't accept it)
-
-      files.forEach((f) => form.append("attachments", f));
 
       const res = await fetch(`http://localhost:3001/petitionAudit/update_document_ByAuditor/${id}`, {
         method: "PUT",
@@ -196,7 +176,7 @@ function AuditorModify() {
 
   const ClicktoDashboard = () => {
         navigate('/auditTracking');
-    }
+  }
 
   
 
@@ -230,7 +210,7 @@ function AuditorModify() {
         </button>
           </div>
 
-          <div className="p-2">
+          <div className="p-10">
             <div className="mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold text-[#66009F]">
@@ -240,11 +220,6 @@ function AuditorModify() {
               <hr className="mt-3 border-gray-200" />
             </div>
 
-            {/* {statusName && (
-              <div className="mb-4 text-[14px] text-gray-700">
-                สถานะปัจจุบัน: <strong>{statusName}</strong>
-              </div>
-            )} */}
 
             {error && (
               <div className="mb-3 rounded-lg bg-red-50 px-4 py-2 text-red-700 ring-1 ring-red-200">
@@ -337,108 +312,6 @@ function AuditorModify() {
                 />
               </div>
 
-              {/* 6 — show destination (read only) */}
-              <div>
-                <label className="mb-1 bloxk text-[15px]">
-                  <span className="font-medium">
-                    6. หน่วยงานปลายทาง
-                  </span>
-                </label>
-                <input
-                  readOnly
-                  value={destination}
-                  type="text"
-                  aria-readonly="true"
-                  className="w-full rounded-lg border border-gray-200 bg-[#F7F7F7] px-3 py-2.5"
-                />
-              </div>
-
-              {/* 7: doc requirements */}
-              <div>
-                <label className="mb-1 block text-[15px] ">
-                  <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={needPresidentCard}
-                    readOnly 
-                    onClick={(e) => e.preventDefault()}
-                    // onChange={(e) => setNeedPresidentCard(e.target.checked)}
-                  />
-                  <span>สำเนาบัตรประจำตัวอธิการบดี</span>
-                </label>
-
-                <label className="flex items-center gap-2 mt-2">
-                  <input
-                    type="checkbox"
-                    checked={needUniversityHouse}
-                    readOnly 
-                    onClick={(e) => e.preventDefault()}
-                    // onChange={(e) => setNeedUniversityHouse(e.target.checked)}
-                  />
-                  <span>ทะเบียนบ้านมหาวิทยาลัย</span>
-                </label>
-              </div>
-              {/* <div>
-                <label className="mb-1 block text-[15px] ">
-                  <span className="font-medium">7. เอกสารประกอบคำร้อง</span>
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={needPresidentCard}
-                    onChange={(e) => setNeedPresidentCard(e.target.checked)}
-                  />
-                  <span>สำเนาบัตรประจำตัวอธิการบดี</span>
-                </label>
-
-                <label className="flex items-center gap-2 mt-2">
-                  <input
-                    type="checkbox"
-                    checked={needUniversityHouse}
-                    onChange={(e) => setNeedUniversityHouse(e.target.checked)}
-                  />
-                  <span>ทะเบียนบ้านมหาวิทยาลัย</span>
-                </label>
-
-                <p className="text-sm text-gray-600 mt-2">
-                  หมายเหตุ : หากปรับเฉพาะตัวเลือกด้านบนโดยไม่แก้ไขข้อความหรือแนบไฟล์ ระบบฝั่งเซิร์ฟเวอร์จะไม่บันทึก (จะต้องแก้ไขฟิลด์อย่างน้อย 1 ช่องหรือแนบไฟล์)
-                </p>
-              </div> */}
-
-              {/* 8: uploads */}
-              <div>
-                <label className="mb-1 block text-[15px] font-medium">
-                  8. แนบเอกสารเพิ่มเติม
-                </label>
-                <div className="rounded-xl border border-dashed border-[#E5E5E5] bg-[#F7F7F7] p-4">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-gray-200 hover:bg-gray-50">
-                    <input
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={fileChange}
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                    />
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-gray-600"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                    >
-                      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
-                    </svg>
-                    Select file
-                  </label>
-                  {files?.length > 0 && (
-                    <div className="mt-3 text-sm text-gray-600">เลือกแล้ว {files.length} ไฟล์</div>
-                  )}
-                </div>
-              </div>
 
               {/* submit */}
               <div className="pt-2">

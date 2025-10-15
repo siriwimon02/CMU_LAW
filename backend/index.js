@@ -303,7 +303,7 @@ app.get('/history_status/:docId', authMiddle, checkRole(["admin", "spv_auditor",
       });
 
       const find_st7 = await prisma.status.findUnique({
-        where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
+        where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว" }
       });
 
       const history_all = []
@@ -461,11 +461,11 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
 
 
       const find_st1 = await prisma.status.findUnique({
-        where : { status : "รอรับเข้ากอง" }
+        where : { status : "รอรับเรื่อง" }
       });
 
       const find_st2 = await prisma.status.findUnique({
-        where : { status : "รับเข้ากองเรียบร้อย" }
+        where : { status : "รับเรื่องแล้ว" }
       });
 
       const find_st3 = await prisma.status.findUnique({
@@ -473,15 +473,15 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
       });
 
       const find_st4 = await prisma.status.findUnique({
-        where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+        where : { status : "ส่งคืนแก้ไขเอกสาร" }
       });
 
       const find_st5 = await prisma.status.findUnique({
-        where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว" }
+        where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว" }
       });
 
       const find_st6 = await prisma.status.findUnique({
-        where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
+        where : { status : "ผู้อำนวยการตรวจสอบแล้ว" }
       });
       
       const find_st7 = await prisma.status.findUnique({
@@ -672,12 +672,6 @@ app.get('/history_statusForUser/:docId', authMiddle, checkRole(["admin", "user"]
       res.status(500).json({ message: "Server error" });
     }
 });
-
-
-
-
-
-
 
 
 

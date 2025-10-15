@@ -2,17 +2,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env.dev' });
 
-// import express from 'express';
-// import prisma from '../prismaClient.js';
-// import multer from "multer";
-
-// import fs from 'fs';
-// import path from 'path';
-// import PizZip from 'pizzip';
-// import Docxtemplater from 'docxtemplater';
-// import libre from 'libreoffice-convert';
-// import util from "util";  // ถ้าใช้ ES Module
-
 import express from 'express';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -39,31 +28,27 @@ const router = express.Router();
 
 
 
-
-
-
-
 //------------------------------------doc ที่รอตรวจสอบขั้นตอน + อัพเดตสถานะให้ตรวจสอบขั้นต้น--------------------------//
 router.get('/wait_to_audit_byAudit', async (req, res) => {
     try {
         const findstatus1 = await prisma.status.findUnique({
-            where : { status: "รับเข้ากองเรียบร้อย" }
+            where : { status: "รับเรื่องแล้ว" }
         });
 
         const findstatus2 = await prisma.status.findUnique({
-            where : { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
+            where : { status: "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่" }
         });
 
         const findstatus3 = await prisma.status.findUnique({
-            where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
+            where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว"}
         })
 
         const findstatus4 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
+            where : { status : "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน"}
         })
 
         const findstatus5 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
+            where : { status : "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"}
         })
 
         const findstatus6 = await prisma.status.findUnique({
@@ -135,7 +120,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 destination : true,
                 user : true,
                 status: true,
-            }
+            }, orderBy: { createdAt : 'desc' }
         })
         //console.log(document_audit_2st);
 
@@ -241,15 +226,15 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
     try { 
         const find_status1 = await prisma.status.findUnique({
-        where: { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
+        where: { status: "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่" }
         });
 
         const findstatus3 = await prisma.status.findUnique({
-            where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
+            where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว"}
         })
 
         const find_status2 = await prisma.status.findUnique({
-            where: { status: "ตรวจสอบขั้นต้นเสร็จสิ้น" }
+            where: { status: "เจ้าหน้าที่ตรวจสอบแล้ว" }
         });
 
         const user = await prisma.user.findUnique({
@@ -340,23 +325,23 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
         }
  
         const find_status1 = await prisma.status.findUnique({
-            where: { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
+            where: { status: "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่" }
         });
 
         const findstatus3 = await prisma.status.findUnique({
-            where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
+            where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว"}
         })
 
         const find_status2 = await prisma.status.findUnique({
-            where: { status: "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+            where: { status: "ส่งคืนแก้ไขเอกสาร" }
         });
 
         const findstatus4 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
+            where : { status : "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน"}
         })
 
         const findstatus5 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
+            where : { status : "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"}
         })
         
         const user = await prisma.user.findUnique({
@@ -423,7 +408,7 @@ router.put('/edit_ByAuditor/:docId', async (req, res) => {
             document: { connect: { id: doc.id } },
             status:   { connect: { id: find_status2.id} },
             changedBy: { connect: { id: user.id } },
-            note_text:   `ส่งแก้ไขเอกสาร โดยพนังงานตรวจสอบ รายละเอียดเพิ่มเติมการแก้ไขเอกสาร : ${text_edit_suggesttion || "-"}`
+            note_text:   `รายละเอียดเพิ่มเติมการแก้ไขเอกสาร : ${text_edit_suggesttion || "-"}`
           }
         });      
         
@@ -501,19 +486,19 @@ router.put('/update_document_ByAuditor/:docId', data.none() ,async (req, res) =>
         const { title, authorizeTo, position, affiliation, authorizeText} = req.body;
 
         const find_status1 = await prisma.status.findUnique({
-            where: { status: "อยู่ระหว่างการตรวจสอบขั้นต้น" }
+            where: { status: "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่" }
         });
 
         const findstatus3 = await prisma.status.findUnique({
-            where : { status : "ผู้ใช้แก้ไขเอกสารเรียบร้อยแล้ว"}
+            where : { status : "แก้ไขเอกสารเรียบร้อยแล้ว"}
         })
 
         const findstatus4 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"}
+            where : { status : "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน"}
         })
 
         const findstatus5 = await prisma.status.findUnique({
-            where : { status : "ส่งกลับให้แก้ไขจากการตรวจสอบขั้นสุดท้าย"}
+            where : { status : "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ"}
         })
 
         const find_status2 = await prisma.status.findUnique({
@@ -710,7 +695,7 @@ router.get('/get_document_audited', async (req, res) => {
 
     try {
         const find_st1 = await prisma.status.findUnique({
-            where : { status : "ตรวจสอบขั้นสุดท้ายเสร็จสิ้น" }
+            where : { status : "ผู้อำนวยการตรวจสอบแล้ว" }
         });
 
         const find_st2 = await prisma.status.findUnique({
@@ -1667,13 +1652,12 @@ router.get('/download_pdf_generate/:docId', async (req, res) => {
 
 
 
-
 //-----------------------------------ประวัติเอกสาร-----------------------------------//
 //-----------------------------ประวัติการตรวจสอบเอกสารขั้นต้นเสร็จเรียบร้อย----------------//
 router.get('/history_audited', async (req, res) => {
   try {
     const find_st1 = await prisma.status.findUnique({
-      where : { status : "ตรวจสอบขั้นต้นเสร็จสิ้น" }
+      where : { status : "เจ้าหน้าที่ตรวจสอบแล้ว" }
     });
 
     const user = await prisma.user.findUnique({
@@ -1703,8 +1687,6 @@ router.get('/history_audited', async (req, res) => {
               status : true,
               user : true
             }}
-        },orderBy: {
-            changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
         }
     });
 
@@ -1773,7 +1755,7 @@ router.get('/history_audited', async (req, res) => {
 router.get('/history_send_back_edit_auditor', async (req, res) => {
   try {
     const find_st1 = await prisma.status.findUnique({
-      where : { status : "ส่งกลับให้ผู้ใช้แก้ไขเอกสาร" }
+      where : { status : "ส่งคืนแก้ไขเอกสาร" }
     });
 
     const user = await prisma.user.findUnique({
@@ -1804,8 +1786,6 @@ router.get('/history_send_back_edit_auditor', async (req, res) => {
               status : true,
               user : true
             }}
-        },orderBy: {
-            changedAt: 'desc' // หรือ 'asc' ถ้าอยากเก่าสุดไปใหม่สุด
         }
     });
     console.log(find_his_edit)

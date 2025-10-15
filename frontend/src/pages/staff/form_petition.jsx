@@ -625,9 +625,6 @@ function FormPetition() {
             </div>
           </div>
         )}
-
-
-
       </div>
     </div>
     </div>
