@@ -8,6 +8,7 @@ function DocumentDetails() {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [docData, setDocData] = useState(null);
 
 
   // ตรวจสอบ token
@@ -29,6 +30,8 @@ function DocumentDetails() {
         const data = await res.json();
 
         console.log("Fetched action log data:", data);
+        
+        setDocData(data);
 
         if (data.thTimelineDesc && data.thTimelineDesc.length > 0) {
           for (let i = 0; i < data.thTimelineDesc.length; i++) {
@@ -95,7 +98,7 @@ function DocumentDetails() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
             <div className="rounded-2xl bg-[#F6F8FF] p-5 border-l-[5px] border-[#66009F] shadow-sm">
               <p className="text-[#66009F] font-semibold text-lg">เลขที่คำขอ</p>
-              <p className="text-gray-500 mt-2">{timeline[0]?.id_doc ?? "-"}</p>
+              <p className="text-gray-500 mt-2">{docData?.id_doc ?? "-"}</p>
             </div>
 
             <div className="rounded-2xl bg-[#F6F8FF] p-5 border-l-[5px] border-[#66009F] shadow-sm">
