@@ -382,9 +382,9 @@ if (loading) return <div>Loading...</div>;
                 className="w-full h-12 pl-12 pr-10 rounded-lg border text-sm bg-white text-gray-800 border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#66009F] appearance-none"
               >
                 <option value="all">รวมทั้งหมด</option>
-                <option value="documentAll">อยู่ระหว่างการตรวจสอบโดยหัวหน้ากอง</option>
-                <option value="history_sendback">ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง</option>
-                <option value="history_accept">ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น</option>
+                <option value="documentAll">อยู่ระหว่างตรวจสอบโดยหัวหน้างาน</option>
+                <option value="history_sendback">ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน</option>
+                <option value="history_accept">หัวหน้างานตรวจสอบแล้ว</option>
               </select>
 
               {/* ไอคอนด้านซ้าย */}
