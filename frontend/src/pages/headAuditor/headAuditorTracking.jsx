@@ -442,7 +442,7 @@ if (loading) return <div>Loading...</div>;
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                               <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
+                              <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
                               <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
                                   <span className="font-medium">
                                     {getDocNumber(doc)}
@@ -767,7 +767,7 @@ if (loading) return <div>Loading...</div>;
                       >
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
-                              <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title}</p>
+                              <p className="font-bold text-xl break-words overflow-hidden line-clamp-2">{doc.doc_title || doc.title || "-"}</p>
                               <p  className="break-words overflow-hidden line-clamp-2">เลขที่คำขอ:{" "} 
                                   <span className="font-medium">
                                     {getDocNumber(doc)}
@@ -897,15 +897,20 @@ if (loading) return <div>Loading...</div>;
                   </p>
                 ) : (
                   historySendBack.map((doc) => {
-                    const statusNow =
-                    doc.status_name || doc.oldstatus || doc.doc_statusNow || doc.status?.status || "-";
+                     const statusNow =
+                    doc.status_name ||
+                    doc.oldstatus ||
+                    doc.doc_statusNow ||
+                    doc.status?.status ||
+                    "-";
 
-                    const statusClass = 
-                      statusNow === "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น"
-                        ? "text-[#05A967]" 
-                        : statusNow === "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"
-                        ? "text-[#CD0000]" 
-                        : "text-gray-600";
+                    const statusClass = greenList.includes(statusNow)
+                    ? "text-[#05A967]"
+                    : orangeList.includes(statusNow)
+                    ? "text-[#E48500]"
+                    : redList.includes(statusNow)
+                    ? "text-[#CD0000]"
+                    : "text-gray-600";
 
 
                     return (
@@ -1012,11 +1017,12 @@ if (loading) return <div>Loading...</div>;
                   historyAccept.map((doc) => {
                     const statusNow =
                     doc.status_name || doc.oldstatus || doc.doc_statusNow || doc.status?.status || "-";
-                    const statusClass = 
-                      statusNow === "ตรวจสอบโดยหัวหน้ากองเสร็จสิ้น"
-                        ? "text-[#05A967]" 
-                        : statusNow === "ส่งกลับเพื่อแก้ไขจากการตรวจสอบโดยหัวหน้ากอง"
-                        ? "text-[#CD0000]" 
+                    const statusClass = greenList.includes(statusNow)
+                    ? "text-[#05A967]"
+                    : orangeList.includes(statusNow)
+                    ? "text-[#E48500]"
+                    : redList.includes(statusNow)
+                    ? "text-[#CD0000]"
                     : "text-gray-600";
 
                     return (
