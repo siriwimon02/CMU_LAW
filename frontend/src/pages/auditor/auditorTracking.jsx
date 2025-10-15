@@ -284,6 +284,38 @@ function Employee_Paper() {
   }, [activeTab, fetchUrl, authHeader, reloadKey, navigate]);
 
 
+  const refreshDocuments = async () => {
+    try {
+      const headers = { Authorization: authHeader };
+      // Documents
+      const resDocs = await fetch(
+        "http://localhost:3001/petitionAudit/wait_to_audit_byAudit",
+        { headers }
+        );
+      const docs = await resDocs.json();
+      setDocumentAll(docs.document_json || []);
+
+      // History Edit
+      const resEdit = await fetch(
+        "http://localhost:3001/petitionAudit/history_send_back_edit_auditor",
+        { headers }
+        );
+      const edits = await resEdit.json();
+      setHistoryChangeDes(edits || []);
+
+      // History Final Audited
+      const resFinal = await fetch(
+        "http://localhost:3001/petitionAudit/history_audited",
+        { headers }
+        );
+      const finals = await resFinal.json();
+      setHistoryAccept(finals || []);
+    } catch (err){
+      console.error("โหลดข้อมูลล้มเหลว", err);
+    }
+  }
+
+
   // แทนที่ฟังก์ชันเดิมสองอันนี้
   const ClickForMoreDetail = (doc) => {
     const id = getDocIdNumeric(doc);
@@ -330,6 +362,7 @@ function Employee_Paper() {
       setSendBackOpen(false);
       setSendBackTarget(null);
       // alert("ส่งกลับให้ผู้ใช้แก้ไขเรียบร้อย");
+      await refreshDocuments();
       // ❌ ลบ setReloadKey
     } catch (e) {
       console.error(e);
@@ -548,9 +581,8 @@ function Employee_Paper() {
 
 
                 const isFinalized =
-                  statusText.includes("เจ้าหน้าที่ตรวจสอบแล้ว") ||
-
-                  statusText.includes("ตรวจสอบขั้นต้นเสร็จสิ้น");
+                  statusText.includes("ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน") ||
+                  statusText.includes("ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ");
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
@@ -645,7 +677,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
-                          disabled={isFinalized}
+                          // disabled={isFinalized}
                           onClick={() => { setSendBackTarget(doc); setSendBackOpen(true); }}
                           className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D4ED8] transition"
                         >
@@ -660,7 +692,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
-                          disabled={isFinalized}
+                          // disabled={isFinalized}
                           onClick={() => ClickForModify(doc)}
                           className="bg-[#D97706] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D97706] transition"
                         >
@@ -903,9 +935,10 @@ function Employee_Paper() {
             <div>
               {(filteredDocs || []).map((doc, i) => {
                 const statusText = doc.status_name ?? "";
-                const isFinalized = 
-                  statusText.includes("เจ้าหน้าที่ตรวจสอบแล้ว") || 
-                  statusText.includes("ตรวจสอบขั้นต้นเสร็จสิ้น"); 
+                const isFinalized =
+                  statusText.includes("ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน") ||
+                  statusText.includes("ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ");
+
                 const checkstatus = () => { 
                   if (statusText === "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่") { 
                     return <span style={{ color: "#E48500" }}>{statusText}</span>; 
@@ -1018,7 +1051,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
-                          disabled={isFinalized}
+                          // disabled={isFinalized}
                           onClick={() => { setSendBackTarget(doc); setSendBackOpen(true); }}
                           className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D4ED8] transition"
                         >
@@ -1033,7 +1066,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
-                          disabled={isFinalized}
+                          // disabled={isFinalized}
                           onClick={() => ClickForModify(doc)}
                           className="bg-[#D97706] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D97706] transition"
                         >
@@ -1289,6 +1322,17 @@ function Employee_Paper() {
          </div>
       </main> 
 
+
+
+
+
+
+
+
+
+
+
+
       {/* ป๊อปอัป: ส่งต่อไปที่หัวหน้าตรวจสอบ (API จริง) */}
       <ForwardToHeadAuditor
         open={rejectOpen}
@@ -1365,6 +1409,7 @@ function Employee_Paper() {
                 setSelected(null);
                 setDeptView("form");
               }, 800);
+              await refreshDocuments();
             } else {
               console.error("API Error:", result);
               alert(result?.message || "ส่งต่อไม่สำเร็จ");
