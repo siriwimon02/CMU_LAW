@@ -549,7 +549,8 @@ function Employee_Paper() {
 
                 const isFinalized =
                   statusText.includes("เจ้าหน้าที่ตรวจสอบแล้ว") ||
-                  statusText.includes("แก้ไขเอกสารเรียบร้อยแล้ว");
+
+                  statusText.includes("ตรวจสอบขั้นต้นเสร็จสิ้น");
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
 
@@ -901,26 +902,26 @@ function Employee_Paper() {
           {activeTab === "documentAll" && (
             <div>
               {(filteredDocs || []).map((doc, i) => {
-                // คำนวณค่าสีตามสถานะ (เลือกฟิลด์ที่มีจริง)
-
-              const checkstatus = () => {
                 const statusText = doc.status_name ?? "";
-
-                if (statusText === "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่") {
-                  return <span style={{ color: "#E48500" }}>{statusText}</span>;
-                } else if (
-                  statusText === "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน" ||
-                  statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ" ||
-                  statusText === "ส่งคืนแก้ไขเอกสาร"
-                ) {
-                  return <span style={{ color: "#CD0000" }}>{statusText}</span>;
-                } else if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว" || statusText === "ตรวจสอบขั้นต้นเสร็จสิ้น") {
-                  return <span style={{ color: "#05A967" }}>{statusText}</span>;
-                }
-
-                // default
-                return <span>{statusText || "—"}</span>;
-              };
+                const isFinalized = 
+                  statusText.includes("เจ้าหน้าที่ตรวจสอบแล้ว") || 
+                  statusText.includes("ตรวจสอบขั้นต้นเสร็จสิ้น"); 
+                const checkstatus = () => { 
+                  if (statusText === "อยู่ระหว่างตรวจสอบโดยเจ้าหน้าที่") { 
+                    return <span style={{ color: "#E48500" }}>{statusText}</span>; 
+                  } 
+                  if ( 
+                    statusText === "ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน" || 
+                    statusText === "ส่งคืนแก้ไขเอกสารโดยผู้อำนวยการ" || 
+                    statusText === "ส่งคืนแก้ไขเอกสาร" 
+                  ) { 
+                    return <span style={{ color: "#CD0000" }}>{statusText}</span>; 
+                  } 
+                  if (statusText === "แก้ไขเอกสารเรียบร้อยแล้ว" || statusText === "ตรวจสอบขั้นต้นเสร็จสิ้น") { 
+                    return <span style={{ color: "#05A967" }}>{statusText}</span>; 
+                  } 
+                  return <span>{statusText || "—"}</span>; 
+                };
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
                 return (
@@ -1004,6 +1005,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
+                          disabled={isFinalized}
                           onClick={() => { setSelected(doc); setDeptView("form"); setRejectOpen(true); }}
                           className="bg-[#16A34A] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#16A34A] transition"
                         >
@@ -1016,6 +1018,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
+                          disabled={isFinalized}
                           onClick={() => { setSendBackTarget(doc); setSendBackOpen(true); }}
                           className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D4ED8] transition"
                         >
@@ -1030,6 +1033,7 @@ function Employee_Paper() {
 
                         <button
                           type="button"
+                          disabled={isFinalized}
                           onClick={() => ClickForModify(doc)}
                           className="bg-[#D97706] text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 text-sm shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D97706] transition"
                         >
