@@ -74,18 +74,18 @@ function DocumentDetails() {
     }
   };
 
-  const getRoleColor = (roleName) => {
-      switch(roleName) {
-          case 'user':
-            return 'bg-[#E8FBFF] text-[#275CA1]'; // ฟ้า
-          case 'auditor':
-            return 'bg-[#FFFBEB] text-[#CA8A04]'; // เหลือง
-          case 'spv_auditor':
-            return 'bg-[#FFEDD5] text-[#EA580C]'; // ส้ม
-          case 'head_auditor':
-            return 'bg-[#FEE2E2] text-[#DC2626]'; // สีแดง
-          case 'admin':
-            return 'bg-[#F1EDFF] text-[#66009F]'; // สีม่วง
+    const getRoleColor = (roleName) => {
+        switch(roleName) {
+            case 'user':
+                return 'bg-[#E8FBFF] text-[#275CA1]'; // ฟ้า
+            case 'auditor':
+                return 'bg-[#FFFBEB] text-[#CA8A04]'; // เหลือง
+            case 'spv_auditor':
+                return 'bg-[#FEE2E2] text-[#DC2626]'; // สีแดง
+             case 'head_auditor':
+                return 'bg-[#FFEDD5] text-[#EA580C]'; // ส้ม
+            case 'admin':
+                return 'bg-[#F1EDFF] text-[#66009F]'; // สีม่วง
         }
     };
 
