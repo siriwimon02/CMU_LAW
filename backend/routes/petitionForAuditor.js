@@ -119,10 +119,11 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 department : true,
                 destination : true,
                 user : true,
+                headauditBy : true,
                 status: true,
             }, orderBy: { createdAt : 'desc' }
         })
-        //console.log(document_audit_2st);
+        console.log("22222222222",document_audit_2st);
 
         const document_json = [];
         for(const doc of document_audit_2st){
@@ -145,6 +146,11 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                   department_name: doc.department.department_name,
                   destination_name: doc.destination.des_name,
                   owneremail : `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
+                  headauditBy: String(doc.headauditIdBy ?? doc.headauditBy?.id ?? '') || 'ยังไม่ระบุ',
+                  headauditByemail :   doc?.headauditBy
+                    ? `${doc.headauditBy.firstname ?? ""} ${doc.headauditBy.lastname ?? ""}`.trim() +
+                      (doc.headauditBy.email ? ` (${doc.headauditBy.email})` : "")
+                    : "-",
                   title:doc.title,
                   authorize_to: doc.authorize_to,
                   position: doc.position,
@@ -163,6 +169,11 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
                 department_name: doc.department.department_name,
                 destination_name: doc.destination.des_name,
                 owneremail : `${doc.user.firstname} ${doc.user.lastname} ( ${doc.user.email} )`,
+                headauditBy: String(doc.headauditIdBy ?? doc.headauditBy?.id ?? '') || 'ยังไม่ระบุ',
+                                  headauditByemail :   doc?.headauditBy
+                    ? `${doc.headauditBy.firstname ?? ""} ${doc.headauditBy.lastname ?? ""}`.trim() +
+                      (doc.headauditBy.email ? ` (${doc.headauditBy.email})` : "")
+                    : "-",
                 title:doc.title,
                 authorize_to: doc.authorize_to,
                 position: doc.position,
@@ -196,7 +207,7 @@ router.get('/wait_to_audit_byAudit', async (req, res) => {
 
 
 
-//----------------------------------------------------อัพเดตยืนการตรวจเอกสารขั้นต้น----------------------------------//
+//--------------------------------------------อัพเดตยืนการตรวจเอกสารขั้นต้น----------------------------------//
 router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
     const {set_headauditId} = req.body;
 
@@ -212,6 +223,7 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
     if (!headUser) {
         return res.status(404).json({ message: "Head auditor not found" });
     }
+
     const find_des1 = await prisma.destination.findUnique({
       where: { des_name: headUser.department.department_name }
     });
@@ -270,6 +282,11 @@ router.put('/update_st_audit_by_audit/:docId', async (req, res) => {
 
         if (doc.auditIdBy !== user.id) {
             return res.status(403).json({ message: "You do not have permission to access this document" });
+        }
+
+        //ต้องเป็นหัวหน้าคนเดิมที่ส่งไป
+        if (doc.headauditIdBy != null && doc.headauditIdBy !== headUser.id) {
+          return res.status(403).json({ message: 'Only the assigned head auditor can perform this action.' });
         }
 
         //อัพเดตสถานนะแก้ไข + เพิ่มรายชื่อหัวหน้าพนักงานที่ต้องตรวจสอบเอกสารนี้

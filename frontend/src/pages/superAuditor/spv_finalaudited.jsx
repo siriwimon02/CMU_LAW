@@ -283,7 +283,7 @@ function FinalAuditCheck() {
                                                 ดูเอกสาร
                                         </button>
 
-                                        <button className="bg-[#05A967] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700"
+                                        <button className="bg-[#16A34A] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700"
                                             onClick={() => openConfirm({
                                             id: doc.id,
                                             title: doc.title,

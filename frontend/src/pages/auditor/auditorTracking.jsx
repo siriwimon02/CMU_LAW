@@ -381,10 +381,9 @@ function Employee_Paper() {
 
 
 
-
-  // console.log("documentAll",documentAll);
-  // console.log("history edit",historyChangeDes);
-  // console.log("historyAccept",historyAccept);
+  console.log("documentAll",documentAll);
+  console.log("history edit",historyChangeDes);
+  console.log("historyAccept",historyAccept);
 
   const normalize = (s) => (s || '')
   .toString()
@@ -579,6 +578,20 @@ function Employee_Paper() {
                   return <span>{statusText || "—"}</span>;
                 };
 
+                const head_auditor = () => {
+                  const head_a = doc.headauditByemail ?? "";
+                  if (head_a !== "-") {
+                    return (
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้าที่ตรวจสอบ:{" "}
+                            <span className="font-medium">{head_a}</span>
+                          </span>
+                        </p>                      
+                    )
+                  }
+                }
+
 
                 const isFinalized =
                   statusText.includes("ส่งคืนแก้ไขเอกสารโดยหัวหน้างาน") ||
@@ -625,6 +638,12 @@ function Employee_Paper() {
                               {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
                             </span>
                           </span>
+                        </p>
+
+                        {head_auditor()}
+                        
+                        <p>
+                          {doc.note}
                         </p>
 
                         <p className="font-medium">
@@ -810,7 +829,6 @@ function Employee_Paper() {
               {(filteredAccept||[]).map((doc, i) => {
 
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
-
                 return (
                   <article
                     key={`${docId}-${i}`}

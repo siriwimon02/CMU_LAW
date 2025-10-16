@@ -249,7 +249,8 @@ router.get('/api/documentAll', async (req, res) => {
 router.get('/api/user', async (req, res) => {
     const userAll = await prisma.user.findMany({
         include: {
-            role: { select: { role_name: true } }
+            role: { select: { role_name: true } },
+            department : true
         }
     });
     res.json(userAll);

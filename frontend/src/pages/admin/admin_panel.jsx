@@ -61,6 +61,7 @@ function Admin_Panel() {
             if (!res.ok) throw new Error('Failed');
             const data = await res.json();
             const safe = (u) => ({ ...u, role: u.role ?? { id: u.rId ?? null, role_name: '' } });
+            console.log(data)
             setUsers(Array.isArray(data) ? data.map(safe) : []);
         } catch (e) {
             console.error('refreshUser error:', e);
@@ -155,6 +156,7 @@ function Admin_Panel() {
                         <thead className="bg-[#F1EEFF] sticky top-0">
                         <tr >
                             <th className="px-4 py-2 text-center text-gray-700">ชื่อผู้ใช้</th>
+                            <th className='px-4 py-2 text-center text-gray-700'>หน่วยงาน</th>
                             <th className="px-4 py-2 text-center text-gray-700">อีเมล</th>
                             <th className="px-4 py-2 text-center text-gray-700">สิทธิ์ปัจจุบัน</th>
                             <th className="px-4 py-2 text-center text-gray-700">การจัดการ</th>
@@ -164,6 +166,7 @@ function Admin_Panel() {
                         {filteredUsers.map((user, i) => (
                             <tr key={i} className="hover:bg-gray-50 border-gray-300 border-t text-center">
                             <td className="px-6 py-2">{user.firstname}</td>
+                            <td className="px-6 py-2">{user.department.department_name}</td>
                             <td className="px-6 py-2">{user.email}</td>
                             <td className="px-6 py-2">
                                 <span className={`px-2 py-1 rounded-full text-sm ${getRoleColor(user.role.role_name)}`}>

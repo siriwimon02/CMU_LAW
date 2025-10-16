@@ -92,6 +92,7 @@ app.get('/auth/user', authMiddle, async(req, res) => {
     }
   });
   console.log(user_info, user_db, user_role);
+
   const json_send_info = {
     department_name: user_db[0].department_name,
     email: user_info.email,

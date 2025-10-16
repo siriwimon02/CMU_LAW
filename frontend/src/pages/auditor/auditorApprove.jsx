@@ -260,7 +260,7 @@ function UploadDocumentApproved () {
                                             ดูรายละเอียด
                                         </button>
                                     
-                                        <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                        <button className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
                                           onClick={() => ClickForViewPet(doc.id) }>
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -276,7 +276,7 @@ function UploadDocumentApproved () {
                                             ดูเอกสาร
                                         </button>
 
-                                        <button className="bg-green-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700"
+                                        <button className="bg-[#16A34A] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-green-700"
                                         onClick={() => ClickForApproveOrReject(doc.id, doc.documentNeed)}
                                         >
                                             <svg
@@ -422,7 +422,7 @@ function UploadDocumentApproved () {
                                         ดูรายละเอียด
                                     </button>
                                 
-                                    <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                    <button className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
                                       onClick={() => ClickForViewPet(h.document.id) }>
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -520,7 +520,7 @@ function UploadDocumentApproved () {
                                         ดูรายละเอียด
                                     </button>
 
-                                    <button className="bg-purple-600 text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                                    <button className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
                                       onClick={() => ClickForViewPet(h.document.id) }>
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"

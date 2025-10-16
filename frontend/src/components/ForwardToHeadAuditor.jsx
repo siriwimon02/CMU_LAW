@@ -23,6 +23,8 @@ export default function ForwardToHeadAuditor({
   const [auditors, setAuditors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [auditId, setAuditId] = useState("");
+  const [selectedHeadId, setSelectedHeadId] = useState(""); // number | ""
+
 
   const authHeader = (localStorage.getItem("token") || "")
     .replace(/^"+|"+$/g, "")
@@ -30,6 +32,10 @@ export default function ForwardToHeadAuditor({
 
   const shouldFetch = !Array.isArray(auditorsProp); // ถ้าส่งมาจากภายนอก ไม่ต้อง fetch
 
+  const norm = (s) => (s ?? "").toString().trim().toLowerCase();
+
+
+ 
   useEffect(() => {
     if (!open) return;
     setAuditId("");
@@ -53,7 +59,23 @@ export default function ForwardToHeadAuditor({
         });
         const data = res.ok ? await res.json() : null;
         const list = Array.isArray(data?.find_auditor) ? data.find_auditor : [];
-        setAuditors(list);
+        
+        // --- helpers ---//
+        const raw = item?.headauditBy ?? item?.headauditBy?.id ?? null;
+        const targetId = raw == null ? null : Number(raw);
+
+        if (targetId != null) {
+          const found = list.find(op => Number(op.id) === targetId);
+          if (found) {
+            setAuditors([found]);     // ✅ เจอ → โชว์แค่คนเดียว
+            setAuditId(targetId);     // ✅ preselect
+          } else {
+            setAuditors(list);        // ❌ ไม่เจอ → โชว์ทั้งหมด
+          }
+        } else {
+          setAuditors(list);          // ไม่มี head เดิม → โชว์ทั้งหมด
+        }
+
       } catch (e) {
         console.error("load auditors error:", e);
         setAuditors([]);
@@ -69,6 +91,9 @@ export default function ForwardToHeadAuditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, authHeader, shouldFetch, JSON.stringify(auditorsProp), loadingAuditorsProp]);
 
+
+
+
   // สร้าง options
   const options = useMemo(() => {
     return (auditors || [])
@@ -78,7 +103,7 @@ export default function ForwardToHeadAuditor({
         const email = a.email || a.username || "";
         return {
           id: String(id ?? ""),
-          label: name ? `${name}${email ? " · " + email : ""}` : (email || `หัวหน้ากอง ${id}`),
+          label: `${name} ( ${email} )`,
         };
       })
       .filter((o) => o.id !== "")
@@ -86,26 +111,6 @@ export default function ForwardToHeadAuditor({
       .sort((a, b) => a.label.localeCompare(b.label, "th"));
   }, [auditors]);
 
-  const getTitle = (row = {}) =>
-    row.title ?? row.doc_title ?? row.document_title ?? "-";
-
-  const formatUser = (row = {}) => {
-    const email =
-      row.owneremail ??
-      row.authorize_to ??
-      row.owner_email ??
-      row.email ??
-      "";
-    const name =
-      [row.firstname, row.lastname].filter(Boolean).join(" ") ||
-      row.ownername ||
-      row.authorize_name ||
-      row.requester_name ||
-      "";
-    if (name && email) return `${name} · ${email}`;
-    return name || email || "-";
-  };
-  
   const handleOpen = () => {
     if (isControlled) return;
     setInternalOpen(true);
@@ -125,6 +130,10 @@ export default function ForwardToHeadAuditor({
       setTimeout(() => handleClose(), 1500);
     }
   };
+
+
+
+
 
   if (!open) {
     return (
@@ -186,32 +195,28 @@ export default function ForwardToHeadAuditor({
 
         <div className="flex min-h-[356px] flex-col">
           <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังหัวหน้ากอง</h2>
-
-          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900" style={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            wordBreak: "break-word" 
-          }}>
-            เรื่อง: {getTitle(item)}
+          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
+            เรื่อง: {item?.request_no ?? item?.title ?? "-"}
+          </p>
+          <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
+            เลขที่คำขอ: {item?.request_no ?? item?.doc_id ?? "-"}
           </p>
           <p className="mt-2 text-lg sm:text-xl text-gray-800"style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            wordBreak: "break-word" 
+            wordBreak: "break-word" // หรือ "break-all"
           }}>
-            ผู้ยื่นคำขอ: {item?.authorize_to ?? "-"}
+            ผู้ยื่นคำขอ: {item?.owneremail ?? "-"}
           </p>
 
-          <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกหัวหน้ากอง (ดูรายชื่อพนักงานที่ส่งไป)</label>
+          <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกหัวหน้ากอง</label>
           <div className="mt-2">
             <div className="relative">
               <select
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 pr-10 text-gray-900 
-                           focus:outline-none focus:ring-2 focus:ring-[#05A967] focus:border-[#05A967] appearance-none"
+                          focus:outline-none focus:ring-2 focus:ring-[#05A967] focus:border-[#05A967] appearance-none"
                 value={auditId}
                 onChange={(e) => setAuditId(e.target.value)}
                 disabled={loading || (Array.isArray(auditorsProp) ? (loadingAuditorsProp || false) : options.length === 0)}
@@ -233,7 +238,7 @@ export default function ForwardToHeadAuditor({
               </div>
             </div>
           </div>
-
+        
           <div className="mt-auto pt-6 flex justify-end">
             <button
               type="button"

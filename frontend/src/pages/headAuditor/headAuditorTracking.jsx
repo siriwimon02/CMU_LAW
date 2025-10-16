@@ -142,7 +142,7 @@ const submitCheck = async () => {
       setTimeout(() => {
         setCheckConfirmedOpen(false);
         window.location.reload();
-      }, 1500);
+      }, 500);
     } else {
       console.error("submitCheck failed:", await res.text());
     }
@@ -199,7 +199,7 @@ const submitEdit = async () => {
         setEditConfirmedOpen(false);
         setReloadKey((k) => k + 1);
         window.location.reload();
-      }, 1500);
+      }, 500);
     } else {
       console.error("Submit failed:", await res.text());
     }
