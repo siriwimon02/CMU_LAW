@@ -77,7 +77,7 @@ function DocumentDetails() {
     const getRoleColor = (roleName) => {
         switch(roleName) {
             case 'user':
-                return 'bg-[#E8FBFF] text-[#275CA1]'; // ฟ้า
+                return 'bg-[#efefef] text-[#686868]'; // เทา
             case 'auditor':
                 return 'bg-[#FFFBEB] text-[#CA8A04]'; // เหลือง
             case 'spv_auditor':
@@ -88,6 +88,7 @@ function DocumentDetails() {
                 return 'bg-[#F1EDFF] text-[#66009F]'; // สีม่วง
         }
     };
+    
 
   return (
     <div className="min-h-screen font-kanit bg-[#F8F8F8] pb-10">

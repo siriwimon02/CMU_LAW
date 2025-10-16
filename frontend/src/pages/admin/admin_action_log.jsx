@@ -72,14 +72,16 @@ function Admin_Action_Log() {
         navigate(`/document/${docId}`);
     };
 
-    const getRoleColor = (des) => {
-        switch(des) {
+    const getDepColor = (roleName) => {
+        switch(roleName) {
             case 'กองกฎหมาย':
-                return 'text-[#CC6666]'; // ม่วง
+                return 'text-[#2025b2]'; // น้ำเงิน
             case 'สำนักงานบริหารงานวิจัย':
-                return 'text-[#66CC99]'; // เขียว
+                return 'text-[#3a8db7]'; // ฟ้า
             case 'ศูนย์บริหารพันธกิจสากล':
-                return 'text-[#6699FF]'; // ฟ้า
+                return 'text-[#17a897]'; // สีเขียว
+            default:
+                return 'text-[#686868]'; //เทา
         }
     };
 
@@ -133,7 +135,7 @@ function Admin_Action_Log() {
                                             {/* หน่วยงานปลายทาง */}
                                             <p className={`text-sm text-gray-600 truncate`}>
                                                 <span>หน่วยงานปลายทาง: </span> 
-                                                <span className={`${getRoleColor(doc.destination_name)}`}>
+                                                <span className={`${getDepColor(doc.destination_name)}`}>
                                                     {doc.destination_name}
                                                 </span>
                                             </p>

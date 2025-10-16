@@ -106,7 +106,7 @@ function Admin_Panel() {
     const getRoleColor = (roleName) => {
         switch(roleName) {
             case 'user':
-                return 'bg-[#E8FBFF] text-[#275CA1]'; // ฟ้า
+                return 'bg-[#efefef] text-[#686868]'; // เทา
             case 'auditor':
                 return 'bg-[#FFFBEB] text-[#CA8A04]'; // เหลือง
             case 'spv_auditor':
@@ -115,6 +115,19 @@ function Admin_Panel() {
                 return 'bg-[#FFEDD5] text-[#EA580C]'; // ส้ม
             case 'admin':
                 return 'bg-[#F1EDFF] text-[#66009F]'; // สีม่วง
+        }
+    };
+
+    const getDepColor = (roleName) => {
+        switch(roleName) {
+            case 'กองกฎหมาย':
+                return 'bg-[#eaebff] text-[#2025b2]'; // น้ำเงิน
+            case 'สำนักงานบริหารงานวิจัย':
+                return 'bg-[#ddf3ff] text-[#3a8db7]'; // ฟ้า
+            case 'ศูนย์บริหารพันธกิจสากล':
+                return 'bg-[#F0FFF0] text-[#17a897]'; // สีเขียว
+            default:
+                return 'bg-[#efefef] text-[#686868]'; //เทา
         }
     };
 
@@ -166,7 +179,11 @@ function Admin_Panel() {
                         {filteredUsers.map((user, i) => (
                             <tr key={i} className="hover:bg-gray-50 border-gray-300 border-t text-center">
                             <td className="px-6 py-2">{user.firstname}</td>
-                            <td className="px-6 py-2">{user.department.department_name}</td>
+                            <td className="px-6 py-2">
+                                <span className={`px-2 py-1 rounded-full text-sm ${getDepColor(user.department.department_name)}`}>
+                                    {user.department.department_name}
+                                </span>
+                            </td>
                             <td className="px-6 py-2">{user.email}</td>
                             <td className="px-6 py-2">
                                 <span className={`px-2 py-1 rounded-full text-sm ${getRoleColor(user.role.role_name)}`}>
