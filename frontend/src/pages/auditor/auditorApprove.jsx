@@ -1005,7 +1005,7 @@ function DecisionModal({ open, onClose, docId, authHeader, onDone }) {
       />
 
       {/* card */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-start justify-between">
           <h2 className="text-lg font-bold">{title}</h2>
           <button

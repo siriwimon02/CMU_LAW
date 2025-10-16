@@ -113,6 +113,37 @@ useEffect(() => {
 }, [documentAll, token]);
 
 
+const refreshDocuments = async () => {
+      try {
+        const [res1, res2, res3] = await Promise.all([
+          fetch("http://localhost:3001/petitionHeadAudit/wait_to_accept_byHeadaudit", {
+            headers: { Authorization: `${token}` },
+          }),
+          fetch("http://localhost:3001/petitionHeadAudit/history_seconde_audited", {
+            headers: { Authorization: `${token}` },
+          }),
+          fetch("http://localhost:3001/petitionHeadAudit/history_send_back_edit_headauditor", {
+            headers: { Authorization: `${token}` },
+          }),
+        ]);
+
+        const [docs1, rawAccept, rawSendBack] = await Promise.all([
+          res1.json(),
+          res2.json(),
+          res3.json(),
+        ]);
+        setDocumentAll(docs1?.document_json || []);
+        setHistoryAccept(rawAccept || []);
+        setHistorySendBack(rawSendBack || []);
+
+    } catch (err) {
+      console.error("Fetch docs error:", err);
+    } finally {
+      setLoading(false);
+    }
+}
+
+
 
 //  Submit ตรวจสอบ 
 const submitCheck = async () => {
@@ -142,7 +173,7 @@ const submitCheck = async () => {
       setTimeout(() => {
         setCheckConfirmedOpen(false);
         window.location.reload();
-      }, 500);
+      }, 1);
     } else {
       console.error("submitCheck failed:", await res.text());
     }
@@ -199,7 +230,7 @@ const submitEdit = async () => {
         setEditConfirmedOpen(false);
         setReloadKey((k) => k + 1);
         window.location.reload();
-      }, 500);
+      }, 1);
     } else {
       console.error("Submit failed:", await res.text());
     }

@@ -106,6 +106,53 @@ function SpvAuditor() {
     }
   }, [activeTab]);
 
+
+
+
+  const refreshDocuments = async () => {
+    try {
+
+      const headers = { Authorization: authHeader };
+      // Documents
+      const resDocs = await fetch(
+          "http://localhost:3001/petitionSuperAudit/wait_to_accept",
+          { headers }
+          );
+      const docs = await resDocs.json();
+      setDocumentAll(docs.document_json || []);
+
+      // History Edit
+      const resEdit = await fetch(
+          "http://localhost:3001/petitionSuperAudit/history_accepted",
+          { headers }
+          );
+      const his_acpt = await resEdit.json();
+      setHistoryAccept(his_acpt || []);
+
+      // History Final Audited
+      const resFinal = await fetch(
+          "http://localhost:3001/petitionSuperAudit/history_change_des",
+          { headers }
+          );
+      const change_d = await resFinal.json();
+      setHistoryChangeDes(change_d || [])
+
+    } catch (err) {
+      console.error("โหลดข้อมูลล้มเหลว", err);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
   // ================== Load destinations ==================
   useEffect(() => {
     let mounted = true;
@@ -719,6 +766,7 @@ function SpvAuditor() {
                 })
               );
               setModalPhase("success");
+              await refreshDocuments();
               setTimeout(() => { setApproveOpen(false); setModalPhase("confirm"); setSelected(null); }, 900);
             } else {
               console.error("[CHANGE_DEST] HTTP", response.status, "resp:", result);
@@ -794,6 +842,7 @@ function SpvAuditor() {
               );
 
               setDeptView("success");
+              await refreshDocuments();
               setTimeout(() => { setRejectOpen(false); setSelected(null); setDeptView("form"); }, 900);
             } else {
               console.error("[ACCEPT] HTTP", response.status, "resp:", result);

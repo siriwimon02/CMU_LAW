@@ -584,7 +584,7 @@ function Employee_Paper() {
                     return (
                         <p className="flex flex-wrap items-center">
                           <span>
-                            หัวหน้าที่ตรวจสอบ:{" "}
+                            หัวหน้าที่ตรวจสอบ : {" "}
                             <span className="font-medium">{head_a}</span>
                           </span>
                         </p>                      
@@ -620,25 +620,26 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            เลขที่คำขอ:{" "}
+                            เลขที่คำขอ : {" "}
                             <span className="font-medium">{doc.doc_id ?? doc.id_doc ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำร้อง:{" "}
+                            ผู้ที่ยื่นคำร้อง : {" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
+                        </p>
 
-                          {/* กลุ่มวันที่ */}
-                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำร้อง:</span>
+                        <p className="flex flex-wrap items-center">
+                          <span>วันที่ส่งคำร้อง : {" "}
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
                             </span>
                           </span>
                         </p>
+
 
                         {head_auditor()}
                         
@@ -754,32 +755,41 @@ function Employee_Paper() {
                         </p>
 
 
+
                         <p className="flex flex-wrap items-center">
                           <span>
-                            เลขที่คำขอ:{" "}
+                            เลขที่คำขอ : {" "}
                             <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
-                          </span>
-
-                          {/* กลุ่มวันที่ */}
-                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำร้อง:</span>
-                            <span className="whitespace-nowrap">
-                              {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
-                            </span>
+                            ผู้ที่ยื่นคำร้อง : {" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            หัวหน้าที่ตรวจสอบ:{" "}
+                            หัวหน้าที่ตรวจสอบ : {" "}
                             <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
+                          </span>
+                        </p>
+
+                        <p>
+                            <span>วันที่ส่งคำร้อง : {" "}
+                              <span className="font-medium">
+                                {formatThaiPretty(doc.createAt) /* ✅ อ่านง่าย */}
+                              </span>
+                            </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>วันที่ส่งคืนแก้ไข : {" "}
+                            <span className="font-medium">
+                              {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
+                            </span>
                           </span>
                         </p>
 
@@ -850,35 +860,40 @@ function Employee_Paper() {
                           <span>{doc.doc_title ?? "—"}</span>
                         </p>
 
-
-
                         <p className="flex flex-wrap items-center">
                           <span>
-                            เลขที่คำขอ:{" "}
+                            เลขที่คำขอ : {" "}
                             <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
                           </span>
                         </p>
 
-
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
-                          </span>
-
-                          {/* กลุ่มวันที่ */}
-                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำร้อง:</span>
-                            <span className="whitespace-nowrap">
-                              {formatThaiPretty(getCreatedAt(doc))}
-                            </span>
+                            ผู้ที่ยื่นคำร้อง : {" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            หัวหน้าที่ตรวจสอบ:{" "}
+                            หัวหน้าที่ตรวจสอบ : {" "}
                             <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
+                          </span>
+                        </p>
+
+                        <p>
+                            <span>วันที่ส่งคำร้อง : {" "}
+                              <span className="font-medium">
+                                {formatThaiPretty(doc.createAt) /* ✅ อ่านง่าย */}
+                              </span>
+                            </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>วันที่ตรวจสอบ : {" "}
+                            <span className="font-medium">
+                              {formatThaiPretty(doc.changeAt) /* ✅ อ่านง่าย */}
+                            </span>
                           </span>
                         </p>
 
@@ -937,17 +952,6 @@ function Employee_Paper() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
           {/* อยู่ระหว่างการตรวจสอบขั้นต้น */}
           {activeTab === "documentAll" && (
             <div>
@@ -974,6 +978,21 @@ function Employee_Paper() {
                   return <span>{statusText || "—"}</span>; 
                 };
 
+
+                const head_auditor = () => {
+                  const head_a = doc.headauditByemail ?? "";
+                  if (head_a !== "-") {
+                    return (
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้าที่ตรวจสอบ:{" "}
+                            <span className="font-medium">{head_a}</span>
+                          </span>
+                        </p>                      
+                    )
+                  }
+                }
+
                 const docId = getDocIdNumeric(doc) || i;  // ✅ ยึด helper เดิม
                 return (
                   <article
@@ -998,27 +1017,33 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            เลขที่คำขอ:{" "}
+                            เลขที่คำขอ : {" "}
                             <span className="font-medium">{doc.doc_id ?? doc.id_doc ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำร้อง:{" "}
+                            ผู้ที่ยื่นคำร้อง : {" "}
                             <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
+                        </p>
 
-                          {/* กลุ่มวันที่ */}
-                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำร้อง:</span>
+                        <p className="flex flex-wrap items-center">
+                          <span>วันที่ส่งคำร้อง : {" "}
                             <span className="whitespace-nowrap">
                               {formatThaiPretty(doc.createdAt) /* ✅ อ่านง่าย */}
                             </span>
                           </span>
                         </p>
+
+                        {head_auditor()}
+
+                        <p>
+                          {doc.note}
+                        </p>
+
                         <p className="font-medium">
-                          
                           { checkstatus() }
                         </p>
 
@@ -1110,10 +1135,6 @@ function Employee_Paper() {
 
 
 
-
-
-
-
           {/* ส่งกลับให้ผู้ใช้แก้ไขเอกสาร */}
           {activeTab === "history_change_des" && (
             <div>
@@ -1145,33 +1166,41 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            เลขที่คำขอ:{" "}
+                            เลขที่คำขอ : {" "}
                             <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
+                            ผู้ที่ยื่นคำร้อง : {" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
+                        </p>
 
-                          {/* กลุ่มวันที่ */}
-                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำร้อง:</span>
-                            <span className="whitespace-nowrap">
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้าที่ตรวจสอบ : {" "}
+                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
+                          </span>
+                        </p>
+
+                        <p>
+                            <span>วันที่ส่งคำร้อง : {" "}
+                              <span className="font-medium">
+                                {formatThaiPretty(doc.createAt) /* ✅ อ่านง่าย */}
+                              </span>
+                            </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>วันที่ส่งคืนแก้ไข : {" "}
+                            <span className="font-medium">
                               {formatThaiPretty(doc.editedAt) /* ✅ อ่านง่าย */}
                             </span>
                           </span>
                         </p>
-
                         
-                        <p className="flex flex-wrap items-center">
-                          <span>
-                            หัวหน้าที่ตรวจสอบ:{" "}
-                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
-                          </span>
-                        </p>
 
                         <p className="font-medium">
                           <span style={{color: "#CD0000"}}>{doc.oldstatus}</span>
@@ -1262,39 +1291,46 @@ function Employee_Paper() {
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            เลขที่คำขอ:{" "}
+                            เลขที่คำขอ : {" "}
                             <span className="font-medium">{doc.idformal ?? doc.idformal ?? "—"}</span>
                           </span>
                         </p>
 
                         <p className="flex flex-wrap items-center">
                           <span>
-                            ผู้ที่ยื่นคำร้อง:{" "}
-                            <span className="font-medium">{`${doc.ownername} (${doc.owneremail ?? "—"})`}</span>
+                            ผู้ที่ยื่นคำร้อง : {" "}
+                            <span className="font-medium">{doc.owneremail ?? "—"}</span>
                           </span>
+                        </p>
 
-                          {/* กลุ่มวันที่ */}
-                          <span className="inline-flex items-center gap-1 ml-2 sm:ml-8">
-                            <span>วันที่คำร้อง:</span>
-                            <span className="whitespace-nowrap">
-                              {formatThaiPretty(getCreatedAt(doc))}
+                        <p className="flex flex-wrap items-center">
+                          <span>
+                            หัวหน้าที่ตรวจสอบ : {" "}
+                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
+                          </span>
+                        </p>
+
+                        <p>
+                            <span>วันที่ส่งคำร้อง : {" "}
+                              <span className="font-medium">
+                                {formatThaiPretty(doc.createAt) /* ✅ อ่านง่าย */}
+                              </span>
+                            </span>
+                        </p>
+
+                        <p className="flex flex-wrap items-center">
+                          <span>วันที่ตรวจสอบ : {" "}
+                            <span className="font-medium">
+                              {formatThaiPretty(doc.changeAt) /* ✅ อ่านง่าย */}
                             </span>
                           </span>
                         </p>
 
 
-                        <p className="flex flex-wrap items-center">
-                          <span>
-                            หัวหน้าที่ตรวจสอบ:{" "}
-                            <span className="font-medium">{`${doc.headauditByname} (${doc.headauditByemail ?? "—"})`}</span>
-                          </span>
-                        </p>
-
                         <p className="font-medium">
                           <span style={{color: "#05A967"}}>{doc.oldstatus}</span>
                         </p>
                         
-
 
                       </div>
 
