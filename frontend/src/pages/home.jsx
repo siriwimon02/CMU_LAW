@@ -26,7 +26,7 @@ function Home() {
                 {/* header */}
 
                 <div className="w-full flex-grow flex justify-center">
-                    <div className="w-full max-w-[1600px] h-[500px] bg-[url('/images/bg.jpg')] bg-no-repeat bg-center bg-cover shadow-lg flex flex-col justify-between rounded-xl overflow-hidden">
+                    <div className="w-full max-w-[1600px] h-[500px] bg-[url('/images/bg.jpg')] bg-no-repeat bg-center bg-cover shadow-lg flex flex-col justify-between overflow-hidden">
                     
                         {/* ข้อความ */}
                         <div className="p-6 sm:p-10 text-white pt-10 sm:pt-20">
