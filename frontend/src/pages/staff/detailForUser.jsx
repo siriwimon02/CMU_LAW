@@ -97,6 +97,8 @@ function DetailForUser() {
     if (id) run();
   }, [id, token]);
 
+  console.log(statusHistory)
+  
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) {
     return (
@@ -202,12 +204,12 @@ function renderStatusDetail(item) {
         <p className="text-sm text-gray-700">
           แก้ไขโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-700">
           เวลาแก้ไข: {item.editAt ? formatThaiDate(item.editAt) : "-"}
         </p>
         <hr className="my-2" />
-        <p className="text-sm text-gray-600">📌 ข้อมูลเดิม</p>
-        <ul className="text-sm text-gray-500 list-disc list-inside">
+        <p className="text-sm text-gray-700">ข้อมูลเดิม</p>
+        <ul className="text-sm text-gray-700 list-disc list-inside break-words">
           <li>เรื่อง: {item.oldTitle}</li>
           <li>ผู้รับมอบ: {item.oldAuthorize_to}</li>
           <li>ตำแหน่ง: {item.oldPosition}</li>
@@ -228,10 +230,10 @@ function renderStatusDetail(item) {
         <p className="text-sm text-gray-700">
           โดย: {item.transferByname} {item.transferBylname} ({item.transferByemail})
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-700">
           เวลา: {item.transferAt ? formatThaiDate(item.transferAt) : "-"}
         </p>
-        {item.note && <p className="text-sm text-gray-600">หมายเหตุ: {item.note}</p>}
+        {item.note && <p className="text-sm text-gray-700">หมายเหตุ: {item.note}</p>}
       </div>
     );
   }
@@ -242,10 +244,10 @@ function renderStatusDetail(item) {
       <p className="text-sm text-gray-700">
         โดย: {item.changeBy_name} {item.changeBy_lname} ({item.changeBy_email})
       </p>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-700">
         เวลา: {item.changeAt ? formatThaiDate(item.changeAt) : "-"}
       </p>
-      {item.note && <p className="text-sm text-gray-600">หมายเหตุ: {item.note}</p>}
+      {item.note && <p className="text-sm text-gray-700">หมายเหตุ: {item.note}</p>}
     </div>
   );
 }

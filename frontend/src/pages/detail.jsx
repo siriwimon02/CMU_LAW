@@ -107,7 +107,7 @@ function Detail() {
       </div>
     );
   }
-
+  console.log(statusHistory)
   return (
     <>
       <div className="bg-[#F8F8F8] min-h-screen flex justify-center items-center p-6 font-kanit">
@@ -197,7 +197,7 @@ function renderStatusDetail(item) {
   if (item.editedByemail) {
     return (
       <div className="mt-2 space-y-1">
-        <p className="text-sm ">หมายเหตุ: {item.note}</p>
+        <p className="text-sm break-words">หมายเหตุ: {item.note}</p>
         <p className="text-sm text-gray-700">
           แก้ไขโดย: {item.editedByname} {item.editedBylname} ({item.editedByemail})
         </p>
@@ -230,7 +230,7 @@ function renderStatusDetail(item) {
         <p className="text-sm text-gray-700">
           เวลา: {item.transferAt ? formatThaiDate(item.transferAt) : "-"}
         </p>
-        {item.note && <p className="text-sm text-gray-700">หมายเหตุ: {item.note}</p>}
+        {item.note && <p className="text-sm text-gray-700 break-words">หมายเหตุ: {item.note}</p>}
       </div>
     );
   }
@@ -244,7 +244,7 @@ function renderStatusDetail(item) {
       <p className="text-sm text-gray-700">
         เวลา: {item.changeAt ? formatThaiDate(item.changeAt) : "-"}
       </p>
-      {item.note && <p className="text-sm text-gray-700">หมายเหตุ: {item.note}</p>}
+      {item.note && <p className="text-sm text-gray-700 break-words">หมายเหตุ: {item.note}</p>}
     </div>
   );
 }
