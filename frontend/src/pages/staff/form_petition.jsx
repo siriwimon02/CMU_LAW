@@ -255,7 +255,9 @@ function FormPetition() {
 
         <form onSubmit={handleOpenConfirm}>
           {/* 1. เรื่อง */}
-          <h4 style={{ marginTop: 16 }}>1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ</h4>
+          <h4 style={{ marginTop: 16 }}>1. เรื่อง มอบอำนาจการดำเนินงานที่เกี่ยวข้องกับ
+            <span className='text-[#FF0000]'> *</span>
+          </h4>
           <input
             type="text"
             value={title}
@@ -272,7 +274,9 @@ function FormPetition() {
           />
 
           {/* 2. ผู้รับมอบอำนาจ */}
-          <h4 style={{ marginTop: 16 }}>2. ผู้รับมอบอำนาจ</h4>
+          <h4 style={{ marginTop: 16 }}>2. ผู้รับมอบอำนาจ
+            <span className='text-[#FF0000]'> *</span>
+          </h4>
           <input
             type="text"
             value={authorize_to}
@@ -290,7 +294,9 @@ function FormPetition() {
           />
 
           {/* 3. ตำแหน่ */}
-          <h4 style={{ marginTop: 16 }}>3. ตำแหน่ง</h4>
+          <h4 style={{ marginTop: 16 }}>3. ตำแหน่ง
+            <span className='text-[#FF0000]'> *</span>
+          </h4>
           <input
             type="text"
             value={position}
@@ -308,7 +314,9 @@ function FormPetition() {
           />
 
           {/* 4. สังกัด */}
-          <h4 style={{ marginTop: 16 }}>4. สังกัด</h4>
+          <h4 style={{ marginTop: 16 }}>4. สังกัด
+            <span className='text-[#FF0000]'> *</span>
+          </h4>
           <input
             type="text"
             value={affiliation}
@@ -326,7 +334,9 @@ function FormPetition() {
           />
 
           {/* 5. รายละเอียดการมอบอำนาจ */}
-          <h4 style={{ marginTop: 16 }}>5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด</h4>
+          <h4 style={{ marginTop: 16 }}>5. ขอรับมอบหมายให้ดำเนินการในเรื่องใด
+            <span className='text-[#FF0000]'> *</span>
+          </h4>
           <textarea
             value={authorize_text}
             onChange={(e) => setAuthorize_text(e.target.value)}
@@ -344,7 +354,9 @@ function FormPetition() {
           />
 
           {/* 6. หน่วยงานปลายทาง */}
-          <h4 style={{ marginTop: 16 }}>6. หน่วยงานปลายทาง</h4>
+          <h4 style={{ marginTop: 16 }}>6. หน่วยงานปลายทาง
+            <span className='text-[#FF0000]'> *</span>
+          </h4>
           <select
             value={destinationId}
             onChange={(e) => setDestination(e.target.value)}
