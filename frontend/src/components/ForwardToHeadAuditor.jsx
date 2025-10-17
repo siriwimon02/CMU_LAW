@@ -151,7 +151,7 @@ export default function ForwardToHeadAuditor({
                 clipRule="evenodd"
               />
             </svg>
-            ส่งต่อไปที่หัวหน้ากอง
+            ส่งต่อไปที่หัวหน้าผู้ตรวจสอบ
           </button>
         )}
       </>
@@ -194,7 +194,7 @@ export default function ForwardToHeadAuditor({
         </button>
 
         <div className="flex min-h-[356px] flex-col">
-          <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังหัวหน้ากอง</h2>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-900">ส่งคำขอไปยังหัวหน้าผู้ตรวจสอบ</h2>
           <p className="mt-6 text-lg sm:text-xl font-extrabold text-gray-900">
             เรื่อง: {item?.request_no ?? item?.title ?? "-"}
           </p>
@@ -211,7 +211,7 @@ export default function ForwardToHeadAuditor({
             ผู้ยื่นคำขอ: {item?.owneremail ?? "-"}
           </p>
 
-          <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกหัวหน้ากอง</label>
+          <label className="mt-6 text-base sm:text-lg text-gray-900">เลือกหัวหน้าผู้ตรวจสอบ</label>
           <div className="mt-2">
             <div className="relative">
               <select
@@ -222,7 +222,7 @@ export default function ForwardToHeadAuditor({
                 disabled={loading || (Array.isArray(auditorsProp) ? (loadingAuditorsProp || false) : options.length === 0)}
               >
                 <option value="" disabled>
-                  {loading || loadingAuditorsProp ? "กำลังโหลดรายชื่อหัวหน้ากอง..." : "เลือกหัวหน้ากอง"}
+                  {loading || loadingAuditorsProp ? "กำลังโหลดรายชื่อหัวหน้าผู้ตรวจสอบ..." : "เลือกหัวหน้าผู้ตรวจสอบ"}
                 </option>
                 {options.map((opt) => (
                   <option key={opt.id} value={opt.id}>
@@ -257,7 +257,7 @@ export default function ForwardToHeadAuditor({
                       strokeLinejoin="round"
                       d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
-              ส่งต่อไปที่หัวหน้ากอง
+              ส่งต่อไปที่หัวหน้าผู้ตรวจสอบ
             </button>
           </div>
         </div>
