@@ -147,7 +147,7 @@ function SpvAuditor() {
 
 
 
-
+  console.log(historyChangeDes);
 
 
 
@@ -407,6 +407,10 @@ function SpvAuditor() {
     }
   };
 
+  const ClickForViewPet = (id) => {
+      navigate(`/view/${id}`);
+  }
+
   // ================== Render helpers ==================
   const FILTER_WAIT = "เอกสารที่รอตรวจสอบ";
   const FILTER_TO_DEPT = "ส่งต่อไปหน่วยงานอื่น";
@@ -528,6 +532,21 @@ function SpvAuditor() {
                   </svg>
                   ดูรายละเอียด
                 </button>,
+                <button className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                onClick={() => ClickForViewPet(doc.id)}>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        aria-hidden="true"
+                    >
+                        <path
+                        fill="currentColor"
+                        d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
+                        />
+                    </svg>
+                        ดูเอกสาร
+                </button>,
                 <button
                   key="to-dept"
                   onClick={() => { setSelected(doc); setModalPhase("confirm"); setApproveOpen(true); }}
@@ -571,19 +590,6 @@ function SpvAuditor() {
                 status_name: h.nowstatus ?? h.oldstatus ?? "-",
                 destination_name: h.to ?? h.destination_name ?? h.new_des ?? "-",
               },
-              [
-                <button
-                  key="detail"
-                  onClick={() => ClickForMoreDetail(h)}
-                  className="border border-gray-200 px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-100"
-                >
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="M21 21l-4.3-4.3" />
-                  </svg>
-                  ดูรายละเอียด
-                </button>,
-              ]
             )
           )}
         </div>
@@ -615,6 +621,21 @@ function SpvAuditor() {
                     <path d="M21 21l-4.3-4.3" />
                   </svg>
                   ดูรายละเอียด
+                </button>,
+                <button className="bg-[#66009F] text-white px-4 py-3 rounded-lg text-sm flex items-center gap-1 hover:bg-purple-700"
+                onClick={() => ClickForViewPet(r.docId)}>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        aria-hidden="true"
+                    >
+                        <path
+                        fill="currentColor"
+                        d="M16.5 19.308q1.166 0 1.987-.812q.82-.811.82-1.996q0-1.165-.82-1.986q-.821-.822-1.987-.822q-1.184 0-1.996.822q-.812.82-.812 1.986q0 1.185.812 1.996q.812.812 1.996.812m5.1 3l-2.796-2.79q-.487.382-1.07.586t-1.234.204q-1.586 0-2.697-1.111t-1.11-2.697t1.11-2.697t2.697-1.11t2.697 1.11t1.11 2.697q0 .656-.216 1.249t-.599 1.08l2.796 2.771zM5.616 21q-.691 0-1.153-.462T4 19.385V4.615q0-.69.463-1.152T5.616 3H13.5L18 7.5v3.02q-.37-.097-.744-.155q-.375-.057-.756-.057q-2.825 0-4.515 1.922t-1.689 4.326q0 1.203.478 2.355T12.294 21zM13 8h4l-4-4l4 4l-4-4z"
+                        />
+                    </svg>
+                        ดูเอกสาร
                 </button>,
               ],
               { showDestination: false }

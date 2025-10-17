@@ -205,7 +205,7 @@ function FinalAuditCheck() {
                 );
             }
             return (
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-4 mt-4 ml-10 mr-10">
                         {filteredDocs.map((doc) => (
                                 <div
                                     key={doc.id}
@@ -427,7 +427,7 @@ function FinalAuditCheck() {
             }
 
             return (
-                <div className="space-y-4 mt-4">
+                <div className="space-y-4 mt-4 ml-10 mr-10">
                 {filteredHisFinal.map((item) => (
                     <div key={`final-${item.historyId}`} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">  
                         <div className="flex-1 min-w-0 max-w-[800px]">
@@ -548,7 +548,7 @@ function FinalAuditCheck() {
             }
 
             return (
-                <div className="space-y-4 mt-4">
+                <div className="space-y-4 mt-4 ml-10 mr-10">
                 {filteredHisEdit.map((edit) => (
                     <div key={edit.historyId} className="bg-white rounded-lg shadow-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
                         <div className="flex-1 min-w-0 max-w-[800px]">
@@ -990,7 +990,7 @@ function FinalAuditCheck() {
         <div className="min-h-screen flex flex-col font-kanit bg-[#F8F8F8]">
         <Navbar />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mx-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mx-15">
             <div className="relative w-full">
                 {/* ไอคอนซ้าย */}
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#66009F]">
